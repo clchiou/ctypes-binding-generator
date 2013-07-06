@@ -1,7 +1,7 @@
 '''Package for automatic generation of ctypes bindings from C sources.'''
 
-from ctypes_binding import CtypesBindingGenerator
-from macro_const import MacroConstantsGenerator
+from cbind.ctypes_binding import CtypesBindingGenerator
+from cbind.macro_const import MacroConstantsGenerator
 
 
 def parse_args():
