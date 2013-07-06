@@ -75,17 +75,18 @@ class CtypesBindingGenerator:
         self._included_symbols = None
         self._excluded_symbols = None
 
-    def parse(self, c_source, args=None):
+    def parse(self, path, contents=None, args=None):
         '''Parse C source file.'''
-        translation_unit = self.index.parse(c_source, args=args)
-        if not translation_unit:
-            msg = 'Could not parse C source: %s' % c_source
-            raise CtypesBindingException(msg)
-        if isinstance(c_source, file):
-            c_src = c_source.name
+        if contents:
+            unsaved_files = [(path, contents)]
         else:
-            c_src = str(c_source)
-        self.translation_units.append((c_src, translation_unit))
+            unsaved_files = None
+        translation_unit = self.index.parse(path, args=args,
+                unsaved_files=unsaved_files)
+        if not translation_unit:
+            msg = 'Could not parse C source: %s' % path
+            raise CtypesBindingException(msg)
+        self.translation_units.append((path, translation_unit))
 
     def generate(self, output, included_symbols=None, excluded_symbols=None):
         '''Generate ctypes binding.'''
