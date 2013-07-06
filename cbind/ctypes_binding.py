@@ -157,12 +157,24 @@ class CtypesBindingGenerator:
             element_type = self._make_type(type_.get_array_element_type())
             c_type = '%s * %d' % (element_type, type_.get_array_size())
         elif type_.kind is TypeKind.POINTER:
-            c_type = 'POINTER(%s)' % self._make_type(type_.get_pointee())
+            c_type = self._make_pointer_type(type_)
         else:
             c_type = self.c_type_map.get(type_.kind)
         if c_type is None:
             raise TypeError('Unsupported TypeKind: %s' % type_.kind)
         return c_type
+
+    def _make_pointer_type(self, type_):
+        '''Generate ctypes binding of a pointer.'''
+        pointee_type = type_.get_pointee()
+        if pointee_type.kind is TypeKind.CHAR_S:
+            return 'c_char_p'
+        elif pointee_type.kind is TypeKind.WCHAR:
+            return 'c_wchar_p'
+        elif pointee_type.kind is TypeKind.VOID:
+            return 'c_void_p'
+        else:
+            return 'POINTER(%s)' % self._make_type(pointee_type)
 
     def _make_typedef(self, cursor, output):
         '''Generate ctypes binding of a typedef statement.'''
