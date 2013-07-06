@@ -143,7 +143,7 @@ class CtypesBindingGenerator:
     def _make_type(self, type_):
         '''Generate ctypes binding of a clang type.'''
         c_type = None
-        if type_.kind is TypeKind.UNEXPOSED:
+        if type_.kind in (TypeKind.UNEXPOSED, TypeKind.RECORD):
             cursor = type_.get_declaration()
             if cursor.spelling:
                 c_type = cursor.spelling

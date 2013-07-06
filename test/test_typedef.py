@@ -7,8 +7,34 @@ class TestTypedef(helper.TestCtypesBindingGenerator):
     def test_simple_typedef(self):
         self.run_test('''
 typedef int my_type;
+typedef struct foo bar;
         ''', '''
 my_type = c_int
+bar = foo
+        ''')
+
+    def test_chained_typedef(self):
+        self.run_test('''
+typedef struct type_0 type_1;
+typedef type_1 type_2;
+        ''', '''
+type_1 = type_0
+type_2 = type_0
+        ''')
+
+    def test_anonymous_struct_typedef(self):
+        self.run_test('''
+typedef struct {
+    int i;
+} type_1;
+typedef type_1 type_2;
+        ''', '''
+class _anonymous_struct_0001(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+type_1 = _anonymous_struct_0001
+type_2 = _anonymous_struct_0001
         ''')
 
 
