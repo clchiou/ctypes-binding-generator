@@ -72,8 +72,6 @@ class CtypesBindingGenerator:
         self.translation_units = []
         self.anonymous_serial = 0
         self.libvar = libvar or '_lib'
-        self._included_symbols = None
-        self._excluded_symbols = None
 
     def parse(self, path, contents=None, args=None):
         '''Parse C source file.'''
@@ -88,10 +86,8 @@ class CtypesBindingGenerator:
             raise CtypesBindingException(msg)
         self.translation_units.append((path, translation_unit))
 
-    def generate(self, output, included_symbols=None, excluded_symbols=None):
+    def generate(self, output):
         '''Generate ctypes binding.'''
-        self._included_symbols = included_symbols or ()
-        self._excluded_symbols = excluded_symbols or ()
         for c_src, tunit in self.translation_units:
             self._walk_astree(tunit.cursor, c_src, output)
 
@@ -100,15 +96,12 @@ class CtypesBindingGenerator:
         for child in cursor.get_children():
             self._walk_astree(child, c_src, output)
 
-        if cursor.spelling in self._excluded_symbols:
+        # Ignore nodes not belong to the C source.
+        if not cursor.location.file or cursor.location.file.name != c_src:
             return
-        elif cursor.spelling not in self._included_symbols:
-            # Ignore nodes not belong to the C source.
-            if not cursor.location.file or cursor.location.file.name != c_src:
-                return
-            # Ignore nodes already processed.
-            if cursor in self.symbol_table:
-                return
+        # Ignore nodes already processed.
+        if cursor in self.symbol_table:
+            return
 
         # TODO(clchiou): Function pointer.
 

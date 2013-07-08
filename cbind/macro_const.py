@@ -6,7 +6,6 @@ import re
 import subprocess
 import tempfile
 from collections import OrderedDict
-from itertools import chain
 from clang.cindex import Index, CursorKind
 
 
@@ -40,17 +39,15 @@ class MacroConstantsGenerator:
                 self.local_symbols.append(match.group(1))
         self.c_sources.append(c_source)
 
-    def parse(self, args=None, included_symbols=None, excluded_symbols=None,
-            regex_integer_typed=None):
+    def parse(self, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
-        symbol_values = self._get_symbol_values(args or (),
-                included_symbols or (), excluded_symbols or ())
+        symbol_values = self._get_symbol_values(args or ())
         assured_integer_symbols = self._translate_symbol_values(symbol_values,
                 regex_integer_typed)
         if assured_integer_symbols:
             self._translate_integer_symbols(assured_integer_symbols, args)
 
-    def _get_symbol_values(self, args, included_symbols, excluded_symbols):
+    def _get_symbol_values(self, args):
         '''Get value of the symbols.'''
         tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
         try:
@@ -58,9 +55,7 @@ class MacroConstantsGenerator:
                 for c_src_path in self.c_sources:
                     c_src_path = os.path.abspath(c_src_path)
                     tmp_src.write('#include "%s"\n' % c_src_path)
-                for symbol in chain(included_symbols, self.local_symbols):
-                    if symbol in excluded_symbols:
-                        continue
+                for symbol in self.local_symbols:
                     tmp_src.write('{0}_{1} = {1}\n'.format(self.magic, symbol))
             clang = ['clang', '-E', tmp_src_path]
             clang.extend(args)
