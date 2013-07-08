@@ -28,7 +28,7 @@ i = POINTER(c_int).in_dll(_lib, 'i')
 c = c_char_p.in_dll(_lib, 'c')
 w = POINTER(c_int).in_dll(_lib, 'w')
 p = c_void_p.in_dll(_lib, 'p')
-uc = POINTER(c_uchar).in_dll(_lib, 'uc')
+uc = POINTER(c_ubyte).in_dll(_lib, 'uc')
         ''')
 
 
