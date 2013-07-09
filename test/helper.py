@@ -30,7 +30,9 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         cbgen.parse('input.c', contents=c_src)
         output = StringIO()
         cbgen.generate(output)
-        self.assert_equivalent(output.getvalue(), python_code)
+        gen_code = output.getvalue()
+        self.assert_equivalent(gen_code, python_code)
+        compile(gen_code, 'output.py', 'exec')
 
     def assert_equivalent(self, code1, code2):
         '''Test if Python codes are equivalent.'''
