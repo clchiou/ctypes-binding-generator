@@ -32,6 +32,19 @@ class bar(Structure):
     _fields_ = [('s', foo)]
         ''')
 
+    def test_self_reference(self):
+        self.run_test('''
+struct blob {
+    struct blob *bp;
+    int i;
+};
+        ''', '''
+class blob(Structure):
+    _pack_ = 8
+    _fields_ = [('bp', POINTER(blob)),
+                ('i', c_int)]
+        ''')
+
     def test_anonymous_struct(self):
         self.run_test('''
 struct foo {

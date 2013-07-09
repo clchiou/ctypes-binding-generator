@@ -112,25 +112,28 @@ class CtypesBindingGenerator:
         if cursor in self.symbol_table:
             return
 
-        # Search for nodes that this node depends on.
+        # Add this node to the symbol table before searching for nodes that
+        # this node depends on to avoid infinite recursion caused by cyclic
+        # reference.
         if cursor.kind is CursorKind.TYPEDEF_DECL:
-            pass
+            self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.FUNCTION_DECL:
+            self.symbol_table.add(cursor)
             for type_ in cursor.type.argument_types():
                 self._extract_type(type_)
             self._extract_type(cursor.result_type)
         elif cursor.kind in self.pod_decl and cursor.is_definition():
+            self.symbol_table.add(cursor)
             for field in cursor.get_children():
                 if field.kind is CursorKind.FIELD_DECL:
                     self._extract_type(field.type)
         elif cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
-            pass
+            self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.VAR_DECL:
+            self.symbol_table.add(cursor)
             self._extract_type(cursor.type)
         else:
             return
-
-        self.symbol_table.add(cursor)
 
     def _extract_type(self, type_):
         '''Extract symbols from this clang type.'''
