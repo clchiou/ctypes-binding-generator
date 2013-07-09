@@ -248,10 +248,12 @@ class CtypesBindingGenerator:
     def _make_pod(self, cursor, output, declared=False, declaration=False):
         '''Generate ctypes binding of a POD definition.'''
         name = self._make_pod_name(cursor)
-        if not declared:
-            self._make_pod_header(cursor, name, declaration, output)
-        if not declaration:
-            self._make_pod_body(cursor, declared, name, output)
+        output_header = not declared
+        output_body = not declaration
+        if output_header:
+            self._make_pod_header(cursor, name, output_body, output)
+        if output_body:
+            self._make_pod_body(cursor, name, output_header, output)
 
     def _make_pod_name(self, cursor):
         '''Generate the name of the POD.'''
@@ -266,28 +268,28 @@ class CtypesBindingGenerator:
             self.symbol_table.annotate(cursor, 'name', name)
         return name
 
-    def _make_pod_header(self, cursor, name, declaration, output):
+    def _make_pod_header(self, cursor, name, output_body, output):
         '''Generate the 'class ...' part of POD.'''
         if cursor.kind is CursorKind.STRUCT_DECL:
             pod_kind = 'Structure'
         else:
             pod_kind = 'Union'
         output.write('class {0}({1}):\n'.format(name, pod_kind))
-        if declaration:
+        if not output_body:
             output.write('%spass\n' % self.indent)
 
-    def _make_pod_body(self, cursor, declared, name, output):
+    def _make_pod_body(self, cursor, name, output_header, output):
         '''Generate the body part of POD.'''
         fields = [field for field in cursor.get_children()
                 if field.kind is CursorKind.FIELD_DECL]
         if not fields:
-            if not declared:
+            if output_header:
                 output.write('%spass\n' % self.indent)
             return
-        if declared:
-            begin = '%s.' % name
-        else:
+        if output_header:
             begin = self.indent
+        else:
+            begin = '%s.' % name
         # Generate _anonymous_
         anonymous = []
         for field in fields:
