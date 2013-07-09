@@ -75,7 +75,6 @@ class CtypesBindingGenerator:
         self.translation_units = []
         self.anonymous_serial = 0
         self.libvar = libvar or '_lib'
-        self._c_src = None
         self._output = None
 
     def _walk_astree(self, cursor, func):
@@ -101,14 +100,13 @@ class CtypesBindingGenerator:
         # * The first pass (right below) enumerates the symbols that we should
         #   generate Python codes for.
         # * The second pass in the generate() method generates the codes.
-        self._c_src = path
-        self._walk_astree(translation_unit.cursor, self._extract_symbol)
+        self._walk_astree(translation_unit.cursor,
+                lambda cursor: self._extract_symbol(cursor, path))
 
-    def _extract_symbol(self, cursor):
+    def _extract_symbol(self, cursor, c_src):
         '''Extract symbols that we should generate Python codes for.'''
         # Ignore this node if it does not belong to the C source.
-        if (not cursor.location.file or
-                cursor.location.file.name != self._c_src):
+        if not cursor.location.file or cursor.location.file.name != c_src:
             return
         # Do not extract this node twice.
         if cursor in self.symbol_table:
@@ -137,7 +135,8 @@ class CtypesBindingGenerator:
     def _extract_type(self, type_):
         '''Extract symbols from this clang type.'''
         if type_.kind in self.blob_type:
-            self.symbol_table.add(type_.get_declaration())
+            cursor = type_.get_declaration()
+            self._extract_symbol(cursor, cursor.location.file.name)
         elif type_.kind is TypeKind.TYPEDEF:
             self._extract_type(type_.get_canonical())
         elif type_.kind is TypeKind.CONSTANTARRAY:

@@ -95,6 +95,22 @@ class my_struct(Structure):
     _fields_ = [('o', other_struct)]
         ''')
 
+    def test_struct_var(self):
+        self.run_header_test('''
+struct my_blob {
+    int i;
+};
+        ''', '''
+#include "%s"
+struct my_blob b;
+        ''', '''
+class my_blob(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+b = my_blob.in_dll(_lib, 'b')
+        ''')
+
     def test_forward_decl(self):
         self.run_header_test('''
 typedef struct {
@@ -116,6 +132,53 @@ class _anonymous_struct_0001(Structure):
 class foo(Structure):
     _pack_ = 4
     _fields_ = [('blob', _anonymous_struct_0001)]
+        ''')
+
+
+class TestNestedInclude(helper.TestCtypesBindingGenerator):
+
+    def run_headers_test(self, *args):
+        header_codes, c_code, python_code = args[:-2], args[-2], args[-1]
+        header_paths = []
+        header_info = {}
+        try:
+            for i in xrange(len(header_codes)):
+                _, header_path = tempfile.mkstemp(suffix='.h')
+                header_paths.append(header_path)
+                header_info['header_%d' % i] = header_path
+            for header_path, header_code in zip(header_paths, header_codes):
+                with open(header_path, 'w') as header_file:
+                    header_file.write(header_code % header_info)
+            self.run_test(c_code % header_info, python_code)
+        finally:
+            for header_path in header_paths:
+                os.remove(header_path)
+
+    def test_nested_include(self):
+        self.run_headers_test('''
+struct blob_1 {
+    int i;
+};
+        ''', '''
+#include "%(header_0)s"
+
+struct blob_2 {
+    struct blob_1 b1;
+};
+        ''', '''
+#include "%(header_1)s"
+
+struct blob_2 b2;
+        ''', '''
+class blob_1(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+class blob_2(Structure):
+    _pack_ = 4
+    _fields_ = [('b1', blob_1)]
+
+b2 = blob_2.in_dll(_lib, 'b2')
         ''')
 
 
