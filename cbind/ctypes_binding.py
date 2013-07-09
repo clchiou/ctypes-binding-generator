@@ -158,16 +158,21 @@ class CtypesBindingGenerator:
         # Do not process node that is not in the symbol table.
         if cursor not in self.symbol_table:
             return
-        # Do not process a node twice.
-        if self.symbol_table.get_annotation(cursor, 'processed', False):
+        # Do not define a node twice.
+        if self.symbol_table.get_annotation(cursor, 'defined', False):
             return
         # TODO(clchiou): Function pointer.
+        declaration = False
         if cursor.kind is CursorKind.TYPEDEF_DECL:
             self._make_typedef(cursor, self._output)
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self._make_function(cursor, self._output)
-        elif cursor.kind in self.pod_decl and cursor.is_definition():
-            self._make_pod(cursor, self._output)
+        elif cursor.kind in self.pod_decl:
+            declared = self.symbol_table.get_annotation(cursor,
+                    'declared', False)
+            declaration = not cursor.is_definition()
+            self._make_pod(cursor, self._output,
+                    declared=declared, declaration=declaration)
         elif cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
             self._make_enum(cursor, self._output)
         elif cursor.kind is CursorKind.VAR_DECL:
@@ -175,7 +180,10 @@ class CtypesBindingGenerator:
         else:
             return
         self._output.write('\n')
-        self.symbol_table.annotate(cursor, 'processed', True)
+        if declaration:
+            self.symbol_table.annotate(cursor, 'declared', True)
+        else:
+            self.symbol_table.annotate(cursor, 'defined', True)
 
     def _make_type(self, type_):
         '''Generate ctypes binding of a clang type.'''
@@ -237,8 +245,16 @@ class CtypesBindingGenerator:
             restype = self._make_type(cursor.result_type)
             output.write('%s.restype = %s\n' % (name, restype))
 
-    def _make_pod(self, cursor, output):
+    def _make_pod(self, cursor, output, declared=False, declaration=False):
         '''Generate ctypes binding of a POD definition.'''
+        name = self._make_pod_name(cursor)
+        if not declared:
+            self._make_pod_header(cursor, name, declaration, output)
+        if not declaration:
+            self._make_pod_body(cursor, declared, name, output)
+
+    def _make_pod_name(self, cursor):
+        '''Generate the name of the POD.'''
         if cursor.spelling:
             name = cursor.spelling
         else:
@@ -248,16 +264,30 @@ class CtypesBindingGenerator:
                 name = '_anonymous_union_%04d'
             name = name % self._next_anonymous_serial()
             self.symbol_table.annotate(cursor, 'name', name)
+        return name
+
+    def _make_pod_header(self, cursor, name, declaration, output):
+        '''Generate the 'class ...' part of POD.'''
         if cursor.kind is CursorKind.STRUCT_DECL:
             pod_kind = 'Structure'
         else:
             pod_kind = 'Union'
         output.write('class {0}({1}):\n'.format(name, pod_kind))
+        if declaration:
+            output.write('%spass\n' % self.indent)
+
+    def _make_pod_body(self, cursor, declared, name, output):
+        '''Generate the body part of POD.'''
         fields = [field for field in cursor.get_children()
                 if field.kind is CursorKind.FIELD_DECL]
         if not fields:
-            output.write('%spass\n' % self.indent)
+            if not declared:
+                output.write('%spass\n' % self.indent)
             return
+        if declared:
+            begin = '%s.' % name
+        else:
+            begin = self.indent
         # Generate _anonymous_
         anonymous = []
         for field in fields:
@@ -265,19 +295,19 @@ class CtypesBindingGenerator:
                 anonymous.append('\'%s\'' % field.spelling)
         if len(anonymous) == 1:
             output.write('%s_anonymous_ = (%s,)\n' %
-                    (self.indent, anonymous[0]))
+                    (begin, anonymous[0]))
         elif anonymous:
             output.write('%s_anonymous_ = (%s)\n' %
-                    (self.indent, ', '.join(anonymous)))
+                    (begin, ', '.join(anonymous)))
         # Generate _pack_
         output.write('%s_pack_ = %d\n' %
-                (self.indent, cursor.type.get_align()))
+                (begin, cursor.type.get_align()))
         # Generate _fields_
-        self._make_pod_fields(fields, output)
+        self._make_pod_fields(begin, fields, output)
 
-    def _make_pod_fields(self, fields, output):
+    def _make_pod_fields(self, begin, fields, output):
         '''Generate ctypes _field_ statement.'''
-        field_stmt = '%s_fields_ = [' % self.indent
+        field_stmt = '%s_fields_ = [' % begin
         indent = ' ' * len(field_stmt)
         output.write(field_stmt)
         first = True

@@ -37,6 +37,27 @@ type_1 = _anonymous_struct_0001
 type_2 = _anonymous_struct_0001
         ''')
 
+    def test_forward_decl(self):
+        self.run_test('''
+struct blob;
+
+struct blob;
+
+typedef struct blob my_blob;
+
+struct blob {
+    int i;
+};
+        ''', '''
+class blob(Structure):
+    pass
+
+my_blob = blob
+
+blob._pack_ = 4
+blob._fields_ = [('i', c_int)]
+        ''')
+
     def test_typedef_void(self):
         self.run_test('''
 typedef void foo;

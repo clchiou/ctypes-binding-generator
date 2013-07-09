@@ -130,8 +130,10 @@ class _anonymous_struct_0001(Structure):
     _fields_ = [('i', c_int)]
 
 class foo(Structure):
-    _pack_ = 4
-    _fields_ = [('blob', _anonymous_struct_0001)]
+    pass
+
+foo._pack_ = 4
+foo._fields_ = [('blob', _anonymous_struct_0001)]
         ''')
 
 

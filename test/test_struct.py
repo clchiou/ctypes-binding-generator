@@ -15,6 +15,14 @@ class foo(Structure):
     _fields_ = [('bar', c_int)]
         ''')
 
+    def test_empty_struct(self):
+        self.run_test('''
+struct foo {};
+        ''', '''
+class foo(Structure):
+    pass
+        ''')
+
     def test_nested_struct(self):
         self.run_test('''
 struct bar {
@@ -74,6 +82,29 @@ class foo(Structure):
     _pack_ = 4
     _fields_ = [('i', c_int, 1),
                 ('j', c_int, 31)]
+        ''')
+
+    def test_cross_reference(self):
+        self.run_test('''
+struct blob1;
+
+struct blob2 {
+    struct blob1 *b1;
+};
+
+struct blob1 {
+    struct blob2 *b2;
+};
+        ''', '''
+class blob1(Structure):
+    pass
+
+class blob2(Structure):
+    _pack_ = 8
+    _fields_ = [('b1', POINTER(blob1))]
+
+blob1._pack_ = 8
+blob1._fields_ = [('b2', POINTER(blob2))]
         ''')
 
 
