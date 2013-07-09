@@ -210,13 +210,20 @@ class CtypesBindingGenerator:
             return 'c_wchar_p'
         elif pointee_type.kind is TypeKind.VOID:
             return 'c_void_p'
+        elif (pointee_type.kind is TypeKind.TYPEDEF and
+                pointee_type.get_canonical().kind is TypeKind.VOID):
+            # Handle special case "typedef void foo;"
+            return 'c_void_p'
         else:
             return 'POINTER(%s)' % self._make_type(pointee_type)
 
     def _make_typedef(self, cursor, output):
         '''Generate ctypes binding of a typedef statement.'''
-        typedef_type = self._make_type(cursor.underlying_typedef_type)
-        output.write('%s = %s\n' % (cursor.spelling, typedef_type))
+        type_ = cursor.underlying_typedef_type
+        # Handle special case "typedef void foo;"
+        if type_.kind is TypeKind.VOID:
+            return
+        output.write('%s = %s\n' % (cursor.spelling, self._make_type(type_)))
 
     def _make_function(self, cursor, output):
         '''Generate ctypes binding of a function declaration.'''

@@ -37,6 +37,14 @@ type_1 = _anonymous_struct_0001
 type_2 = _anonymous_struct_0001
         ''')
 
+    def test_typedef_void(self):
+        self.run_test('''
+typedef void foo;
+foo *p;
+        ''', '''
+p = c_void_p.in_dll(_lib, 'p')
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()
