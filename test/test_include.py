@@ -95,6 +95,29 @@ class my_struct(Structure):
     _fields_ = [('o', other_struct)]
         ''')
 
+    def test_forward_decl(self):
+        self.run_header_test('''
+typedef struct {
+    int i;
+} my_blob;
+        ''', '''
+#include "%s"
+
+struct foo;
+
+struct foo {
+    my_blob blob;
+};
+        ''', '''
+class _anonymous_struct_0001(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+class foo(Structure):
+    _pack_ = 4
+    _fields_ = [('blob', _anonymous_struct_0001)]
+        ''')
+
+
 if __name__ == '__main__':
     unittest.main()
-
