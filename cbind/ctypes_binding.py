@@ -73,6 +73,7 @@ class CParser:
         self.symbol_table = SymbolTable()
         self.forward_declaration = SymbolTable()
         self.translation_units = []
+        self._this_file = None
         self._foreigners = None
 
     def parse(self, path, contents, args):
@@ -92,6 +93,7 @@ class CParser:
         # * The first pass (right below) enumerates the symbols that we should
         #   generate Python codes for.
         # * The second pass in the generate() method generates the codes.
+        self._this_file = path
         self._foreigners = []
         walk_astree(translation_unit.cursor,
                 None, lambda cursor: self._extract_symbol(cursor, path))
@@ -124,12 +126,12 @@ class CParser:
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self.symbol_table.add(cursor)
             for type_ in cursor.type.argument_types():
-                self._extract_type(type_, c_src)
-            self._extract_type(cursor.result_type, c_src)
+                self._extract_type(type_)
+            self._extract_type(cursor.result_type)
         elif cursor.kind in POD_DECL and cursor.is_definition():
             for field in cursor.get_children():
                 if field.kind is CursorKind.FIELD_DECL:
-                    self._extract_type(field.type, c_src)
+                    self._extract_type(field.type)
                 elif field.kind in POD_DECL:
                     self._extract_symbol(field, c_src)
             self.symbol_table.add(cursor)
@@ -137,25 +139,25 @@ class CParser:
             self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.VAR_DECL:
             self.symbol_table.add(cursor)
-            self._extract_type(cursor.type, c_src)
+            self._extract_type(cursor.type)
         else:
             return
 
-    def _extract_type(self, type_, c_src):
+    def _extract_type(self, type_):
         '''Extract symbols from this clang type.'''
         if type_.kind in BLOB_TYPE:
             cursor = type_.get_declaration()
-            if cursor.location.file.name != c_src:
+            if cursor.location.file.name != self._this_file:
                 self._foreigners.append(cursor)
             elif (cursor.kind in POD_DECL and
                     cursor not in self.symbol_table):
                 self.forward_declaration.add(cursor)
         elif type_.kind is TypeKind.TYPEDEF:
-            self._extract_type(type_.get_canonical(), c_src)
+            self._extract_type(type_.get_canonical())
         elif type_.kind is TypeKind.CONSTANTARRAY:
-            self._extract_type(type_.get_array_element_type(), c_src)
+            self._extract_type(type_.get_array_element_type())
         elif type_.kind is TypeKind.POINTER:
-            self._extract_type(type_.get_pointee(), c_src)
+            self._extract_type(type_.get_pointee())
 
 
 class CtypesBindingGenerator:

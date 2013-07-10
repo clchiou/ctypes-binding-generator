@@ -17,6 +17,31 @@ class TestInclude(helper.TestCtypesBindingGenerator):
             header_file.write(header_code)
         self.run_test(c_code % self.header_path, python_code)
 
+    def test_simple_header(self):
+        self.run_header_test('''
+struct blob1 {
+    int i;
+};
+
+struct blob2 {
+    struct blob1 *bp1;
+};
+        ''', '''
+#include "%s"
+
+struct blob2 b2;
+        ''', '''
+class blob1(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+class blob2(Structure):
+    _pack_ = 8
+    _fields_ = [('bp1', POINTER(blob1))]
+
+b2 = blob2.in_dll(_lib, 'b2')
+        ''')
+
     def test_function(self):
         self.run_header_test('''
 typedef struct {
