@@ -36,7 +36,7 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         output.write('Codes are not equivalent:\n')
         self._format_two_column(python_code, gen_code, output)
         output.write('\n')
-        self._format_ast(cbgen.translation_units, output)
+        self._format_ast(cbgen.parser.translation_units, output)
         error_message = output.getvalue()
 
         self.assert_equivalent(gen_code, python_code, error_message)
