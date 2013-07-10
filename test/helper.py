@@ -31,10 +31,18 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         output = StringIO()
         cbgen.generate(output)
         gen_code = output.getvalue()
-        self.assert_equivalent(gen_code, python_code)
+
+        output = StringIO()
+        output.write('Codes are not equivalent:\n')
+        self._format_two_column(python_code, gen_code, output)
+        output.write('\n')
+        self._format_ast(cbgen.translation_units, output)
+        error_message = output.getvalue()
+
+        self.assert_equivalent(gen_code, python_code, error_message)
         compile(gen_code, 'output.py', 'exec')
 
-    def assert_equivalent(self, code1, code2):
+    def assert_equivalent(self, code1, code2, error_message):
         '''Test if Python codes are equivalent.'''
         unimportant_token_types = frozenset(
                 (token.NEWLINE, token.INDENT, token.DEDENT, 54))
@@ -44,18 +52,14 @@ class TestCtypesBindingGenerator(unittest.TestCase):
             for token_type, token_str, _, _, _ in tokens:
                 if token_type not in unimportant_token_types:
                     yield token_str
-        msg = 'Codes are not equivalent:\n'
-        two_column = self._format_two_column(msg, code1, code2)
         for token1, token2 in izip(get_tokens(code1), get_tokens(code2)):
-            self.assertEqual(token1, token2, two_column)
+            self.assertEqual(token1, token2, error_message)
 
     @staticmethod
-    def _format_two_column(msg, code1, code2):
+    def _format_two_column(code1, code2, output):
         '''Format codes in two column.'''
         input1 = StringIO(code1)
         input2 = StringIO(code2)
-        output = StringIO()
-        output.write(msg)
         while True:
             line1 = input1.readline()
             line2 = input2.readline()
@@ -63,5 +67,26 @@ class TestCtypesBindingGenerator(unittest.TestCase):
                 break
             line1 = line1.rstrip()
             line2 = line2.rstrip()
-            output.write('{0:<60} | {1:<60}\n'.format(line1, line2))
-        return output.getvalue()
+            output.write('{0:<38} | {1:<38}\n'.format(line1, line2))
+
+    @staticmethod
+    def _format_ast(tunits, output):
+        '''Format translation units.'''
+        def traverse(cursor, indent):
+            '''Traverse and print astree.'''
+            if cursor.location.file:
+                begin = ('%s%s:%s' % (indent,
+                    cursor.location.file.name, cursor.location.line))
+            else:
+                begin = '%s?:%s' % (indent, cursor.location.line)
+            if cursor.spelling:
+                name = cursor.spelling
+            else:
+                name = '\'\''
+            output.write('{0:<24} {1:<24} {2}\n'.format(begin,
+                name, cursor.kind))
+            for child in cursor.get_children():
+                traverse(child, indent + '  ')
+
+        for tunit in tunits:
+            traverse(tunit.cursor, '')
