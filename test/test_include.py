@@ -95,6 +95,46 @@ class my_struct(Structure):
     _fields_ = [('o', other_struct)]
         ''')
 
+    def test_nested_struct(self):
+        self.run_header_test('''
+struct blob1 {
+    struct blob2 {
+        int i;
+    } b2;
+};
+
+struct blob3 {
+    struct {
+        int j;
+    } b;
+};
+        ''', '''
+#include "%s"
+
+struct blob1 var_b1;
+struct blob3 var_b3;
+        ''', '''
+class blob2(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+class blob1(Structure):
+    _pack_ = 4
+    _fields_ = [('b2', blob2)]
+
+class _anonymous_struct_0001(Structure):
+    _pack_ = 4
+    _fields_ = [('j', c_int)]
+
+class blob3(Structure):
+    _anonymous_ = ('b',)
+    _pack_ = 4
+    _fields_ = [('b', _anonymous_struct_0001)]
+
+var_b1 = blob1.in_dll(_lib, 'var_b1')
+var_b3 = blob3.in_dll(_lib, 'var_b3')
+        ''')
+
     def test_struct_var(self):
         self.run_header_test('''
 struct my_blob {

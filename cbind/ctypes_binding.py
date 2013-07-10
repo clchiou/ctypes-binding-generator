@@ -130,6 +130,8 @@ class CParser:
             for field in cursor.get_children():
                 if field.kind is CursorKind.FIELD_DECL:
                     self._extract_type(field.type, c_src)
+                elif field.kind in POD_DECL:
+                    self._extract_symbol(field, c_src)
             self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
             self.symbol_table.add(cursor)
