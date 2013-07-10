@@ -48,9 +48,29 @@ struct blob {
 };
         ''', '''
 class blob(Structure):
+    pass
+blob._pack_ = 8
+blob._fields_ = [('bp', POINTER(blob)),
+                 ('i', c_int)]
+        ''')
+
+    def test_nested_self_reference(self):
+        self.run_test('''
+struct blob1 {
+    struct blob2 {
+        struct blob1 *bp1;
+    } b2;
+};
+        ''', '''
+class blob1(Structure):
+    pass
+
+class blob2(Structure):
     _pack_ = 8
-    _fields_ = [('bp', POINTER(blob)),
-                ('i', c_int)]
+    _fields_ = [('bp1', POINTER(blob1))]
+
+blob1._pack_ = 8
+blob1._fields_ = [('b2', blob2)]
         ''')
 
     def test_anonymous_struct(self):

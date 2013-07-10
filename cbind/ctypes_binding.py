@@ -72,16 +72,21 @@ class CtypesBindingGenerator:
         '''Initialize the object.'''
         self.index = Index.create()
         self.symbol_table = SymbolTable()
+        self.forward_declaration = SymbolTable()
         self.translation_units = []
         self.anonymous_serial = 0
         self.libvar = libvar or '_lib'
+        self._foreigners = None
         self._output = None
 
-    def _walk_astree(self, cursor, func):
+    def _walk_astree(self, cursor, preorder, postorder):
         '''Recursively walk through the AST.'''
+        if preorder:
+            preorder(cursor)
         for child in cursor.get_children():
-            self._walk_astree(child, func)
-        func(cursor)
+            self._walk_astree(child, preorder, postorder)
+        if postorder:
+            postorder(cursor)
 
     def parse(self, path, contents=None, args=None):
         '''Parse C source file.'''
@@ -100,8 +105,15 @@ class CtypesBindingGenerator:
         # * The first pass (right below) enumerates the symbols that we should
         #   generate Python codes for.
         # * The second pass in the generate() method generates the codes.
+        self._foreigners = []
         self._walk_astree(translation_unit.cursor,
-                lambda cursor: self._extract_symbol(cursor, path))
+                None, lambda cursor: self._extract_symbol(cursor, path))
+        # Foreigners are symbols not defined locally in this file.
+        while self._foreigners:
+            foreigners = self._foreigners
+            self._foreigners = []
+            for cursor in foreigners:
+                self._extract_symbol(cursor, cursor.location.file.name)
 
     def _extract_symbol(self, cursor, c_src):
         '''Extract symbols that we should generate Python codes for.'''
@@ -120,38 +132,53 @@ class CtypesBindingGenerator:
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self.symbol_table.add(cursor)
             for type_ in cursor.type.argument_types():
-                self._extract_type(type_)
-            self._extract_type(cursor.result_type)
+                self._extract_type(type_, c_src)
+            self._extract_type(cursor.result_type, c_src)
         elif cursor.kind in self.pod_decl and cursor.is_definition():
-            self.symbol_table.add(cursor)
             for field in cursor.get_children():
                 if field.kind is CursorKind.FIELD_DECL:
-                    self._extract_type(field.type)
+                    self._extract_type(field.type, c_src)
+            self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
             self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.VAR_DECL:
             self.symbol_table.add(cursor)
-            self._extract_type(cursor.type)
+            self._extract_type(cursor.type, c_src)
         else:
             return
 
-    def _extract_type(self, type_):
+    def _extract_type(self, type_, c_src):
         '''Extract symbols from this clang type.'''
         if type_.kind in self.blob_type:
             cursor = type_.get_declaration()
-            self._extract_symbol(cursor, cursor.location.file.name)
+            if cursor.location.file.name != c_src:
+                self._foreigners.append(cursor)
+            elif (cursor.kind in self.pod_decl and
+                    cursor not in self.symbol_table):
+                self.forward_declaration.add(cursor)
         elif type_.kind is TypeKind.TYPEDEF:
-            self._extract_type(type_.get_canonical())
+            self._extract_type(type_.get_canonical(), c_src)
         elif type_.kind is TypeKind.CONSTANTARRAY:
-            self._extract_type(type_.get_array_element_type())
+            self._extract_type(type_.get_array_element_type(), c_src)
         elif type_.kind is TypeKind.POINTER:
-            self._extract_type(type_.get_pointee())
+            self._extract_type(type_.get_pointee(), c_src)
 
     def generate(self, output):
         '''Generate ctypes binding.'''
         self._output = output
         for tunit in self.translation_units:
-            self._walk_astree(tunit.cursor, self._generate)
+            self._walk_astree(tunit.cursor,
+                    self._generate_forward_declaration,
+                    self._generate)
+
+    def _generate_forward_declaration(self, cursor):
+        '''Generate forward declaration for nodes.'''
+        if cursor in self.forward_declaration:
+            declared = self.symbol_table.get_annotation(cursor,
+                    'declared', False)
+            self._make_pod(cursor, self._output,
+                    declared=declared, declaration=True)
+            self.symbol_table.annotate(cursor, 'declared', True)
 
     def _generate(self, cursor):
         '''Generate ctypes binding from a AST node.'''
