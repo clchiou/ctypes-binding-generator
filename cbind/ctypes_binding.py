@@ -273,7 +273,8 @@ class CtypesBindingGenerator:
         '''Generate ctypes binding of a function declaration.'''
         name = cursor.spelling
         output.write('{0} = {1}.{0}\n'.format(name, self.libvar))
-        if conf.lib.clang_Cursor_getNumArguments(cursor):
+        if (not cursor.type.is_function_variadic() and
+                conf.lib.clang_Cursor_getNumArguments(cursor)):
             argtypes = '[%s]' % ', '.join(self._make_type(type_)
                     for type_ in cursor.type.argument_types())
             output.write('%s.argtypes = %s\n' % (name, argtypes))

@@ -29,6 +29,14 @@ foo = _lib.foo
 foo.argtypes = [POINTER(c_int), c_char_p, POINTER(c_int), c_void_p]
         ''')
 
+    def test_variadic(self):
+        self.run_test('''
+int printf(const char *, ...);
+        ''', '''
+printf = _lib.printf
+printf.restype = c_int
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()
