@@ -73,8 +73,6 @@ class CParser:
         self.symbol_table = SymbolTable()
         self.forward_declaration = SymbolTable()
         self.translation_units = []
-        self._this_file = None
-        self._foreigners = None
 
     def parse(self, path, contents, args):
         '''Parse C source file.'''
@@ -88,31 +86,66 @@ class CParser:
             msg = 'Could not parse C source: %s' % path
             raise CtypesBindingException(msg)
         self.translation_units.append(translation_unit)
+        walk_astree(translation_unit.cursor, None, self._extract_symbol)
+        # Breadth-first scan for needed symbols.
+        visited = SymbolTable()
+        todo = []
+        run_mark_needed = lambda cursor: self._mark_needed(cursor,
+                todo, visited)
+        for cursor in translation_unit.cursor.get_children():
+            if not cursor.location.file or cursor.location.file.name != path:
+                continue
+            walk_astree(cursor, run_mark_needed, None)
+        while todo:
+            nodes = list(todo)
+            todo[:] = [] # Clear todo but not create a new list.
+            for cursor in nodes:
+                walk_astree(cursor, run_mark_needed, None)
 
-        # We run through the AST for two passes:
-        # * The first pass (right below) enumerates the symbols that we should
-        #   generate Python codes for.
-        # * The second pass in the generate() method generates the codes.
-        self._this_file = path
-        self._foreigners = []
-        walk_astree(translation_unit.cursor,
-                None, lambda cursor: self._extract_symbol(cursor, path))
-        # Foreigners are symbols not defined locally in this file.
-        while self._foreigners:
-            foreigners = self._foreigners
-            self._foreigners = []
-            for cursor in foreigners:
-                self._extract_symbol(cursor, cursor.location.file.name)
+    def _not_mark_needed(self, cursor):
+        '''Test if a cursor has not been marked as needed.'''
+        return (cursor not in self.symbol_table or
+                not self.symbol_table.get_annotation(cursor, 'needed', False))
+
+    def _mark_needed(self, cursor, todo, visited):
+        '''Mark node as needed.'''
+        try:
+            self.symbol_table.annotate(cursor, 'needed', True)
+        except KeyError:
+            pass
+        self._scan_type(cursor.type, todo, visited)
+
+    def _scan_type(self, type_, todo, visited):
+        '''Scan type recursively for symbols.'''
+        if type_.kind in BLOB_TYPE or type_.kind is TypeKind.ENUM:
+            cursor = type_.get_declaration()
+            if (cursor.kind not in POD_DECL and
+                    cursor.kind is not CursorKind.ENUM_DECL):
+                return
+            if cursor in visited:
+                return
+            todo.append(cursor)
+            visited.add(cursor)
+            if cursor.kind in POD_DECL:
+                for field in cursor.get_children():
+                    if field.kind is CursorKind.FIELD_DECL:
+                        self._scan_type(field.type, todo, visited)
+        elif type_.kind is TypeKind.TYPEDEF:
+            self._scan_type(type_.get_canonical(), todo, visited)
+        elif type_.kind is TypeKind.CONSTANTARRAY:
+            self._scan_type(type_.get_array_element_type(), todo, visited)
+        elif type_.kind is TypeKind.POINTER:
+            self._scan_type(type_.get_pointee(), todo, visited)
 
     def traverse(self, preorder, postorder):
         '''Traverse ASTs.'''
         for tunit in self.translation_units:
             walk_astree(tunit.cursor, preorder, postorder)
 
-    def _extract_symbol(self, cursor, c_src):
+    def _extract_symbol(self, cursor):
         '''Extract symbols that we should generate Python codes for.'''
-        # Ignore this node if it does not belong to the C source.
-        if not cursor.location.file or cursor.location.file.name != c_src:
+        # Ignore this node if it does not belong to any C sources.
+        if not cursor.location.file:
             return
         # Do not extract this node twice.
         if cursor in self.symbol_table:
@@ -133,7 +166,7 @@ class CParser:
                 if field.kind is CursorKind.FIELD_DECL:
                     self._extract_type(field.type)
                 elif field.kind in POD_DECL:
-                    self._extract_symbol(field, c_src)
+                    self._extract_symbol(field)
             self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
             self.symbol_table.add(cursor)
@@ -147,10 +180,7 @@ class CParser:
         '''Extract symbols from this clang type.'''
         if type_.kind in BLOB_TYPE:
             cursor = type_.get_declaration()
-            if cursor.location.file.name != self._this_file:
-                self._foreigners.append(cursor)
-            elif (cursor.kind in POD_DECL and
-                    cursor not in self.symbol_table):
+            if cursor.kind in POD_DECL and cursor not in self.symbol_table:
                 self.forward_declaration.add(cursor)
         elif type_.kind is TypeKind.TYPEDEF:
             self._extract_type(type_.get_canonical())
@@ -181,8 +211,20 @@ class CtypesBindingGenerator:
         postorder = lambda cursor: self._make(cursor, output)
         self.parser.traverse(preorder, postorder)
 
+    def _ignore_node(self, cursor):
+        '''Test if we can ignore this node.'''
+        # Do not process node that is not in the symbol table.
+        if cursor not in self.symbol_table:
+            return True
+        # Do not process node that is not needed
+        if not self.symbol_table.get_annotation(cursor, 'needed', False):
+            return True
+        return False
+
     def _make_forward_decl(self, cursor, output):
         '''Generate forward declaration for nodes.'''
+        if self._ignore_node(cursor):
+            return
         if cursor not in self.parser.forward_declaration:
             return
         declared = self.symbol_table.get_annotation(cursor, 'declared', False)
@@ -191,8 +233,7 @@ class CtypesBindingGenerator:
 
     def _make(self, cursor, output):
         '''Generate ctypes binding from a AST node.'''
-        # Do not process node that is not in the symbol table.
-        if cursor not in self.symbol_table:
+        if self._ignore_node(cursor):
             return
         # Do not define a node twice.
         if self.symbol_table.get_annotation(cursor, 'defined', False):

@@ -42,6 +42,25 @@ class blob2(Structure):
 b2 = blob2.in_dll(_lib, 'b2')
         ''')
 
+    def test_self_reference(self):
+        self.run_header_test('''
+struct blob {
+    struct blob *bp;
+};
+        ''', '''
+#include "%s"
+
+struct blob b;
+        ''', '''
+class blob(Structure):
+    pass
+
+blob._pack_ = 8
+blob._fields_ = [('bp', POINTER(blob))]
+
+b = blob.in_dll(_lib, 'b')
+        ''')
+
     def test_function(self):
         self.run_header_test('''
 typedef struct {
@@ -246,6 +265,37 @@ class blob_2(Structure):
     _fields_ = [('b1', blob_1)]
 
 b2 = blob_2.in_dll(_lib, 'b2')
+        ''')
+
+    def test_forward_decl(self):
+        self.run_headers_test('''
+struct blob {
+    int i;
+};
+        ''', '''
+#include "%(header_0)s"
+
+struct foo {
+    struct blob *bp;
+};
+        ''', '''
+struct foo;
+
+#include "%(header_1)s"
+
+struct foo f;
+        ''', '''
+class foo(Structure):
+    pass
+
+class blob(Structure):
+    _pack_ = 4
+    _fields_ = [('i', c_int)]
+
+foo._pack_ = 8
+foo._fields_ = [('bp', POINTER(blob))]
+
+f = foo.in_dll(_lib, 'f')
         ''')
 
 
