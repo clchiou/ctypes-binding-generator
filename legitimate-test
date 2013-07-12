@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+
+'''Examine if a commit has legitimate unittests.'''
+
+import argparse
+import os
+import subprocess
+import sys
+from cStringIO import StringIO
+
+
+MAX_SEARCH_LEVEL = 10
+
+
+def is_tree_clean():
+    '''Test if the repository is clean.'''
+    status = subprocess.check_output(['git', 'status', '--porcelain'])
+    status = StringIO(status)
+    for status_line in status:
+        if '??' != status_line[:2]:
+            return False
+    return True
+
+
+def get_rootdir():
+    '''Get the root directory of this repository.'''
+    rootdir = '.'
+    for _ in xrange(MAX_SEARCH_LEVEL):
+        if os.path.exists(os.path.join(rootdir, '.git')):
+            break
+        rootdir = os.path.join(rootdir, '..')
+    else:
+        raise Exception('Could not find .git/ directory')
+    return os.path.abspath(rootdir)
+
+
+def rev_parse(commit):
+    '''Run git rev-parse.'''
+    return subprocess.check_output(['git', 'rev-parse', commit]).strip()
+
+
+def checkout(commit, *args):
+    '''Run git checkout.'''
+    cmd = ['git', 'checkout', '-q', commit]
+    cmd.extend(args)
+    return subprocess.check_output(cmd)
+
+
+def reset(commit):
+    '''Run git reset --hard.'''
+    return subprocess.check_output(['git', 'reset', '--hard', commit])
+
+
+def get_changed_files(commit):
+    '''Run git diff-tree and return a list of changed files.'''
+    diff_tree = subprocess.check_output(['git', 'diff-tree', commit])
+    diff_tree = StringIO(diff_tree)
+    diff_tree.readline()
+    return [line.split()[-1] for line in diff_tree]
+
+
+def run_unittest(expect_failure):
+    '''Run unittests and catch test failure.'''
+    try:
+        cmd = 'python -m unittest discover -s test'.split()
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        result = expect_failure
+    else:
+        result = not expect_failure
+    return result
+
+
+def main():
+    '''Main function.'''
+    parser = argparse.ArgumentParser(
+            description='Examine if a commit has legitimate unittests.')
+    parser.add_argument('commit', nargs='+',
+            help='Git commit(s) to be examined')
+    args = parser.parse_args()
+
+    if not is_tree_clean():
+        parser.error('tree is dirty; run `git stash` first?')
+
+    rootdir = get_rootdir()
+    os.chdir(rootdir)
+
+    current_commit = rev_parse('HEAD')
+    commits = [rev_parse(commit) for commit in args.commit]
+    ret = 0
+    try:
+        for commit in commits:
+            abbrev = commit[:10]
+            changed_files = frozenset(get_changed_files(commit))
+            if 'test' not in changed_files:
+                if 'cbind' in changed_files:
+                    print '%s Code changes without unittests' % abbrev
+                    ret = 1
+                else:
+                    print '%s No change to unittests' % abbrev
+                continue
+
+            legitimate = True
+            reset(commit)
+            if not run_unittest(False):
+                print '%s Could not pass unittests' % abbrev
+                legitimate = False
+            checkout('%s~1' % commit, '--', 'cbind')
+            if not run_unittest(True):
+                print '%s Unittests do not break any codes' % abbrev
+                legitimate = False
+            if legitimate:
+                print '%s Legitimate unittests' % abbrev
+            else:
+                ret = 1
+    finally:
+        reset(current_commit)
+
+    return ret
+
+
+if __name__ == '__main__':
+    sys.exit(main())
