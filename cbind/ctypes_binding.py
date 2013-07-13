@@ -1,6 +1,6 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
-from clang.cindex import Index, CursorKind, TypeKind, conf
+from clang.cindex import Index, CursorKind, TypeKind
 
 
 # Map of clang type to ctypes type
@@ -156,18 +156,16 @@ class CParser:
         # reference.
         if cursor.kind is CursorKind.TYPEDEF_DECL:
             self.symbol_table.add(cursor)
+        elif cursor.kind is CursorKind.PARM_DECL:
+            self.symbol_table.add(cursor)
+            self._extract_type(cursor.type)
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self.symbol_table.add(cursor)
             for type_ in cursor.type.argument_types():
                 self._extract_type(type_)
             self._extract_type(cursor.result_type)
         elif cursor.kind in POD_DECL and cursor.is_definition():
-            for field in cursor.get_children():
-                if field.kind is CursorKind.FIELD_DECL:
-                    self._extract_type(field.type)
-                elif field.kind in POD_DECL:
-                    self._extract_symbol(field)
-            self.symbol_table.add(cursor)
+            self._extract_pod(cursor)
         elif cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
             self.symbol_table.add(cursor)
         elif cursor.kind is CursorKind.VAR_DECL:
@@ -175,6 +173,15 @@ class CParser:
             self._extract_type(cursor.type)
         else:
             return
+
+    def _extract_pod(self, cursor):
+        '''Extract symbols from POD.'''
+        for field in cursor.get_children():
+            if field.kind is CursorKind.FIELD_DECL:
+                self._extract_type(field.type)
+            elif field.kind in POD_DECL:
+                self._extract_symbol(field)
+        self.symbol_table.add(cursor)
 
     def _extract_type(self, type_):
         '''Extract symbols from this clang type.'''
@@ -242,6 +249,8 @@ class CtypesBindingGenerator:
         declaration = False
         if cursor.kind is CursorKind.TYPEDEF_DECL:
             self._make_typedef(cursor, output)
+        elif cursor.kind is CursorKind.PARM_DECL:
+            self._add_function_argument_type(cursor)
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self._make_function(cursor, output)
         elif cursor.kind in POD_DECL:
@@ -261,6 +270,13 @@ class CtypesBindingGenerator:
             self.symbol_table.annotate(cursor, 'declared', True)
         else:
             self.symbol_table.annotate(cursor, 'defined', True)
+
+    def _add_function_argument_type(self, arg):
+        '''Add argument type to function's argument list.'''
+        func = arg.lexical_parent
+        if not self.symbol_table.has_annotation(func, 'arguments'):
+            self.symbol_table.annotate(func, 'arguments', [])
+        self.symbol_table.get_annotation(func, 'arguments').append(arg.type)
 
     def _make_type(self, type_):
         '''Generate ctypes binding of a clang type.'''
@@ -314,10 +330,10 @@ class CtypesBindingGenerator:
         '''Generate ctypes binding of a function declaration.'''
         name = cursor.spelling
         output.write('{0} = {1}.{0}\n'.format(name, self.libvar))
-        if (not cursor.type.is_function_variadic() and
-                conf.lib.clang_Cursor_getNumArguments(cursor)):
+        arguments = self.symbol_table.get_annotation(cursor, 'arguments', [])
+        if (not cursor.type.is_function_variadic() and arguments):
             argtypes = '[%s]' % ', '.join(self._make_type(type_)
-                    for type_ in cursor.type.argument_types())
+                    for type_ in arguments)
             output.write('%s.argtypes = %s\n' % (name, argtypes))
         if cursor.result_type.kind is not TypeKind.VOID:
             restype = self._make_type(cursor.result_type)
@@ -469,6 +485,12 @@ class SymbolTable:
         if node_key in self._table:
             return
         self._table[node_key] = (node, {})
+
+    def has_annotation(self, node, key):
+        '''Test if key exists for node's annotation.'''
+        node_key = self._hash_node(node)
+        annotations = self._table[node_key][1]
+        return key in annotations
 
     def annotate(self, node, key, value):
         '''Annotate a node with (key, value).'''

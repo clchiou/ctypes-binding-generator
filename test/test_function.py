@@ -37,6 +37,14 @@ printf = _lib.printf
 printf.restype = c_int
         ''')
 
+    def test_array_arg(self):
+        self.run_test('''
+void foo(int bar[3]);
+        ''', '''
+foo = _lib.foo
+foo.argtypes = [c_int * 3]
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()
