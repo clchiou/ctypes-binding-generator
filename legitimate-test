@@ -4,22 +4,14 @@
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from cStringIO import StringIO
 
 
 MAX_SEARCH_LEVEL = 10
-
-
-def is_tree_clean():
-    '''Test if the repository is clean.'''
-    status = subprocess.check_output(['git', 'status', '--porcelain'])
-    status = StringIO(status)
-    for status_line in status:
-        if '??' != status_line[:2]:
-            return False
-    return True
 
 
 def get_rootdir():
@@ -59,6 +51,11 @@ def get_changed_files(commit):
     return [line.split()[-1] for line in diff_tree]
 
 
+def clone(repo, path):
+    '''Run git clone.'''
+    subprocess.check_output(['git', 'clone', repo, path])
+
+
 def run_unittest(expect_failure):
     '''Run unittests and catch test failure.'''
     try:
@@ -78,17 +75,13 @@ def main():
     parser.add_argument('commit', nargs='+',
             help='Git commit(s) to be examined')
     args = parser.parse_args()
-
-    if not is_tree_clean():
-        parser.error('tree is dirty; run `git stash` first?')
-
     rootdir = get_rootdir()
-    os.chdir(rootdir)
-
-    current_commit = rev_parse('HEAD')
-    commits = [rev_parse(commit) for commit in args.commit]
+    temp_path = tempfile.mkdtemp()
     ret = 0
     try:
+        clone(rootdir, temp_path)
+        os.chdir(temp_path)
+        commits = [rev_parse(commit) for commit in args.commit]
         for commit in commits:
             abbrev = commit[:10]
             changed_files = frozenset(get_changed_files(commit))
@@ -114,7 +107,7 @@ def main():
             else:
                 ret = 1
     finally:
-        reset(current_commit)
+        shutil.rmtree(temp_path)
 
     return ret
 
