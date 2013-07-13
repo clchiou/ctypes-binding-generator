@@ -245,7 +245,6 @@ class CtypesBindingGenerator:
         # Do not define a node twice.
         if self.symbol_table.get_annotation(cursor, 'defined', False):
             return
-        # TODO(clchiou): Function pointer.
         declaration = False
         if cursor.kind is CursorKind.TYPEDEF_DECL:
             self._make_typedef(cursor, output)
