@@ -31,6 +31,15 @@ p = c_void_p.in_dll(_lib, 'p')
 uc = POINTER(c_ubyte).in_dll(_lib, 'uc')
         ''')
 
+    def test_funcptr(self):
+        self.run_test('''
+void (*foo)(void);
+void (*bar)(...);
+        ''', '''
+foo = CFUNCTYPE(None).in_dll(_lib, 'foo')
+bar = c_void_p.in_dll(_lib, 'bar')
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

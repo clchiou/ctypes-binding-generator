@@ -45,6 +45,14 @@ foo = _lib.foo
 foo.argtypes = [c_int * 3]
         ''')
 
+    def test_funcptr_arg(self):
+        self.run_test('''
+void foo(void (*bar)(int spam[3]));
+        ''', '''
+foo = _lib.foo
+foo.argtypes = [CFUNCTYPE(None, POINTER(c_int))]
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

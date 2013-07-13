@@ -1,6 +1,7 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
-from clang.cindex import Index, CursorKind, TypeKind
+import logging
+from clang.cindex import Index, CursorKind, TypeKind, conf
 
 
 # Map of clang type to ctypes type
@@ -156,9 +157,6 @@ class CParser:
         # reference.
         if cursor.kind is CursorKind.TYPEDEF_DECL:
             self.symbol_table.add(cursor)
-        elif cursor.kind is CursorKind.PARM_DECL:
-            self.symbol_table.add(cursor)
-            self._extract_type(cursor.type)
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self.symbol_table.add(cursor)
             for type_ in cursor.type.argument_types():
@@ -248,8 +246,6 @@ class CtypesBindingGenerator:
         declaration = False
         if cursor.kind is CursorKind.TYPEDEF_DECL:
             self._make_typedef(cursor, output)
-        elif cursor.kind is CursorKind.PARM_DECL:
-            self._add_function_argument_type(cursor)
         elif cursor.kind is CursorKind.FUNCTION_DECL:
             self._make_function(cursor, output)
         elif cursor.kind in POD_DECL:
@@ -269,13 +265,6 @@ class CtypesBindingGenerator:
             self.symbol_table.annotate(cursor, 'declared', True)
         else:
             self.symbol_table.annotate(cursor, 'defined', True)
-
-    def _add_function_argument_type(self, arg):
-        '''Add argument type to function's argument list.'''
-        func = arg.lexical_parent
-        if not self.symbol_table.has_annotation(func, 'arguments'):
-            self.symbol_table.annotate(func, 'arguments', [])
-        self.symbol_table.get_annotation(func, 'arguments').append(arg.type)
 
     def _make_type(self, type_):
         '''Generate ctypes binding of a clang type.'''
@@ -304,6 +293,7 @@ class CtypesBindingGenerator:
     def _make_pointer_type(self, type_):
         '''Generate ctypes binding of a pointer.'''
         pointee_type = type_.get_pointee()
+        canonical = pointee_type.get_canonical()
         if pointee_type.kind is TypeKind.CHAR_S:
             return 'c_char_p'
         elif pointee_type.kind is TypeKind.WCHAR:
@@ -311,11 +301,31 @@ class CtypesBindingGenerator:
         elif pointee_type.kind is TypeKind.VOID:
             return 'c_void_p'
         elif (pointee_type.kind is TypeKind.TYPEDEF and
-                pointee_type.get_canonical().kind is TypeKind.VOID):
+                canonical.kind is TypeKind.VOID):
             # Handle special case "typedef void foo;"
             return 'c_void_p'
+        elif canonical.kind is TypeKind.FUNCTIONPROTO:
+            return self._make_function_pointer(canonical)
         else:
             return 'POINTER(%s)' % self._make_type(pointee_type)
+
+    def _make_function_pointer(self, type_):
+        '''Generate ctypes binding of a function pointer.'''
+        # ctypes does not support variadic function pointer...
+        if type_.is_function_variadic():
+            logging.info('Could not generate pointer to variadic function')
+            return 'c_void_p'
+        args = type_.argument_types()
+        if len(args) > 0:
+            argtypes = ', %s' % ', '.join(self._make_type(arg) for arg in args)
+        else:
+            argtypes = ''
+        result_type = type_.get_result()
+        if result_type.kind is TypeKind.VOID:
+            restype = 'None'
+        else:
+            restype = self._make_type(result_type)
+        return 'CFUNCTYPE(%s%s)' % (restype, argtypes)
 
     def _make_typedef(self, cursor, output):
         '''Generate ctypes binding of a typedef statement.'''
@@ -329,14 +339,20 @@ class CtypesBindingGenerator:
         '''Generate ctypes binding of a function declaration.'''
         name = cursor.spelling
         output.write('{0} = {1}.{0}\n'.format(name, self.libvar))
-        arguments = self.symbol_table.get_annotation(cursor, 'arguments', [])
-        if (not cursor.type.is_function_variadic() and arguments):
-            argtypes = '[%s]' % ', '.join(self._make_type(type_)
-                    for type_ in arguments)
-            output.write('%s.argtypes = %s\n' % (name, argtypes))
+        argtypes = self._make_function_arguments(cursor)
+        if argtypes:
+            output.write('%s.argtypes = [%s]\n' % (name, argtypes))
         if cursor.result_type.kind is not TypeKind.VOID:
             restype = self._make_type(cursor.result_type)
             output.write('%s.restype = %s\n' % (name, restype))
+
+    def _make_function_arguments(self, cursor):
+        '''Generate ctypes binding of function's arguments.'''
+        num_args = conf.lib.clang_Cursor_getNumArguments(cursor)
+        if cursor.type.is_function_variadic() or num_args <= 0:
+            return None
+        args = (self._make_type(arg.type) for arg in cursor.get_arguments())
+        return ', '.join(args)
 
     def _make_pod(self, cursor, output, declared=False, declaration=False):
         '''Generate ctypes binding of a POD definition.'''
@@ -484,12 +500,6 @@ class SymbolTable:
         if node_key in self._table:
             return
         self._table[node_key] = (node, {})
-
-    def has_annotation(self, node, key):
-        '''Test if key exists for node's annotation.'''
-        node_key = self._hash_node(node)
-        annotations = self._table[node_key][1]
-        return key in annotations
 
     def annotate(self, node, key, value):
         '''Annotate a node with (key, value).'''
