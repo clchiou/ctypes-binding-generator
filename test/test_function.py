@@ -45,6 +45,15 @@ foo = _lib.foo
 foo.argtypes = [c_int * 3]
         ''')
 
+    # TODO(clchiou): Reenable this test when libclang exposes IncompleteArray.
+    def disable_test_incomplete_array_arg(self):
+        self.run_test('''
+void spam(int egg[]);
+        ''', '''
+spam = _lib.spam
+spam.argtypes = [POINTER(c_int)]
+        ''')
+
     def test_funcptr_arg(self):
         self.run_test('''
 void foo(void (*bar)(int spam[3]));

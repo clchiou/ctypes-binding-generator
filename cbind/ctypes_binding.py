@@ -282,17 +282,22 @@ class CtypesBindingGenerator:
         elif type_.kind is TypeKind.CONSTANTARRAY:
             element_type = self._make_type(type_.get_array_element_type())
             c_type = '%s * %d' % (element_type, type_.get_array_size())
+        # TODO(clchiou): libclang does not expose IncompleteArray.
+        #elif type_.kind is TypeKind.INCOMPLETEARRAY:
+        #    pointee_type = type_.get_array_element_type()
+        #    c_type = self._make_pointer_type(pointee_type=pointee_type)
         elif type_.kind is TypeKind.POINTER:
-            c_type = self._make_pointer_type(type_)
+            c_type = self._make_pointer_type(pointer_type=type_)
         else:
             c_type = C_TYPE_MAP.get(type_.kind)
         if c_type is None:
             raise TypeError('Unsupported TypeKind: %s' % type_.kind)
         return c_type
 
-    def _make_pointer_type(self, type_):
+    def _make_pointer_type(self, pointer_type=None, pointee_type=None):
         '''Generate ctypes binding of a pointer.'''
-        pointee_type = type_.get_pointee()
+        if pointer_type:
+            pointee_type = pointer_type.get_pointee()
         canonical = pointee_type.get_canonical()
         if pointee_type.kind is TypeKind.CHAR_S:
             return 'c_char_p'
