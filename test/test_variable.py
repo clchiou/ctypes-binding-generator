@@ -31,6 +31,15 @@ p = c_void_p.in_dll(_lib, 'p')
 uc = POINTER(c_ubyte).in_dll(_lib, 'uc')
         ''')
 
+    def test_array(self):
+        self.run_test('''
+int array[5];
+int array2[3][4][5];
+        ''', '''
+array = (c_int * 5).in_dll(_lib, 'array')
+array2 = (((c_int * 5) * 4) * 3).in_dll(_lib, 'array2')
+        ''')
+
     def test_funcptr(self):
         self.run_test('''
 void (*foo)(void);

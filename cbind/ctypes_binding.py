@@ -280,8 +280,9 @@ class CtypesBindingGenerator:
         elif type_.kind is TypeKind.TYPEDEF:
             c_type = self._make_type(type_.get_canonical())
         elif type_.kind is TypeKind.CONSTANTARRAY:
+            # TODO(clchiou): Make parentheses context-sensitive
             element_type = self._make_type(type_.get_array_element_type())
-            c_type = '%s * %d' % (element_type, type_.get_array_size())
+            c_type = '(%s * %d)' % (element_type, type_.get_array_size())
         # TODO(clchiou): libclang does not expose IncompleteArray.
         #elif type_.kind is TypeKind.INCOMPLETEARRAY:
         #    pointee_type = type_.get_array_element_type()

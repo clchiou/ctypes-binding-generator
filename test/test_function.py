@@ -42,7 +42,7 @@ printf.restype = c_int
 void foo(int bar[3]);
         ''', '''
 foo = _lib.foo
-foo.argtypes = [c_int * 3]
+foo.argtypes = [(c_int * 3)]
         ''')
 
     # TODO(clchiou): Reenable this test when libclang exposes IncompleteArray.
