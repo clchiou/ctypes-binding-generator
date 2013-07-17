@@ -91,10 +91,15 @@ class MacroConstantsGenerator:
     @staticmethod
     def _guess_str(value):
         '''Guess value is string valued.'''
-        for sep in '\'"':
-            if value.startswith(sep) and value.endswith(sep):
-                return value
-        return None
+        try:
+            py_value = eval(value, {})
+        except (SyntaxError, NameError, TypeError):
+            return None
+        if not isinstance(py_value, str):
+            return None
+        if len(py_value) == 1 and value[0] == value[-1] == '\'':
+            return 'ord(\'%s\')' % py_value
+        return repr(py_value)
 
     @staticmethod
     def _guess_int(value):

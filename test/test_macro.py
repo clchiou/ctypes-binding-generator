@@ -17,7 +17,7 @@ B = 1
 C = 0x10
 D = 007
 E = 3.14
-F = "hello world"
+F = 'hello world'
         ''')
 
     def test_macro_int(self):
@@ -29,7 +29,22 @@ F = "hello world"
 A = 2
 B = 6
         ''',
-        regex_integer_typed='A|B')
+        regex_integer_typed='[AB]')
+
+    def test_macro_str(self):
+        self.run_test('''
+#define A "hello" " world"
+#define B 'a'
+#define C 'a' + 3
+#define D 'a' + 3
+#define E __func__
+#define F "this is " __func__
+        ''', '''
+A = 'hello world'
+B = ord('a')
+C = 100
+        ''',
+        regex_integer_typed='C')
 
 
 if __name__ == '__main__':
