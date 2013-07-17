@@ -1,7 +1,7 @@
 '''Unit testing helpers.'''
 
-import sys
 import os
+import re
 import tempfile
 import token
 import tokenize
@@ -44,6 +44,9 @@ class TestMacroConstantGenerator(unittest.TestCase):
         '''Generate Python code from C code and compare it to the answer.'''
         with os.fdopen(self.header_fd, 'w') as header_file:
             header_file.write(c_code)
+
+        if regex_integer_typed:
+            regex_integer_typed = re.compile(regex_integer_typed)
 
         mcgen = MacroConstantsGenerator()
         mcgen.preprocess(self.header_path)
