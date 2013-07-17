@@ -9,18 +9,8 @@ import unittest
 from cStringIO import StringIO
 from itertools import izip
 
-
-CBIND_PACKAGE_LOCATION = '..'
-
-def prepare():
-    '''Set up sys.path so that unit tests will import local package
-       instead of the installed one.
-    '''
-    if CBIND_PACKAGE_LOCATION not in sys.path:
-        sys.path.insert(0, CBIND_PACKAGE_LOCATION)
-
-prepare()
 from cbind import CtypesBindingGenerator, MacroConstantsGenerator
+
 
 class TestCtypesBindingGenerator(unittest.TestCase):
     '''Boilerplate of unit tests.'''
