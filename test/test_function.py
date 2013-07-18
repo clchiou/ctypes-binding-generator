@@ -62,6 +62,19 @@ foo = _lib.foo
 foo.argtypes = [CFUNCTYPE(None, POINTER(c_int))]
         ''')
 
+    def test_function_body(self):
+        self.run_test('''
+int square(int x)
+{
+    int y = x * x;
+    return y;
+}
+        ''', '''
+square = _lib.square
+square.argtypes = [c_int]
+square.restype = c_int
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

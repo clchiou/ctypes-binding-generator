@@ -87,21 +87,21 @@ class CParser:
             msg = 'Could not parse C source: %s' % path
             raise CtypesBindingException(msg)
         self.translation_units.append(translation_unit)
-        walk_astree(translation_unit.cursor, None, self._extract_symbol)
+        walk_astree(translation_unit.cursor,
+                postorder=self._extract_symbol, prune=self._prune_node)
         # Breadth-first scan for needed symbols.
         visited = SymbolTable()
         todo = []
-        run_mark_needed = lambda cursor: self._mark_needed(cursor,
-                todo, visited)
+        mark_needed = lambda cursor: self._mark_needed(cursor, todo, visited)
         for cursor in translation_unit.cursor.get_children():
             if not cursor.location.file or cursor.location.file.name != path:
                 continue
-            walk_astree(cursor, run_mark_needed, None)
+            walk_astree(cursor, preorder=mark_needed)
         while todo:
             nodes = list(todo)
             todo[:] = [] # Clear todo but not create a new list.
             for cursor in nodes:
-                walk_astree(cursor, run_mark_needed, None)
+                walk_astree(cursor, preorder=mark_needed)
 
     def _not_mark_needed(self, cursor):
         '''Test if a cursor has not been marked as needed.'''
@@ -141,7 +141,14 @@ class CParser:
     def traverse(self, preorder, postorder):
         '''Traverse ASTs.'''
         for tunit in self.translation_units:
-            walk_astree(tunit.cursor, preorder, postorder)
+            walk_astree(tunit.cursor, preorder=preorder, postorder=postorder)
+
+    @staticmethod
+    def _prune_node(cursor):
+        '''Prune nodes.'''
+        if cursor.kind is CursorKind.COMPOUND_STMT:
+            return True
+        return False
 
     def _extract_symbol(self, cursor):
         '''Extract symbols that we should generate Python codes for.'''
@@ -523,11 +530,13 @@ class SymbolTable:
             return annotations.get(key, default)
 
 
-def walk_astree(cursor, preorder, postorder):
+def walk_astree(cursor, preorder=None, postorder=None, prune=None):
     '''Recursively walk through the AST.'''
+    if prune and prune(cursor):
+        return
     if preorder:
         preorder(cursor)
     for child in cursor.get_children():
-        walk_astree(child, preorder, postorder)
+        walk_astree(child, preorder, postorder, prune)
     if postorder:
         postorder(cursor)
