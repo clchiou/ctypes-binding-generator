@@ -75,6 +75,13 @@ square.argtypes = [c_int]
 square.restype = c_int
         ''')
 
+    def test_static_function(self):
+        self.run_test('''
+static void foo(void);
+static inline int bar(void) { return 0; }
+        ''', '''
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

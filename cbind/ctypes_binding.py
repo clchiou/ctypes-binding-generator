@@ -1,7 +1,9 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
 import logging
-from clang.cindex import Index, CursorKind, TypeKind, conf
+from ctypes import c_uint
+from clang.cindex import Index, Cursor, CursorKind, TypeKind
+from clang.cindex import conf, register_function
 
 
 # Map of clang type to ctypes type
@@ -58,6 +60,17 @@ INDENT = '    '
 POD_DECL = frozenset((CursorKind.STRUCT_DECL, CursorKind.UNION_DECL))
 
 BLOB_TYPE = frozenset((TypeKind.UNEXPOSED, TypeKind.RECORD))
+
+CXLinkage_Invalid = 0
+CXLinkage_NoLinkage = 1
+CXLinkage_Internal = 2
+CXLinkage_UniqueExternal = 3
+CXLinkage_External = 4
+
+
+# Register libclang function.
+register_function(conf.lib,
+        ('clang_getCursorLinkage', [Cursor], c_uint), False)
 
 
 class CtypesBindingException(Exception):
@@ -350,6 +363,9 @@ class CtypesBindingGenerator:
 
     def _make_function(self, cursor, output):
         '''Generate ctypes binding of a function declaration.'''
+        linkage_kind = conf.lib.clang_getCursorLinkage(cursor)
+        if linkage_kind != CXLinkage_External:
+            return
         name = cursor.spelling
         output.write('{0} = {1}.{0}\n'.format(name, self.libvar))
         argtypes = self._make_function_arguments(cursor)
