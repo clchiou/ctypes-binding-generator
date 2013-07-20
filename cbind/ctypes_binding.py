@@ -61,11 +61,12 @@ POD_DECL = frozenset((CursorKind.STRUCT_DECL, CursorKind.UNION_DECL))
 
 BLOB_TYPE = frozenset((TypeKind.UNEXPOSED, TypeKind.RECORD))
 
-CXLinkage_Invalid = 0
-CXLinkage_NoLinkage = 1
-CXLinkage_Internal = 2
-CXLinkage_UniqueExternal = 3
-CXLinkage_External = 4
+# clang Index.h enum CXLinkageKind
+CXLINKAGE_INVALID = 0
+CXLINKAGE_NOLINKAGE = 1
+CXLINKAGE_INTERNAL = 2
+CXLINKAGE_UNIQUEEXTERNAL = 3
+CXLINKAGE_EXTERNAL = 4
 
 
 # Register libclang function.
@@ -364,7 +365,7 @@ class CtypesBindingGenerator:
     def _make_function(self, cursor, output):
         '''Generate ctypes binding of a function declaration.'''
         linkage_kind = conf.lib.clang_getCursorLinkage(cursor)
-        if linkage_kind != CXLinkage_External:
+        if linkage_kind != CXLINKAGE_EXTERNAL:
             return
         name = cursor.spelling
         output.write('{0} = {1}.{0}\n'.format(name, self.libvar))
