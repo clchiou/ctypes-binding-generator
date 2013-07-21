@@ -4,6 +4,7 @@ import logging
 from ctypes import c_uint
 from clang.cindex import Index, Cursor, CursorKind, TypeKind
 from clang.cindex import conf, register_function
+from cbind.util import walk_astree
 
 
 # Map of clang type to ctypes type
@@ -545,15 +546,3 @@ class SymbolTable:
             return annotations[key]
         else:
             return annotations.get(key, default)
-
-
-def walk_astree(cursor, preorder=None, postorder=None, prune=None):
-    '''Recursively walk through the AST.'''
-    if prune and prune(cursor):
-        return
-    if preorder:
-        preorder(cursor)
-    for child in cursor.get_children():
-        walk_astree(child, preorder, postorder, prune)
-    if postorder:
-        postorder(cursor)

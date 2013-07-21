@@ -8,6 +8,7 @@ import tempfile
 from collections import OrderedDict
 from cStringIO import StringIO
 from clang.cindex import Index, CursorKind
+from cbind.util import walk_astree
 
 
 class MacroConstantsException(Exception):
@@ -17,8 +18,6 @@ class MacroConstantsException(Exception):
 
 class MacroConstantsGenerator:
     '''Generate Python code from macro constants.'''
-
-    magic = '__macro_symbol_magic'
 
     def __init__(self):
         '''Initialize object.'''
@@ -43,58 +42,10 @@ class MacroConstantsGenerator:
             else:
                 msg = 'Could not translate macro constant: %s = %s'
                 logging.info(msg, symbol, value)
-        if not assured_integer_symbols:
-            return
-        self._translate_integer_symbols(c_path, assured_integer_symbols, args)
-
-    def _translate_integer_symbols(self, c_path, integer_symbols, args):
-        '''Translate integer-typed symbols.'''
-        tunit = self._run_clang(c_path, integer_symbols, args)
-        cursors = []
-        self._find(tunit.cursor, self._is_enum_def, cursors)
-        if not cursors:
-            msg = 'Could not find enum in generated C source'
-            raise MacroConstantsException(msg)
-        regex_name = re.compile('^%s_([\w_]+)$' % self.magic)
-        for cursor in cursors:
-            for enum in cursor.get_children():
-                match = regex_name.match(enum.spelling)
-                if not match:
-                    continue
-                self.symbol_table[match.group(1)] = str(enum.enum_value)
-
-    def _run_clang(self, c_path, integer_symbols, args):
-        '''Run clang on integer symbols.'''
-        tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
-        try:
-            with os.fdopen(tmp_src_fd, 'w') as tmp_src:
-                c_abs_path = os.path.abspath(c_path)
-                tmp_src.write('#include "%s"\n' % c_abs_path)
-                tmp_src.write('enum {\n')
-                for symbol, value in integer_symbols:
-                    tmp_src.write('%s_%s = %s,\n' %
-                            (self.magic, symbol, value))
-                tmp_src.write('};\n')
-            index = Index.create()
-            tunit = index.parse(tmp_src_path, args=args)
-            if not tunit:
-                msg = 'Could not parse generated C source'
-                raise MacroConstantsException(msg)
-        finally:
-            os.remove(tmp_src_path)
-        return tunit
-
-    def _find(self, cursor, predicate, result):
-        '''Recursively walk through the AST to find the cursors.'''
-        for child in cursor.get_children():
-            self._find(child, predicate, result)
-        if predicate(cursor):
-            result.append(cursor)
-
-    @staticmethod
-    def _is_enum_def(cursor):
-        '''Test if the cursor is an enum definition.'''
-        return cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition()
+        if assured_integer_symbols:
+            gen = translate_integer_expr(c_path, args, assured_integer_symbols)
+            for symbol, value in gen:
+                self.symbol_table[symbol] = value
 
     def generate(self, output):
         '''Generate macro constants.'''
@@ -164,3 +115,46 @@ def simple_translate_value(value):
         return value
     # Okay, it's none of above...
     return None
+
+
+def translate_integer_expr(c_path, args, symbol_values,
+        magic='__macro_symbol_magic'):
+    '''Translate integer-typed expression with libclang.'''
+
+    def run_clang(c_path, args, symbol_values, magic):
+        '''Run clang on integer symbols.'''
+        tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
+        try:
+            with os.fdopen(tmp_src_fd, 'w') as tmp_src:
+                c_abs_path = os.path.abspath(c_path)
+                tmp_src.write('#include "%s"\n' % c_abs_path)
+                tmp_src.write('enum {\n')
+                for symbol, value in symbol_values:
+                    tmp_src.write('%s_%s = %s,\n' % (magic, symbol, value))
+                tmp_src.write('};\n')
+            index = Index.create()
+            tunit = index.parse(tmp_src_path, args=args)
+            if not tunit:
+                msg = 'Could not parse generated C source'
+                raise MacroConstantsException(msg)
+        finally:
+            os.remove(tmp_src_path)
+        return tunit
+    tunit = run_clang(c_path, args, symbol_values, magic)
+
+    nodes = []
+    def search_enum_def(cursor):
+        '''Test if the cursor is an enum definition.'''
+        if cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
+            nodes.append(cursor)
+    walk_astree(tunit.cursor, search_enum_def)
+    if not nodes:
+        msg = 'Could not find enum in generated C source'
+        raise MacroConstantsException(msg)
+
+    regex_name = re.compile('^%s_([\w_]+)$' % magic)
+    for cursor in nodes:
+        for enum in cursor.get_children():
+            match = regex_name.match(enum.spelling)
+            if match:
+                yield (match.group(1), str(enum.enum_value))
