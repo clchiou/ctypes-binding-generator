@@ -76,8 +76,9 @@ def main():
     if args.parse_macro:
         mcgen = MacroConstantsGenerator()
         for c_src in args.i:
-            mcgen.preprocess(c_src)
-        mcgen.parse(args=clang_args, regex_integer_typed=args.macro_int)
+            mcgen.parse(c_src,
+                    args=clang_args,
+                    regex_integer_typed=args.macro_int)
 
     if args.o == '-':
         output = sys.stdout

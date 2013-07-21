@@ -22,12 +22,11 @@ class MacroConstantsGenerator:
     def __init__(self):
         '''Initialize object.'''
         self.local_symbols = []
-        self.c_sources = []
         self.symbol_table = OrderedDict()
 
-    def preprocess(self, c_source):
-        '''Search the source file for locally-defined macros constants.'''
-        with open(c_source) as src:
+    def parse(self, c_path, args=None, regex_integer_typed=None):
+        '''Parse the source files.'''
+        with open(c_path) as src:
             regex_def = re.compile(r'\s*#\s*define\s+([\w_]+)')
             for src_line in src:
                 match = regex_def.match(src_line)
@@ -37,24 +36,20 @@ class MacroConstantsGenerator:
                 if src_line[match.end()] == '(':
                     continue
                 self.local_symbols.append(match.group(1))
-        self.c_sources.append(c_source)
-
-    def parse(self, args=None, regex_integer_typed=None):
-        '''Parse the source files.'''
-        symbol_values = self._get_symbol_values(args or ())
+        symbol_values = self._get_symbol_values(c_path, args or ())
         assured_integer_symbols = self._translate_symbol_values(symbol_values,
                 regex_integer_typed)
-        if assured_integer_symbols:
-            self._translate_integer_symbols(assured_integer_symbols, args)
+        if not assured_integer_symbols:
+            return
+        self._translate_integer_symbols(c_path, assured_integer_symbols, args)
 
-    def _get_symbol_values(self, args):
+    def _get_symbol_values(self, c_path, args):
         '''Get value of the symbols.'''
         tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
         try:
             with os.fdopen(tmp_src_fd, 'w') as tmp_src:
-                for c_src_path in self.c_sources:
-                    c_src_path = os.path.abspath(c_src_path)
-                    tmp_src.write('#include "%s"\n' % c_src_path)
+                c_abs_path = os.path.abspath(c_path)
+                tmp_src.write('#include "%s"\n' % c_abs_path)
                 for symbol in self.local_symbols:
                     tmp_src.write('{0}_{1} = {1}\n'.format(self.magic, symbol))
             clang = ['clang', '-E', tmp_src_path]
@@ -121,9 +116,9 @@ class MacroConstantsGenerator:
         else:
             return value
 
-    def _translate_integer_symbols(self, integer_symbols, args):
+    def _translate_integer_symbols(self, c_path, integer_symbols, args):
         '''Translate integer-typed symbols.'''
-        tunit = self._run_clang(integer_symbols, args)
+        tunit = self._run_clang(c_path, integer_symbols, args)
         cursors = []
         self._find(tunit.cursor, self._is_enum_def, cursors)
         if not cursors:
@@ -137,14 +132,13 @@ class MacroConstantsGenerator:
                     continue
                 self.symbol_table[match.group(1)] = str(enum.enum_value)
 
-    def _run_clang(self, integer_symbols, args):
+    def _run_clang(self, c_path, integer_symbols, args):
         '''Run clang on integer symbols.'''
         tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
         try:
             with os.fdopen(tmp_src_fd, 'w') as tmp_src:
-                for c_src_path in self.c_sources:
-                    c_src_path = os.path.abspath(c_src_path)
-                    tmp_src.write('#include "%s"\n' % c_src_path)
+                c_abs_path = os.path.abspath(c_path)
+                tmp_src.write('#include "%s"\n' % c_abs_path)
                 tmp_src.write('enum {\n')
                 for symbol, value in integer_symbols:
                     tmp_src.write('%s_%s = %s,\n' %

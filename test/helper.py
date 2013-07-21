@@ -49,8 +49,9 @@ class TestMacroConstantGenerator(unittest.TestCase):
             regex_integer_typed = re.compile(regex_integer_typed)
 
         mcgen = MacroConstantsGenerator()
-        mcgen.preprocess(self.header_path)
-        mcgen.parse(args=args, regex_integer_typed=regex_integer_typed)
+        mcgen.parse(self.header_path,
+                args=args,
+                regex_integer_typed=regex_integer_typed)
         output = StringIO()
         mcgen.generate(output)
         gen_code = output.getvalue()
