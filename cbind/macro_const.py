@@ -27,69 +27,25 @@ class MacroConstantsGenerator:
     def parse(self, c_path, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
         symbol_values = parse_symbol_values(c_path, args)
+        assured_integer_symbols = []
         candidates = enumerate_candidates(c_path)
-        candidate_symbol_values = [(sym, val) for sym, val in symbol_values
-                if sym in candidates]
-        assured_integer_symbols = self._translate_symbol_values(
-                candidate_symbol_values, regex_integer_typed)
+        for symbol, value in symbol_values:
+            if symbol not in candidates:
+                continue
+            py_value = simple_translate_value(value)
+            if py_value is not None:
+                self.symbol_table[symbol] = py_value
+            elif regex_integer_typed and regex_integer_typed.match(symbol):
+                # We could not parse the value, but since user assures us that
+                # this value is integer-typed, we will give it another try...
+                assured_integer_symbols.append((symbol, value))
+                self.symbol_table[symbol] = None
+            else:
+                msg = 'Could not translate macro constant: %s = %s'
+                logging.info(msg, symbol, value)
         if not assured_integer_symbols:
             return
         self._translate_integer_symbols(c_path, assured_integer_symbols, args)
-
-    def _translate_symbol_values(self, symbol_values, regex_integer_typed):
-        '''Translate symbol values into Python codes.'''
-        assured_integer_symbols = []
-        for symbol, value in symbol_values:
-            # Now comes the dirty part: We guess the type of value, and
-            # translate the value into Python codes accordingly.
-            for guess in (self._guess_str, self._guess_int, self._guess_float):
-                translated_value = guess(value)
-                if translated_value is not None:
-                    self.symbol_table[symbol] = translated_value
-                    break
-            else:
-                # We could not parse the value, but since user assures us that
-                # this value is integer-typed, we will give it another try...
-                if regex_integer_typed and regex_integer_typed.match(symbol):
-                    assured_integer_symbols.append((symbol, value))
-                    self.symbol_table[symbol] = None
-                else:
-                    msg = 'Could not translate macro constant: %s = %s'
-                    logging.info(msg, symbol, value)
-        return assured_integer_symbols
-
-    @staticmethod
-    def _guess_str(value):
-        '''Guess value is string valued.'''
-        try:
-            py_value = eval(value, {})
-        except (SyntaxError, NameError, TypeError):
-            return None
-        if not isinstance(py_value, str):
-            return None
-        if len(py_value) == 1 and value[0] == value[-1] == '\'':
-            return 'ord(\'%s\')' % py_value
-        return repr(py_value)
-
-    @staticmethod
-    def _guess_int(value):
-        '''Guess value is int valued.'''
-        try:
-            int(value, 0)
-        except ValueError:
-            return None
-        else:
-            return value
-
-    @staticmethod
-    def _guess_float(value):
-        '''Guess value is float valued.'''
-        try:
-            float(value)
-        except ValueError:
-            return None
-        else:
-            return value
 
     def _translate_integer_symbols(self, c_path, integer_symbols, args):
         '''Translate integer-typed symbols.'''
@@ -178,3 +134,33 @@ def parse_symbol_values(c_path, args):
             continue
         symbol_values.append((symbol, value.strip()))
     return symbol_values
+
+
+def simple_translate_value(value):
+    '''Translate symbol value into Python codes.'''
+    # Guess value is string valued...
+    py_value = None
+    try:
+        py_value = eval(value, {})
+    except (SyntaxError, NameError, TypeError):
+        pass
+    if isinstance(py_value, str):
+        if len(py_value) == 1 and value[0] == value[-1] == '\'':
+            return 'ord(\'%s\')' % py_value
+        return repr(py_value)
+    # Guess value is int valued...
+    try:
+        int(value, 0)
+    except ValueError:
+        pass
+    else:
+        return value
+    # Guess value is float valued...
+    try:
+        float(value)
+    except ValueError:
+        pass
+    else:
+        return value
+    # Okay, it's none of above...
+    return None
