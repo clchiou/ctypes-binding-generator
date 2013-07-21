@@ -6,6 +6,7 @@ import re
 import subprocess
 import tempfile
 from collections import OrderedDict
+from cStringIO import StringIO
 from clang.cindex import Index, CursorKind
 
 
@@ -25,48 +26,20 @@ class MacroConstantsGenerator:
 
     def parse(self, c_path, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
-        candidates = self._enumerate_candidates(c_path)
-        symbol_values = self._get_symbol_values(c_path, args or (), candidates)
-        assured_integer_symbols = self._translate_symbol_values(symbol_values,
-                regex_integer_typed)
+        symbol_values = parse_symbol_values(c_path, args)
+        candidates = enumerate_candidates(c_path)
+        candidate_symbol_values = [(sym, val) for sym, val in symbol_values
+                if sym in candidates]
+        assured_integer_symbols = self._translate_symbol_values(
+                candidate_symbol_values, regex_integer_typed)
         if not assured_integer_symbols:
             return
         self._translate_integer_symbols(c_path, assured_integer_symbols, args)
-
-    @staticmethod
-    def _enumerate_candidates(c_path):
-        '''Get locally-defined macro names.'''
-        candidates = []
-        regex_def = re.compile(r'\s*#\s*define\s+([\w_]+)')
-        with open(c_path) as c_src:
-            for c_src_line in c_src:
-                match = regex_def.match(c_src_line)
-                if match:
-                    candidates.append(match.group(1))
-        return candidates
-
-    def _get_symbol_values(self, c_path, args, candidates):
-        '''Get value of the symbols.'''
-        tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
-        try:
-            with os.fdopen(tmp_src_fd, 'w') as tmp_src:
-                c_abs_path = os.path.abspath(c_path)
-                tmp_src.write('#include "%s"\n' % c_abs_path)
-                for symbol in candidates:
-                    tmp_src.write('{0}_{1} = {1}\n'.format(self.magic, symbol))
-            clang = ['clang', '-E', tmp_src_path]
-            clang.extend(args)
-            preprocessed = subprocess.check_output(clang)
-        finally:
-            os.remove(tmp_src_path)
-        regex = re.compile('^%s_([\w_]+) = (.*)$' % self.magic, re.MULTILINE)
-        return regex.findall(preprocessed)
 
     def _translate_symbol_values(self, symbol_values, regex_integer_typed):
         '''Translate symbol values into Python codes.'''
         assured_integer_symbols = []
         for symbol, value in symbol_values:
-            value = value.strip()
             # Now comes the dirty part: We guess the type of value, and
             # translate the value into Python codes accordingly.
             for guess in (self._guess_str, self._guess_int, self._guess_float):
@@ -172,3 +145,36 @@ class MacroConstantsGenerator:
         for symbol, value in self.symbol_table.iteritems():
             assert value, 'empty value: %s' % repr(value)
             output.write('%s = %s\n' % (symbol, value))
+
+
+REGEX_DEFINE = re.compile(r'\s*#\s*define\s+([\w_]+)')
+
+
+def enumerate_candidates(c_path):
+    '''Get locally-defined macro names.'''
+    candidates = set()
+    with open(c_path) as c_src:
+        for c_src_line in c_src:
+            match = REGEX_DEFINE.match(c_src_line)
+            if match:
+                candidates.add(match.group(1))
+    return candidates
+
+
+def parse_symbol_values(c_path, args):
+    '''Run gcc preprocessor and get values of the symbols.'''
+    symbol_values = []
+    gcc = ['gcc', '-E', '-dM', c_path]
+    gcc.extend(args or ())
+    macros = StringIO(subprocess.check_output(gcc))
+    for define_line in macros:
+        match = REGEX_DEFINE.match(define_line)
+        if not match:
+            continue
+        symbol = match.group(1)
+        value = define_line[match.end():]
+        if not value[0].isspace():
+            # TODO(clchiou): Ignore macro function for now.
+            continue
+        symbol_values.append((symbol, value.strip()))
+    return symbol_values
