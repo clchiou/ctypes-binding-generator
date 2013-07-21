@@ -21,36 +21,38 @@ class MacroConstantsGenerator:
 
     def __init__(self):
         '''Initialize object.'''
-        self.local_symbols = []
         self.symbol_table = OrderedDict()
 
     def parse(self, c_path, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
-        with open(c_path) as src:
-            regex_def = re.compile(r'\s*#\s*define\s+([\w_]+)')
-            for src_line in src:
-                match = regex_def.match(src_line)
-                if not match:
-                    continue
-                # TODO(clchiou): Parse macro function; ignore it for now.
-                if src_line[match.end()] == '(':
-                    continue
-                self.local_symbols.append(match.group(1))
-        symbol_values = self._get_symbol_values(c_path, args or ())
+        candidates = self._enumerate_candidates(c_path)
+        symbol_values = self._get_symbol_values(c_path, args or (), candidates)
         assured_integer_symbols = self._translate_symbol_values(symbol_values,
                 regex_integer_typed)
         if not assured_integer_symbols:
             return
         self._translate_integer_symbols(c_path, assured_integer_symbols, args)
 
-    def _get_symbol_values(self, c_path, args):
+    @staticmethod
+    def _enumerate_candidates(c_path):
+        '''Get locally-defined macro names.'''
+        candidates = []
+        regex_def = re.compile(r'\s*#\s*define\s+([\w_]+)')
+        with open(c_path) as c_src:
+            for c_src_line in c_src:
+                match = regex_def.match(c_src_line)
+                if match:
+                    candidates.append(match.group(1))
+        return candidates
+
+    def _get_symbol_values(self, c_path, args, candidates):
         '''Get value of the symbols.'''
         tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
         try:
             with os.fdopen(tmp_src_fd, 'w') as tmp_src:
                 c_abs_path = os.path.abspath(c_path)
                 tmp_src.write('#include "%s"\n' % c_abs_path)
-                for symbol in self.local_symbols:
+                for symbol in candidates:
                     tmp_src.write('{0}_{1} = {1}\n'.format(self.magic, symbol))
             clang = ['clang', '-E', tmp_src_path]
             clang.extend(args)
