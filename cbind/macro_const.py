@@ -25,25 +25,32 @@ class MacroConstantsGenerator:
 
     def parse(self, c_path, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
-        symbol_values = parse_symbol_values(c_path, args)
-        assured_integer_symbols = []
-        candidates = enumerate_candidates(c_path)
-        for symbol, value in symbol_values:
-            if symbol not in candidates:
-                continue
+        int_expr = []
+        def translate_const(value):
+            '''Translate macro value to Python codes.'''
             py_value = simple_translate_value(value)
             if py_value is not None:
                 self.symbol_table[symbol] = py_value
             elif regex_integer_typed and regex_integer_typed.match(symbol):
                 # We could not parse the value, but since user assures us that
                 # this value is integer-typed, we will give it another try...
-                assured_integer_symbols.append((symbol, value))
+                int_expr.append((symbol, value))
                 self.symbol_table[symbol] = None
             else:
                 msg = 'Could not translate macro constant: %s = %s'
                 logging.info(msg, symbol, value)
-        if assured_integer_symbols:
-            gen = translate_integer_expr(c_path, args, assured_integer_symbols)
+
+        candidates = enumerate_candidates(c_path)
+        for symbol, arguments, body in parse_c_source(c_path, args):
+            if symbol not in candidates:
+                pass
+            elif arguments is not None:
+                # TODO(clchiou): Ignore macro function for now.
+                pass
+            else:
+                translate_const(body)
+        if int_expr:
+            gen = translate_integer_expr(c_path, args, int_expr)
             for symbol, value in gen:
                 self.symbol_table[symbol] = value
 
@@ -55,6 +62,17 @@ class MacroConstantsGenerator:
 
 
 REGEX_DEFINE = re.compile(r'\s*#\s*define\s+([\w_]+)')
+REGEX_ARGUMENTS = re.compile(r'''
+        \(
+            \s*
+            (
+                [\w_]+
+                (?:
+                    \s*,\s*[\w_]+
+                )*
+            )?
+            \s*
+        \)''', re.VERBOSE)
 
 
 def enumerate_candidates(c_path):
@@ -68,9 +86,9 @@ def enumerate_candidates(c_path):
     return candidates
 
 
-def parse_symbol_values(c_path, args):
+def parse_c_source(c_path, args):
     '''Run gcc preprocessor and get values of the symbols.'''
-    symbol_values = []
+    symbol_arg_body = []
     gcc = ['gcc', '-E', '-dM', c_path]
     gcc.extend(args or ())
     macros = StringIO(subprocess.check_output(gcc))
@@ -80,11 +98,23 @@ def parse_symbol_values(c_path, args):
             continue
         symbol = match.group(1)
         value = define_line[match.end():]
-        if not value[0].isspace():
-            # TODO(clchiou): Ignore macro function for now.
-            continue
-        symbol_values.append((symbol, value.strip()))
-    return symbol_values
+        arguments, body = match_macro_function(value)
+        symbol_arg_body.append((symbol, arguments, body))
+    return symbol_arg_body
+
+
+def match_macro_function(value):
+    '''Match macro function arguments'''
+    match = REGEX_ARGUMENTS.match(value)
+    if not match:
+        return None, value.strip()
+    arguments = match.group(1)
+    if arguments:
+        arguments = tuple(arg.strip() for arg in arguments.split(','))
+    else:
+        arguments = ()
+    body = value[match.end():].strip()
+    return arguments, body
 
 
 def simple_translate_value(value):
