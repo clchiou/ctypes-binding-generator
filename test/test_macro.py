@@ -46,6 +46,19 @@ C = 100
         ''',
         regex_integer_typed='C')
 
+    def test_macro_function(self):
+        self.run_test('''
+#define A() 0
+#define B(x) x
+#define C(x, y) x * y
+#define D(x, y, z) x + y - z
+        ''', '''
+A = lambda : 0
+B = lambda x: x
+C = lambda x, y: x * y
+D = lambda x, y, z: x + y - z
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

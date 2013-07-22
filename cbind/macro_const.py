@@ -26,39 +26,47 @@ class MacroConstantsGenerator:
     def parse(self, c_path, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
         int_expr = []
-        def translate_const(value):
+        def translate_const(symbol, value):
             '''Translate macro value to Python codes.'''
             py_value = simple_translate_value(value)
             if py_value is not None:
-                self.symbol_table[symbol] = py_value
+                self.symbol_table[symbol] = None, py_value
             elif regex_integer_typed and regex_integer_typed.match(symbol):
                 # We could not parse the value, but since user assures us that
                 # this value is integer-typed, we will give it another try...
                 int_expr.append((symbol, value))
-                self.symbol_table[symbol] = None
+                self.symbol_table[symbol] = None, None
             else:
                 msg = 'Could not translate macro constant: %s = %s'
                 logging.info(msg, symbol, value)
+
+        def translate_macro_body(symbol, arguments, body):
+            '''Translate macro body into Python codes.'''
+            # TODO(clchiou): Implement translate_macro_body.
+            self.symbol_table[symbol] = arguments, body
 
         candidates = enumerate_candidates(c_path)
         for symbol, arguments, body in parse_c_source(c_path, args):
             if symbol not in candidates:
                 pass
             elif arguments is not None:
-                # TODO(clchiou): Ignore macro function for now.
-                pass
+                translate_macro_body(symbol, arguments, body)
             else:
-                translate_const(body)
+                translate_const(symbol, body)
         if int_expr:
             gen = translate_integer_expr(c_path, args, int_expr)
             for symbol, value in gen:
-                self.symbol_table[symbol] = value
+                self.symbol_table[symbol] = None, value
 
     def generate(self, output):
         '''Generate macro constants.'''
-        for symbol, value in self.symbol_table.iteritems():
-            assert value, 'empty value: %s' % repr(value)
-            output.write('%s = %s\n' % (symbol, value))
+        for symbol, (arguments, body) in self.symbol_table.iteritems():
+            assert body, 'empty value: %s' % repr(body)
+            if arguments is not None:
+                output.write('%s = lambda %s: %s\n' %
+                        (symbol, ', '.join(arguments), body))
+            else:
+                output.write('%s = %s\n' % (symbol, body))
 
 
 REGEX_DEFINE = re.compile(r'\s*#\s*define\s+([\w_]+)')
