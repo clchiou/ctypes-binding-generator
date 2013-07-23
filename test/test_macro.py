@@ -52,6 +52,8 @@ C = 100
 #define B(x) x
 #define C(x, y) x * y
 #define D(x, y, z) x + y - z
+#define E()
+#define F(x)
         ''', '''
 A = lambda : 0
 B = lambda x: x

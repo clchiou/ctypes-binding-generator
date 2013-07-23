@@ -42,7 +42,11 @@ class MacroConstantsGenerator:
 
         def translate_macro_body(symbol, arguments, body):
             '''Translate macro body into Python codes.'''
-            # TODO(clchiou): Implement translate_macro_body.
+            if not body:
+                return
+            # TODO(clchiou): libclang does not export much of the ASTree.
+            # It looks like we cannot implement a C-to-Python translator
+            # from libclang.  What should we do?
             self.symbol_table[symbol] = arguments, body
 
         candidates = enumerate_candidates(c_path)
