@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from cStringIO import StringIO
 from clang.cindex import Index, CursorKind
 from cbind.util import walk_astree
@@ -73,14 +73,73 @@ class MacroConstantsGenerator:
                 output.write('%s = %s\n' % (symbol, body))
 
 
-REGEX_DEFINE = re.compile(r'\s*#\s*define\s+([\w_]+)')
+class Token(namedtuple('Token', 'kind spelling')):
+    '''C Token.'''
+
+    # pylint: disable=W0232,R0903
+
+    regex_token = re.compile(r'''
+            [a-zA-Z_]\w* |
+            \w?"(?:[^"]|\")*" |
+            \w?'(?:[^']|\')+' |
+
+            # Floating-point literal must be before integer literal...
+            \d*\.\d+(?:[eE][+\-]?\d+)?[fFlL]? |
+            \d+\.\d*(?:[eE][+\-]?\d+)?[fFlL]? |
+
+            0[xX][a-fA-F0-9]+[uUlL]* |
+            0\d+[uUlL]* |
+            \d+[uUlL]* |
+            \d+[eE][+\-]?\d+[fFlL]? |
+
+            [();,:\[\]~?{}] | <% | %> | <: | :> |
+            \.\.\. |
+            (?:>>|<<|[+\-*/%&\^|<>=!])=? | && | \|\| |
+            \+\+ | -- | ->
+            ''', re.VERBOSE)
+
+    regex_symbol = re.compile(r'[a-zA-Z_]\w*')
+
+    regex_binop = re.compile(r'''
+            (?:
+                >> |
+                << |
+                [+\-*/%&\^|<>=!]
+            )=? |
+            && |
+            \|\| |
+            \. |
+            ->
+            ''', re.VERBOSE)
+
+    SYMBOL  = 'SYMBOL'
+    BINOP   = 'BINOP'
+    LITERAL = 'LITERAL'
+
+    @classmethod
+    def get_tokens(cls, c_expr):
+        '''Make token list from C expression.'''
+        for token in cls.regex_token.findall(c_expr):
+            if cls.regex_symbol.match(token):
+                yield cls(cls.SYMBOL, token)
+            elif cls.regex_binop.match(token):
+                yield cls(cls.BINOP, token)
+            elif '"' in token or "'" in token:
+                yield cls(cls.LITERAL, token)
+            elif any(c.isdigit() for c in token):
+                yield cls(cls.LITERAL, token)
+            else:
+                pass
+
+
+REGEX_DEFINE = re.compile(r'\s*#\s*define\s+(\w+)')
 REGEX_ARGUMENTS = re.compile(r'''
         \(
             \s*
             (
-                [\w_]+
+                \w+
                 (?:
-                    \s*,\s*[\w_]+
+                    \s*,\s*\w+
                 )*
             )?
             \s*
@@ -194,7 +253,7 @@ def translate_integer_expr(c_path, args, symbol_values,
         msg = 'Could not find enum in generated C source'
         raise MacroConstantsException(msg)
 
-    regex_name = re.compile('^%s_([\w_]+)$' % magic)
+    regex_name = re.compile('^%s_(\w+)$' % magic)
     for cursor in nodes:
         for enum in cursor.get_children():
             match = regex_name.match(enum.spelling)
