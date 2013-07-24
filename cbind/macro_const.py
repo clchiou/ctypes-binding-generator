@@ -79,37 +79,28 @@ class Token(namedtuple('Token', 'kind spelling')):
     # pylint: disable=W0232,R0903
 
     regex_token = re.compile(r'''
-            [a-zA-Z_]\w* |
-            \w?"(?:[^"]|\")*" |
-            \w?'(?:[^']|\')+' |
-
-            # Floating-point literal must be before integer literal...
-            \d*\.\d+(?:[eE][+\-]?\d+)?[fFlL]? |
-            \d+\.\d*(?:[eE][+\-]?\d+)?[fFlL]? |
-
-            0[xX][a-fA-F0-9]+[uUlL]* |
-            0\d+[uUlL]* |
-            \d+[uUlL]* |
-            \d+[eE][+\-]?\d+[fFlL]? |
-
+            (?P<symbol>[a-zA-Z_]\w*) |
+            (?P<string_literal>\w?"(?:[^"]|\")*") |
+            (?P<char_literal>\w?'(?:[^']|\')+') |
+            # Floating-point literal must be listed before integer literal...
+            (?P<floating_point_literal>
+                \d*\.\d+(?:[eE][+\-]?\d+)?[fFlL]? |
+                \d+\.\d*(?:[eE][+\-]?\d+)?[fFlL]?
+            ) |
+            (?P<integer_literal>
+                0[xX][a-fA-F0-9]+[uUlL]* |
+                0\d+[uUlL]* |
+                \d+[uUlL]* |
+                \d+[eE][+\-]?\d+[fFlL]?
+            ) |
+            (?P<binary_operator>
+                (?:>>|<<|[+\-*/%&\^|<>=!])=? | && | \|\| | ->
+            ) |
+            # Ignore the following kinds of tokens for now...
+            \+\+ | -- |
             [();,:\[\]~?{}] | <% | %> | <: | :> |
             \.\.\. |
-            (?:>>|<<|[+\-*/%&\^|<>=!])=? | && | \|\| |
-            \+\+ | -- | ->
-            ''', re.VERBOSE)
-
-    regex_symbol = re.compile(r'[a-zA-Z_]\w*')
-
-    regex_binop = re.compile(r'''
-            (?:
-                >> |
-                << |
-                [+\-*/%&\^|<>=!]
-            )=? |
-            && |
-            \|\| |
-            \. |
-            ->
+            \s+
             ''', re.VERBOSE)
 
     SYMBOL  = 'SYMBOL'
@@ -119,17 +110,24 @@ class Token(namedtuple('Token', 'kind spelling')):
     @classmethod
     def get_tokens(cls, c_expr):
         '''Make token list from C expression.'''
-        for token in cls.regex_token.findall(c_expr):
-            if cls.regex_symbol.match(token):
-                yield cls(cls.SYMBOL, token)
-            elif cls.regex_binop.match(token):
-                yield cls(cls.BINOP, token)
-            elif '"' in token or "'" in token:
-                yield cls(cls.LITERAL, token)
-            elif any(c.isdigit() for c in token):
-                yield cls(cls.LITERAL, token)
-            else:
-                pass
+        pos = 0
+        while True:
+            match = cls.regex_token.match(c_expr, pos)
+            if not match:
+                break
+            pos = match.end()
+            for gname, kind in (
+                    ('symbol',                  cls.SYMBOL),
+                    ('string_literal',          cls.LITERAL),
+                    ('char_literal',            cls.LITERAL),
+                    ('floating_point_literal',  cls.LITERAL),
+                    ('integer_literal',         cls.LITERAL),
+                    ('binary_operator',         cls.BINOP),
+                    ):
+                value = match.group(gname)
+                if value:
+                    yield cls(kind, value)
+                    break
 
 
 REGEX_DEFINE = re.compile(r'\s*#\s*define\s+(\w+)')
