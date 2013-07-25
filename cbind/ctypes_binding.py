@@ -305,10 +305,9 @@ class CtypesBindingGenerator:
             # TODO(clchiou): Make parentheses context-sensitive
             element_type = self._make_type(type_.get_array_element_type())
             c_type = '(%s * %d)' % (element_type, type_.get_array_size())
-        # TODO(clchiou): libclang does not expose IncompleteArray.
-        #elif type_.kind is TypeKind.INCOMPLETEARRAY:
-        #    pointee_type = type_.get_array_element_type()
-        #    c_type = self._make_pointer_type(pointee_type=pointee_type)
+        elif type_.kind is TypeKind.INCOMPLETEARRAY:
+            pointee_type = type_.get_array_element_type()
+            c_type = self._make_pointer_type(pointee_type=pointee_type)
         elif type_.kind is TypeKind.POINTER:
             c_type = self._make_pointer_type(pointer_type=type_)
         else:
