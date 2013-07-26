@@ -22,6 +22,7 @@ class MacroConstantsGenerator:
     def __init__(self):
         '''Initialize object.'''
         self.symbol_table = OrderedDict()
+        self.parser = Parser()
 
     def parse(self, c_path, args=None, regex_integer_typed=None):
         '''Parse the source files.'''
@@ -37,24 +38,15 @@ class MacroConstantsGenerator:
                 int_expr.append((symbol, value))
                 self.symbol_table[symbol] = None, None
             else:
-                msg = 'Could not translate macro constant: %s = %s'
+                msg = 'Could not parse marco: #define %s %s'
                 logging.info(msg, symbol, value)
-
-        def translate_macro_body(symbol, arguments, body):
-            '''Translate macro body into Python codes.'''
-            if not body:
-                return
-            # TODO(clchiou): libclang does not export much of the ASTree.
-            # It looks like we cannot implement a C-to-Python translator
-            # from libclang.  What should we do?
-            self.symbol_table[symbol] = arguments, body
 
         candidates = enumerate_candidates(c_path)
         for symbol, arguments, body in parse_c_source(c_path, args):
             if symbol not in candidates:
                 pass
             elif arguments is not None:
-                translate_macro_body(symbol, arguments, body)
+                self._parse_macro_function(symbol, arguments, body)
             else:
                 translate_const(symbol, body)
         if int_expr:
@@ -62,13 +54,27 @@ class MacroConstantsGenerator:
             for symbol, value in gen:
                 self.symbol_table[symbol] = None, value
 
+    def _parse_macro_function(self, symbol, arguments, body):
+        '''Parse macro function.'''
+        if not body:
+            return
+        try:
+            py_expr = self.parser.parse(body)
+        except CSyntaxError:
+            msg = 'Could not parse macro: #define %s(%s) %s'
+            logging.info(msg, symbol, ', '.join(arguments), body)
+        else:
+            self.symbol_table[symbol] = arguments, py_expr
+
     def generate(self, output):
         '''Generate macro constants.'''
         for symbol, (arguments, body) in self.symbol_table.iteritems():
             assert body, 'empty value: %s' % repr(body)
             if arguments is not None:
-                output.write('%s = lambda %s: %s\n' %
-                        (symbol, ', '.join(arguments), body))
+                output.write('%s = lambda %s: \n' %
+                        (symbol, ', '.join(arguments)))
+                body.translate(output)
+                output.write('\n')
             else:
                 output.write('%s = %s\n' % (symbol, body))
 
