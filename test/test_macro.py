@@ -2,7 +2,7 @@ import unittest
 import helper
 
 
-class TestMacro(helper.TestMacroConstantGenerator):
+class TestMacro(helper.TestMacroGenerator):
 
     def test_simple_macro(self):
         self.run_test('''

@@ -3,7 +3,7 @@
 import unittest
 from cStringIO import StringIO
 
-from cbind.macro_const import Token, Expression, Parser
+from cbind.macro import Token, Expression, Parser
 
 
 class TestToken(unittest.TestCase):

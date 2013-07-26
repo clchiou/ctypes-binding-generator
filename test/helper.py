@@ -9,7 +9,7 @@ import unittest
 from cStringIO import StringIO
 from itertools import izip
 
-from cbind import CtypesBindingGenerator, MacroConstantsGenerator
+from cbind import CtypesBindingGenerator, MacroGenerator
 
 
 class TestCtypesBindingGenerator(unittest.TestCase):
@@ -30,7 +30,7 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         compile(gen_code, 'output.py', 'exec')
 
 
-class TestMacroConstantGenerator(unittest.TestCase):
+class TestMacroGenerator(unittest.TestCase):
     '''Boilerplate of unit tests.'''
 
     def setUp(self):
@@ -48,7 +48,7 @@ class TestMacroConstantGenerator(unittest.TestCase):
         if regex_integer_typed:
             regex_integer_typed = re.compile(regex_integer_typed)
 
-        mcgen = MacroConstantsGenerator()
+        mcgen = MacroGenerator()
         mcgen.parse(self.header_path,
                 args=args,
                 regex_integer_typed=regex_integer_typed)

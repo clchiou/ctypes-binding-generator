@@ -11,12 +11,12 @@ from clang.cindex import Index, CursorKind
 from cbind.util import walk_astree
 
 
-class MacroConstantsException(Exception):
-    '''Exception raised by MacroConstantsGenerator class.'''
+class MacroException(Exception):
+    '''Exception raised by MacroGenerator class.'''
     pass
 
 
-class MacroConstantsGenerator:
+class MacroGenerator:
     '''Generate Python code from macro constants.'''
 
     def __init__(self):
@@ -424,7 +424,7 @@ def translate_integer_expr(c_path, args, symbol_values,
             tunit = index.parse(tmp_src_path, args=args)
             if not tunit:
                 msg = 'Could not parse generated C source'
-                raise MacroConstantsException(msg)
+                raise MacroException(msg)
         finally:
             os.remove(tmp_src_path)
         return tunit
@@ -438,7 +438,7 @@ def translate_integer_expr(c_path, args, symbol_values,
     walk_astree(tunit.cursor, search_enum_def)
     if not nodes:
         msg = 'Could not find enum in generated C source'
-        raise MacroConstantsException(msg)
+        raise MacroException(msg)
 
     regex_name = re.compile('^%s_(\w+)$' % magic)
     for cursor in nodes:

@@ -1,7 +1,7 @@
 '''Package for automatic generation of ctypes bindings from C sources.'''
 
 from cbind.ctypes_binding import CtypesBindingGenerator
-from cbind.macro_const import MacroConstantsGenerator
+from cbind.macro import MacroGenerator
 
 
 def parse_args():
@@ -74,7 +74,7 @@ def main():
     for c_src in args.i:
         cbgen.parse(c_src, args=clang_args)
     if args.parse_macro:
-        mcgen = MacroConstantsGenerator()
+        mcgen = MacroGenerator()
         for c_src in args.i:
             mcgen.parse(c_src,
                     args=clang_args,
