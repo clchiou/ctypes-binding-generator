@@ -27,6 +27,7 @@ class TestToken(unittest.TestCase):
                 + - * /
                 1ul
                 () [] {}
+                ,
                 ''',
                 Token(Token.SYMBOL, '__file__'),
                 Token(Token.STR_LITERAL, '"\\"hello world\\""'),
@@ -40,6 +41,7 @@ class TestToken(unittest.TestCase):
                 Token(Token.PARENTHESES, '('), Token(Token.PARENTHESES, ')'),
                 Token(Token.PARENTHESES, '['), Token(Token.PARENTHESES, ']'),
                 Token(Token.PARENTHESES, '{'), Token(Token.PARENTHESES, '}'),
+                Token(Token.MISC, ','),
                 Token(Token.END, None),
                 )
 
@@ -64,11 +66,11 @@ class TestExpression(unittest.TestCase):
         else:
             self.assertEqual(output.this.spelling, answer[0])
         if isinstance(answer, str) or len(answer) == 1:
-            self.assertIsNone(output.left)
-            self.assertIsNone(output.right)
+            self.assertFalse(output.children)
             return
-        self.compare_expr(output.left, answer[1])
-        self.compare_expr(output.right, answer[2])
+        self.assertEqual(len(output.children), len(answer) - 1)
+        for child, sub_tree in zip(output.children, answer[1:]):
+            self.compare_expr(child, sub_tree)
 
     def run_test(self, c_expr, answer, py_expr=None):
         parser = Parser()
@@ -91,3 +93,8 @@ class TestExpression(unittest.TestCase):
                         )
                     )
                 )
+
+    def test_function_call(self):
+        self.run_test('f(1, 2, 3)', ('f', '1', '2', '3'))
+        self.run_test('f(x)', ('f', 'x'))
+        self.run_test('f()', ('f',))

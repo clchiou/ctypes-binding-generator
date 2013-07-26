@@ -71,7 +71,7 @@ class MacroConstantsGenerator:
         for symbol, (arguments, body) in self.symbol_table.iteritems():
             assert body, 'empty value: %s' % repr(body)
             if arguments is not None:
-                output.write('%s = lambda %s: \n' %
+                output.write('%s = lambda %s: ' %
                         (symbol, ', '.join(arguments)))
                 body.translate(output)
                 output.write('\n')
@@ -136,7 +136,7 @@ class Parser:
                 self._putback(token)
             return token
         if error:
-            raise CSyntaxError('Could not match %s' % token)
+            raise CSyntaxError('Could not match %s' % str(token))
         self._putback(token)
         return None
 
@@ -147,7 +147,7 @@ class Parser:
         if not this or this.kind is Token.END:
             return left
         right = self._expr()
-        return Expression(this=this, left=left, right=right)
+        return Expression.make(this=this, children=(left, right))
 
     def _term(self):
         '''Parse term.'''
@@ -156,40 +156,81 @@ class Parser:
         if not this or this.kind is Token.END:
             return left
         right = self._term()
-        return Expression(this=this, left=left, right=right)
+        return Expression.make(this=this, children=(left, right))
 
     def _factor(self):
         '''Parse factor.'''
+        if self._match((Token.PARENTHESES, '('), error=False):
+            expr = self._expr()
+            self._match((Token.PARENTHESES, ')'))
+            # pylint: disable=E1103
+            return Expression.make(this=expr.this, children=expr.children,
+                    parentheses=True)
         this = self._match((Token.SYMBOL,),
-                (Token.INT_LITERAL,), (Token.FP_LITERAL,),
-                (Token.PARENTHESES, '('))
-        if this.kind is not Token.PARENTHESES:
-            return Expression(this=this, left=None, right=None)
-        expr = self._expr()
-        self._match((Token.PARENTHESES, ')'))
-        expr.parentheses = True  # pylint: disable=W0201
-        return expr
+                (Token.CHAR_LITERAL,),
+                (Token.INT_LITERAL,), (Token.FP_LITERAL,))
+        if (this.kind is Token.SYMBOL and
+                self._match((Token.PARENTHESES, '('), error=False)):
+            # Function call
+            this = Token(kind=Token.FUNCTION, spelling=this.spelling)
+            children = self._args()
+            self._match((Token.PARENTHESES, ')'))
+            return Expression.make(this=this, children=children)
+        return Expression.make(this=this)
+
+    def _args(self):
+        '''Parse argument list.'''
+        args = []
+        first = True
+        rpar = None
+        while True:
+            rpar = self._match((Token.PARENTHESES, ')'), error=False)
+            if rpar:
+                break
+            if not first:
+                self._match((Token.MISC, ','))
+            args.append(self._expr())
+            first = False
+        if rpar:
+            self._putback(rpar)
+        return args
 
 
-class Expression(namedtuple('Expression', 'this left right')):
+class Expression(namedtuple('Expression', 'this children parentheses')):
     '''C expression.'''
 
-    # pylint: disable=W0232,E1101,R0903
+    # pylint: disable=W0232,E1101
+
+    @classmethod
+    def make(cls, this, children=(), parentheses=False):
+        '''Make an expression with sensible initial values.'''
+        return cls(this=this, children=children, parentheses=parentheses)
 
     def translate(self, output):
         '''Translate C expression to Python codes.'''
-        parentheses = hasattr(self, 'parentheses') and self.parentheses
-        if parentheses:
+        if self.this.kind is Token.FUNCTION:
+            # Function call
+            self.this.translate(output)
             output.write('(')
-        if self.left:
-            self.left.translate(output)
-            output.write(' ')
-        self.this.translate(output)
-        if self.right:
-            output.write(' ')
-            self.right.translate(output)
-        if parentheses:
+            first = True
+            for child in self.children:
+                if not first:
+                    output.write(', ')
+                child.translate(output)
+                first = False
             output.write(')')
+        elif self.this.kind is Token.BINOP:
+            if self.parentheses:
+                output.write('(')
+            self.children[0].translate(output)
+            output.write(' ')
+            self.this.translate(output)
+            output.write(' ')
+            self.children[1].translate(output)
+            if self.parentheses:
+                output.write(')')
+        else:
+            self.this.translate(output)
 
 
 class Token(namedtuple('Token', 'kind spelling')):
@@ -218,13 +259,17 @@ class Token(namedtuple('Token', 'kind spelling')):
             (?P<parentheses>
                 [()\[\]{}]
             ) |
+            (?P<misc>
+                ,
+            ) |
             # Ignore the following kinds of tokens for now...
             \+\+ | -- |
-            [;,:~?] | <% | %> | <: | :> |
+            [;:~?] | <% | %> | <: | :> |
             \.\.\. |
             \s+
             ''', re.VERBOSE)
 
+    FUNCTION        = 'FUNCTION'
     SYMBOL          = 'SYMBOL'
     BINOP           = 'BINOP'
     CHAR_LITERAL    = 'CHAR_LITERAL'
@@ -232,6 +277,7 @@ class Token(namedtuple('Token', 'kind spelling')):
     INT_LITERAL     = 'INT_LITERAL'
     FP_LITERAL      = 'FP_LITERAL'
     PARENTHESES     = 'PARENTHESES'
+    MISC            = 'MISC'
     END             = 'END'
 
     @classmethod
@@ -251,6 +297,7 @@ class Token(namedtuple('Token', 'kind spelling')):
                     ('floating_point_literal',  cls.FP_LITERAL),
                     ('binary_operator',         cls.BINOP),
                     ('parentheses',             cls.PARENTHESES),
+                    ('misc',                    cls.MISC),
                     ):
                 spelling = match.group(gname)
                 if spelling:
