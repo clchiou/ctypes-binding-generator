@@ -26,6 +26,7 @@ class TestToken(unittest.TestCase):
                 3.14
                 + - * /
                 1ul
+                () [] {}
                 ''',
                 Token(Token.SYMBOL, '__file__'),
                 Token(Token.STR_LITERAL, '"\\"hello world\\""'),
@@ -36,6 +37,9 @@ class TestToken(unittest.TestCase):
                 Token(Token.BINOP, '*'),
                 Token(Token.BINOP, '/'),
                 Token(Token.INT_LITERAL, '1ul'),
+                Token(Token.PARENTHESES, '('), Token(Token.PARENTHESES, ')'),
+                Token(Token.PARENTHESES, '['), Token(Token.PARENTHESES, ']'),
+                Token(Token.PARENTHESES, '{'), Token(Token.PARENTHESES, '}'),
                 Token(Token.END, None),
                 )
 
@@ -43,30 +47,35 @@ class TestToken(unittest.TestCase):
 class TestExpression(unittest.TestCase):
 
     def compare_expr(self, output, answer):
-        self.assertEqual(output.this, answer.this)
-        self.assertEqual(output.left is None, answer.left is None)
-        self.assertEqual(output.right is None, answer.right is None)
-        if output.left:
-            self.compare_expr(output.left, answer.left)
-        if output.right:
-            self.compare_expr(output.right, answer.right)
+        if isinstance(answer, str):
+            self.assertEqual(output.this.spelling, answer)
+        else:
+            self.assertEqual(output.this.spelling, answer[0])
+        if isinstance(answer, str) or len(answer) == 1:
+            self.assertIsNone(output.left)
+            self.assertIsNone(output.right)
+            return
+        self.compare_expr(output.left, answer[1])
+        self.compare_expr(output.right, answer[2])
 
-    def test_syntax(self):
-        c_expr = 'x + y * z'
+    def run_test(self, c_expr, answer, py_expr=None):
         parser = Parser()
         expr = parser.parse(c_expr)
-        self.compare_expr(expr,
-                Expression(this=Token(Token.BINOP, '+'),
-                    left=Expression(this=Token(Token.SYMBOL, 'x'),
-                        left=None, right=None),
-                    right=Expression(this=Token(Token.BINOP, '*'),
-                        left=Expression(this=Token(Token.SYMBOL, 'y'),
-                            left=None, right=None),
-                        right=Expression(this=Token(Token.SYMBOL, 'z'),
-                            left=None, right=None)
+        self.compare_expr(expr, answer)
+        output = StringIO()
+        expr.translate(output)
+        self.assertEqual(output.getvalue(), py_expr or c_expr)
+
+    def test_simple_expr(self):
+        self.run_test('xx + yy * zz - (1 - 3.14) / a',
+                ('+',
+                    'xx',
+                    ('-',
+                        ('*', 'yy', 'zz'),
+                        ('/',
+                            ('-', '1', '3.14'),
+                            'a'
+                            )
                         )
                     )
                 )
-        output = StringIO()
-        expr.translate(output)
-        self.assertEqual(output.getvalue(), c_expr)

@@ -154,8 +154,15 @@ class Parser:
 
     def _factor(self):
         '''Parse factor.'''
-        this = self._match((Token.SYMBOL,))
-        return Expression(this=this, left=None, right=None)
+        this = self._match((Token.SYMBOL,),
+                (Token.INT_LITERAL,), (Token.FP_LITERAL,),
+                (Token.PARENTHESES, '('))
+        if this.kind is not Token.PARENTHESES:
+            return Expression(this=this, left=None, right=None)
+        expr = self._expr()
+        self._match((Token.PARENTHESES, ')'))
+        expr.parentheses = True  # pylint: disable=W0201
+        return expr
 
 
 class Expression(namedtuple('Expression', 'this left right')):
@@ -165,6 +172,9 @@ class Expression(namedtuple('Expression', 'this left right')):
 
     def translate(self, output):
         '''Translate C expression to Python codes.'''
+        parentheses = hasattr(self, 'parentheses') and self.parentheses
+        if parentheses:
+            output.write('(')
         if self.left:
             self.left.translate(output)
             output.write(' ')
@@ -172,6 +182,8 @@ class Expression(namedtuple('Expression', 'this left right')):
         if self.right:
             output.write(' ')
             self.right.translate(output)
+        if parentheses:
+            output.write(')')
 
 
 class Token(namedtuple('Token', 'kind spelling')):
@@ -197,9 +209,12 @@ class Token(namedtuple('Token', 'kind spelling')):
             (?P<binary_operator>
                 (?:>>|<<|[+\-*/%&\^|<>=!])=? | && | \|\| | ->
             ) |
+            (?P<parentheses>
+                [()\[\]{}]
+            ) |
             # Ignore the following kinds of tokens for now...
             \+\+ | -- |
-            [();,:\[\]~?{}] | <% | %> | <: | :> |
+            [;,:~?] | <% | %> | <: | :> |
             \.\.\. |
             \s+
             ''', re.VERBOSE)
@@ -210,6 +225,7 @@ class Token(namedtuple('Token', 'kind spelling')):
     STR_LITERAL     = 'STR_LITERAL'
     INT_LITERAL     = 'INT_LITERAL'
     FP_LITERAL      = 'FP_LITERAL'
+    PARENTHESES     = 'PARENTHESES'
     END             = 'END'
 
     @classmethod
@@ -228,6 +244,7 @@ class Token(namedtuple('Token', 'kind spelling')):
                     ('integer_literal',         cls.INT_LITERAL),
                     ('floating_point_literal',  cls.FP_LITERAL),
                     ('binary_operator',         cls.BINOP),
+                    ('parentheses',             cls.PARENTHESES),
                     ):
                 spelling = match.group(gname)
                 if spelling:
