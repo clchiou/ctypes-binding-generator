@@ -43,6 +43,18 @@ class TestToken(unittest.TestCase):
                 Token(Token.END, None),
                 )
 
+    def run_token_translate(self, kind, spelling, answer):
+        output = StringIO()
+        Token(kind, spelling).translate(output)
+        self.assertEqual(output.getvalue(), answer)
+
+    def test_token_translate(self):
+        self.run_token_translate(Token.BINOP, '&&', 'and')
+        self.run_token_translate(Token.BINOP, '||', 'or')
+        self.run_token_translate(Token.CHAR_LITERAL, '\'x\'', 'ord(\'x\')')
+        self.run_token_translate(Token.INT_LITERAL, '016ul', '016')
+        self.run_token_translate(Token.FP_LITERAL, '3.14f', '3.14')
+
 
 class TestExpression(unittest.TestCase):
 

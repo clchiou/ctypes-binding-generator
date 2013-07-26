@@ -256,6 +256,12 @@ class Token(namedtuple('Token', 'kind spelling')):
         '''Translate this token to Python codes.'''
         if self.kind is self.CHAR_LITERAL:
             output.write('ord(%s)' % self.spelling)
+        elif self.kind is self.BINOP and self.spelling == '&&':
+            output.write('and')
+        elif self.kind is self.BINOP and self.spelling == '||':
+            output.write('or')
+        elif self.kind is self.INT_LITERAL or self.kind is self.FP_LITERAL:
+            output.write(self.spelling.rstrip('fFuUlL'))
         else:
             output.write(self.spelling)
 
