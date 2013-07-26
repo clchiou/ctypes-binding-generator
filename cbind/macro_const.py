@@ -73,10 +73,111 @@ class MacroConstantsGenerator:
                 output.write('%s = %s\n' % (symbol, body))
 
 
-class Token(namedtuple('Token', 'kind spelling')):
-    '''C Token.'''
+# A parser of a subset of C syntax is implemented for translating macro
+# functions.  This should be good enough for the common cases.
 
-    # pylint: disable=W0232,R0903
+
+class CSyntaxError(Exception):
+    '''Raised when C syntax error.'''
+    pass
+
+
+class Parser:
+    '''A parser of a subset of C expression syntax.'''
+
+    # pylint: disable=R0903
+
+    def __init__(self):
+        '''Initialize the object.'''
+        self._tokens = None
+        self._prev_token = None
+
+    def parse(self, c_expr):
+        '''Parse C expression.'''
+        self._tokens = Token.get_tokens(c_expr)
+        self._prev_token = None
+        return self._expr()
+
+    def _next(self):
+        '''Return next token.'''
+        if not self._prev_token:
+            try:
+                token = self._tokens.next()
+            except StopIteration:
+                raise CSyntaxError('End of token sequence')
+            return token
+        token = self._prev_token
+        self._prev_token = None
+        return token
+
+    def _putback(self, token):
+        '''Put back this token.'''
+        if self._prev_token is not None:
+            raise CSyntaxError('Previous is not empty: %s' % self._prev_token)
+        self._prev_token = token
+
+    def _match(self, *matches, **kwargs):
+        '''Match this token.'''
+        error = kwargs.get('error', True)
+        token = self._next()
+        for match in matches:
+            kind, spellings = match[0], match[1:]
+            if token.kind is not kind:
+                continue
+            if spellings and token.spelling not in spellings:
+                continue
+            if token.kind is Token.END:
+                self._putback(token)
+            return token
+        if error:
+            raise CSyntaxError('Could not match %s' % token)
+        self._putback(token)
+        return None
+
+    def _expr(self):
+        '''Parse expr.'''
+        left = self._term()
+        this = self._match((Token.BINOP, '+', '-'), (Token.END,), error=False)
+        if not this or this.kind is Token.END:
+            return left
+        right = self._expr()
+        return Expression(this=this, left=left, right=right)
+
+    def _term(self):
+        '''Parse term.'''
+        left = self._factor()
+        this = self._match((Token.BINOP, '*', '/'), (Token.END,), error=False)
+        if not this or this.kind is Token.END:
+            return left
+        right = self._term()
+        return Expression(this=this, left=left, right=right)
+
+    def _factor(self):
+        '''Parse factor.'''
+        this = self._match((Token.SYMBOL,))
+        return Expression(this=this, left=None, right=None)
+
+
+class Expression(namedtuple('Expression', 'this left right')):
+    '''C expression.'''
+
+    # pylint: disable=W0232,E1101,R0903
+
+    def translate(self, output):
+        '''Translate C expression to Python codes.'''
+        if self.left:
+            self.left.translate(output)
+            output.write(' ')
+        self.this.translate(output)
+        if self.right:
+            output.write(' ')
+            self.right.translate(output)
+
+
+class Token(namedtuple('Token', 'kind spelling')):
+    '''C token.'''
+
+    # pylint: disable=W0232,E1101
 
     regex_token = re.compile(r'''
             (?P<symbol>[a-zA-Z_]\w*) |
@@ -103,9 +204,13 @@ class Token(namedtuple('Token', 'kind spelling')):
             \s+
             ''', re.VERBOSE)
 
-    SYMBOL  = 'SYMBOL'
-    BINOP   = 'BINOP'
-    LITERAL = 'LITERAL'
+    SYMBOL          = 'SYMBOL'
+    BINOP           = 'BINOP'
+    CHAR_LITERAL    = 'CHAR_LITERAL'
+    STR_LITERAL     = 'STR_LITERAL'
+    INT_LITERAL     = 'INT_LITERAL'
+    FP_LITERAL      = 'FP_LITERAL'
+    END             = 'END'
 
     @classmethod
     def get_tokens(cls, c_expr):
@@ -118,16 +223,24 @@ class Token(namedtuple('Token', 'kind spelling')):
             pos = match.end()
             for gname, kind in (
                     ('symbol',                  cls.SYMBOL),
-                    ('string_literal',          cls.LITERAL),
-                    ('char_literal',            cls.LITERAL),
-                    ('floating_point_literal',  cls.LITERAL),
-                    ('integer_literal',         cls.LITERAL),
+                    ('char_literal',            cls.CHAR_LITERAL),
+                    ('string_literal',          cls.STR_LITERAL),
+                    ('integer_literal',         cls.INT_LITERAL),
+                    ('floating_point_literal',  cls.FP_LITERAL),
                     ('binary_operator',         cls.BINOP),
                     ):
-                value = match.group(gname)
-                if value:
-                    yield cls(kind, value)
+                spelling = match.group(gname)
+                if spelling:
+                    yield cls(kind=kind, spelling=spelling)
                     break
+        yield cls(kind=cls.END, spelling=None)
+
+    def translate(self, output):
+        '''Translate this token to Python codes.'''
+        if self.kind is self.CHAR_LITERAL:
+            output.write('ord(%s)' % self.spelling)
+        else:
+            output.write(self.spelling)
 
 
 REGEX_DEFINE = re.compile(r'\s*#\s*define\s+(\w+)')
