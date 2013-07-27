@@ -93,6 +93,19 @@ class Parser:
 
     # pylint: disable=R0903
 
+    BINARY_OPERATOR_PRECEDENCE = (
+            '||',
+            '&&',
+            '|',
+            '^',
+            '&',
+            ('==', '!='),
+            ('<', '>', '<=', '>='),
+            ('<<', '>>'),
+            ('+', '-'),
+            ('*', '/', '%'),
+            )
+
     def __init__(self):
         '''Initialize the object.'''
         self._tokens = None
@@ -102,7 +115,7 @@ class Parser:
         '''Parse C expression.'''
         self._tokens = Token.get_tokens(c_expr)
         self._prev_token = None
-        return self._expr()
+        return self._expr_stmt()
 
     def _next(self):
         '''Return next token.'''
@@ -119,7 +132,8 @@ class Parser:
     def _putback(self, token):
         '''Put back this token.'''
         if self._prev_token is not None:
-            raise CSyntaxError('Previous is not empty: %s' % self._prev_token)
+            raise CSyntaxError('Previous is not empty: %s' %
+                    str(self._prev_token))
         self._prev_token = token
 
     def _match(self, *matches, **kwargs):
@@ -140,28 +154,46 @@ class Parser:
         self._putback(token)
         return None
 
-    def _expr(self):
-        '''Parse expr.'''
-        left = self._term()
-        this = self._match((Token.BINOP, '+', '-'), (Token.END,), error=False)
-        if not this or this.kind is Token.END:
-            return left
-        right = self._expr()
-        return Expression.make(this=this, children=(left, right))
+    def _expr_stmt(self):
+        '''Parse expression statement.'''
+        # It is quite common that a macro ends without semicolon...
+        expr = self._cond_expr()
+        semicolon = self._match((Token.MISC, ';'), (Token.END,))
+        if semicolon.kind is not Token.END:
+            self._match((Token.END,))
+        return expr
 
-    def _term(self):
-        '''Parse term.'''
-        left = self._factor()
-        this = self._match((Token.BINOP, '*', '/'), (Token.END,), error=False)
+    def _cond_expr(self):
+        '''Parse conditional expression.'''
+        cond = self._binop_expr(self.BINARY_OPERATOR_PRECEDENCE)
+        qmark = self._match((Token.MISC, '?'), error=False)
+        if not qmark:
+            return cond
+        true = self._cond_expr()
+        self._match((Token.MISC, ':'))
+        false = self._cond_expr()
+        this = Token(kind=Token.TRIOP, spelling='?:')
+        return Expression.make(this=this, children=(cond, true, false))
+
+    def _binop_expr(self, binops):
+        '''Parse binary operator expression.'''
+        if not binops:
+            return self._factor()
+        left = self._binop_expr(binops[1:])
+        if isinstance(binops[0], tuple):
+            match_op = (Token.BINOP,) + binops[0]
+        else:
+            match_op = (Token.BINOP, binops[0])
+        this = self._match(match_op, (Token.END,), error=False)
         if not this or this.kind is Token.END:
             return left
-        right = self._term()
+        right = self._binop_expr(binops)
         return Expression.make(this=this, children=(left, right))
 
     def _factor(self):
         '''Parse factor.'''
         if self._match((Token.PARENTHESES, '('), error=False):
-            expr = self._expr()
+            expr = self._cond_expr()
             self._match((Token.PARENTHESES, ')'))
             # pylint: disable=E1103
             return Expression.make(this=expr.this, children=expr.children,
@@ -189,7 +221,7 @@ class Parser:
                 break
             if not first:
                 self._match((Token.MISC, ','))
-            args.append(self._expr())
+            args.append(self._cond_expr())
             first = False
         if rpar:
             self._putback(rpar)
@@ -219,6 +251,12 @@ class Expression(namedtuple('Expression', 'this children parentheses')):
                 child.translate(output)
                 first = False
             output.write(')')
+        elif self.this.kind is Token.TRIOP:
+            self.children[1].translate(output)
+            output.write(' if ')
+            self.children[0].translate(output)
+            output.write(' else ')
+            self.children[2].translate(output)
         elif self.this.kind is Token.BINOP:
             if self.parentheses:
                 output.write('(')
@@ -254,23 +292,26 @@ class Token(namedtuple('Token', 'kind spelling')):
                 \d+[eE][+\-]?\d+[fFlL]?
             ) |
             (?P<binary_operator>
-                (?:>>|<<|[+\-*/%&\^|<>=!])=? | && | \|\| | ->
+                # &&, ||, and -> has to be placed first...
+                && | \|\| | -> |
+                (?:>>|<<|[+\-*/%&\^|<>=!])=?
             ) |
             (?P<parentheses>
                 [()\[\]{}]
             ) |
             (?P<misc>
-                ,
+                [,;:?]
             ) |
             # Ignore the following kinds of tokens for now...
             \+\+ | -- |
-            [;:~?] | <% | %> | <: | :> |
+            ~ | <% | %> | <: | :> |
             \.\.\. |
             \s+
             ''', re.VERBOSE)
 
     FUNCTION        = 'FUNCTION'
     SYMBOL          = 'SYMBOL'
+    TRIOP           = 'TRIOP'
     BINOP           = 'BINOP'
     CHAR_LITERAL    = 'CHAR_LITERAL'
     STR_LITERAL     = 'STR_LITERAL'

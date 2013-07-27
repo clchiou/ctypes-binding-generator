@@ -28,6 +28,9 @@ class TestToken(unittest.TestCase):
                 1ul
                 () [] {}
                 ,
+                ||
+                &&
+                ->
                 ''',
                 Token(Token.SYMBOL, '__file__'),
                 Token(Token.STR_LITERAL, '"\\"hello world\\""'),
@@ -42,6 +45,9 @@ class TestToken(unittest.TestCase):
                 Token(Token.PARENTHESES, '['), Token(Token.PARENTHESES, ']'),
                 Token(Token.PARENTHESES, '{'), Token(Token.PARENTHESES, '}'),
                 Token(Token.MISC, ','),
+                Token(Token.BINOP, '||'),
+                Token(Token.BINOP, '&&'),
+                Token(Token.BINOP, '->'),
                 Token(Token.END, None),
                 )
 
@@ -93,6 +99,12 @@ class TestExpression(unittest.TestCase):
                         )
                     )
                 )
+        self.run_test('xx || yy && zz;',
+                ('||', 'xx', ('&&', 'yy', 'zz')),
+                'xx or yy and zz')
+        self.run_test('x ? y : z',
+                ('?:', 'x', 'y', 'z'),
+                'y if x else z')
 
     def test_function_call(self):
         self.run_test('f(1, 2, 3)', ('f', '1', '2', '3'))
