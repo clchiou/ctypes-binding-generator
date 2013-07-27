@@ -20,14 +20,14 @@ E = 3.14
 F = "hello world"
         ''')
 
-    def disable_test_macro_int(self):
+    def test_macro_int(self):
         self.run_test('''
 #define A (1 + 1)
 #define B A * 3
-#define C A * 4
+#define C sizeof(int)
         ''', '''
-A = 2
-B = 6
+A = (1 + 1)
+B = A * 3
         ''',
         regex_integer_typed='[AB]')
 
@@ -41,7 +41,6 @@ B = 6
         ''', '''
 B = ord('a')
 C = ord('a') + 3
-D = __func__
         ''',
         regex_integer_typed='C')
 

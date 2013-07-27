@@ -44,6 +44,7 @@ class MacroGenerator:
             gen = translate_integer_expr(c_path, args, int_symbols)
             for symbol in gen:
                 self.symbol_table[symbol.name] = symbol
+        self._check_bound_name()
 
     def _parse_symbol(self, symbol):
         '''Parse macro symbol body.'''
@@ -55,6 +56,30 @@ class MacroGenerator:
         # pylint: disable=E1101
         self.symbol_table[new_symbol.name] = new_symbol
         return True
+
+    def _check_bound_name(self):
+        '''Check if there are references to undefined symbols.'''
+        bound_names = frozenset(name for name in self.symbol_table
+                if self.symbol_table[name])
+        for name in bound_names:
+            symbol = self.symbol_table[name]
+            if symbol.args:
+                env = bound_names.union(symbol.args)
+            else:
+                env = bound_names
+            def check_symbol_name(token):
+                '''Check if token name is defined.'''
+                if token.kind is not Token.SYMBOL:
+                    return
+                if token.spelling in env:
+                    return
+                msg = 'Could not find symbol definition: %s'
+                raise CSyntaxError(msg, token.spelling)
+            try:
+                symbol.expr.traverse(check_symbol_name)
+            except CSyntaxError:
+                logging.info('Could not resolve reference: %s', symbol.macro)
+                self.symbol_table[name] = None
 
     def generate(self, output):
         '''Generate macro constants.'''
@@ -316,7 +341,13 @@ class Parser:
 class Expression(namedtuple('Expression', 'this children')):
     '''C expression.'''
 
-    # pylint: disable=W0232,E1101,R0903
+    # pylint: disable=W0232,E1101
+
+    def traverse(self, func):
+        '''Traverse syntax tree.'''
+        for child in self.children:
+            child.traverse(func)
+        func(self.this)
 
     def translate(self, output):
         '''Translate C expression to Python codes.'''
