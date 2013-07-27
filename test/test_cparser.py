@@ -105,8 +105,14 @@ class TestExpression(unittest.TestCase):
         self.run_test('x ? y : z',
                 ('?:', 'x', 'y', 'z'),
                 'y if x else z')
+        self.run_test('- +x',
+                ('-', ('+', 'x')),
+                '-+x')
+        self.run_test('!!1',
+                ('!', ('!', '1')),
+                'not not 1')
 
     def test_function_call(self):
-        self.run_test('f(1, 2, 3)', ('f', '1', '2', '3'))
-        self.run_test('f(x)', ('f', 'x'))
-        self.run_test('f()', ('f',))
+        self.run_test('f(1, 2, 3)', ('()', 'f', '1', '2', '3'))
+        self.run_test('f(x)', ('()', 'f', 'x'))
+        self.run_test('f()', ('()', 'f'))

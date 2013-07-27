@@ -138,18 +138,18 @@ class Parser:
 
     def _match(self, *matches, **kwargs):
         '''Match this token.'''
-        error = kwargs.get('error', True)
+        required = kwargs.get('required', True)
         token = self._next()
         for match in matches:
             kind, spellings = match[0], match[1:]
-            if token.kind is not kind:
+            if kind and token.kind is not kind:
                 continue
             if spellings and token.spelling not in spellings:
                 continue
             if token.kind is Token.END:
                 self._putback(token)
             return token
-        if error:
+        if required:
             raise CSyntaxError('Could not match %s' % str(token))
         self._putback(token)
         return None
@@ -166,7 +166,7 @@ class Parser:
     def _cond_expr(self):
         '''Parse conditional expression.'''
         cond = self._binop_expr(self.BINARY_OPERATOR_PRECEDENCE)
-        qmark = self._match((Token.MISC, '?'), error=False)
+        qmark = self._match((Token.MISC, '?'), required=False)
         if not qmark:
             return cond
         true = self._cond_expr()
@@ -178,54 +178,67 @@ class Parser:
     def _binop_expr(self, binops):
         '''Parse binary operator expression.'''
         if not binops:
-            return self._factor()
+            return self._uniop_expr()
         left = self._binop_expr(binops[1:])
         if isinstance(binops[0], tuple):
             match_op = (Token.BINOP,) + binops[0]
         else:
             match_op = (Token.BINOP, binops[0])
-        this = self._match(match_op, (Token.END,), error=False)
+        this = self._match(match_op, (Token.END,), required=False)
         if not this or this.kind is Token.END:
             return left
         right = self._binop_expr(binops)
         return Expression.make(this=this, children=(left, right))
 
-    def _factor(self):
-        '''Parse factor.'''
-        if self._match((Token.PARENTHESES, '('), error=False):
-            expr = self._cond_expr()
-            self._match((Token.PARENTHESES, ')'))
-            # pylint: disable=E1103
-            return Expression.make(this=expr.this, children=expr.children,
-                    parentheses=True)
-        this = self._match((Token.SYMBOL,),
-                (Token.CHAR_LITERAL,),
-                (Token.INT_LITERAL,), (Token.FP_LITERAL,))
-        if (this.kind is Token.SYMBOL and
-                self._match((Token.PARENTHESES, '('), error=False)):
-            # Function call
-            this = Token(kind=Token.FUNCTION, spelling=this.spelling)
-            children = self._args()
-            self._match((Token.PARENTHESES, ')'))
-            return Expression.make(this=this, children=children)
-        return Expression.make(this=this)
+    def _uniop_expr(self):
+        '''Parse uniary operator expression.'''
+        operator = self._match((None, '+', '-', '~', '!'), required=False)
+        if not operator:
+            return self._postfix_expr()
+        operand = self._uniop_expr()
+        this = Token(kind=Token.UNIOP, spelling=operator.spelling)
+        return Expression.make(this=this, children=(operand,))
 
-    def _args(self):
+    def _postfix_expr(self):
+        '''Parse postfix expression.'''
+        primary = self._primary_expr()
+        rpar = self._match((Token.PARENTHESES, '('), required=False)
+        if not rpar:
+            return primary
+        args = self._arg_expr_list()
+        self._match((Token.PARENTHESES, ')'))
+        this = Token(kind=Token.FUNCTION, spelling='()')
+        return Expression.make(this=this, children=(primary,) + args)
+
+    def _arg_expr_list(self):
         '''Parse argument list.'''
         args = []
         first = True
-        rpar = None
         while True:
-            rpar = self._match((Token.PARENTHESES, ')'), error=False)
+            rpar = self._match((Token.PARENTHESES, ')'), required=False)
             if rpar:
+                self._putback(rpar)
                 break
             if not first:
                 self._match((Token.MISC, ','))
             args.append(self._cond_expr())
             first = False
-        if rpar:
-            self._putback(rpar)
-        return args
+        return tuple(args)
+
+    def _primary_expr(self):
+        '''Parse primary expression.'''
+        this = self._match((Token.PARENTHESES, '('),
+                (Token.SYMBOL,),
+                (Token.CHAR_LITERAL,),
+                (Token.INT_LITERAL,),
+                (Token.FP_LITERAL,))
+        if this.kind is Token.PARENTHESES:
+            expr = self._cond_expr()
+            self._match((Token.PARENTHESES, ')'))
+            # pylint: disable=E1103
+            return Expression.make(this=expr.this, children=expr.children,
+                    parentheses=True)
+        return Expression.make(this=this)
 
 
 class Expression(namedtuple('Expression', 'this children parentheses')):
@@ -242,10 +255,10 @@ class Expression(namedtuple('Expression', 'this children parentheses')):
         '''Translate C expression to Python codes.'''
         if self.this.kind is Token.FUNCTION:
             # Function call
-            self.this.translate(output)
+            self.children[0].translate(output)
             output.write('(')
             first = True
-            for child in self.children:
+            for child in self.children[1:]:
                 if not first:
                     output.write(', ')
                 child.translate(output)
@@ -267,6 +280,12 @@ class Expression(namedtuple('Expression', 'this children parentheses')):
             self.children[1].translate(output)
             if self.parentheses:
                 output.write(')')
+        elif self.this.kind is Token.UNIOP:
+            if self.this.spelling == '!':
+                output.write('not ')
+            else:
+                output.write(self.this.spelling)
+            self.children[0].translate(output)
         else:
             self.this.translate(output)
 
@@ -313,6 +332,7 @@ class Token(namedtuple('Token', 'kind spelling')):
     SYMBOL          = 'SYMBOL'
     TRIOP           = 'TRIOP'
     BINOP           = 'BINOP'
+    UNIOP           = 'UNIOP'
     CHAR_LITERAL    = 'CHAR_LITERAL'
     STR_LITERAL     = 'STR_LITERAL'
     INT_LITERAL     = 'INT_LITERAL'
