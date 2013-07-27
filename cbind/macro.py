@@ -119,14 +119,14 @@ class Parser:
 
     def _next(self):
         '''Return next token.'''
-        if not self._prev_token:
+        if self._prev_token:
+            token = self._prev_token
+            self._prev_token = None
+        else:
             try:
                 token = self._tokens.next()
             except StopIteration:
                 raise CSyntaxError('End of token sequence')
-            return token
-        token = self._prev_token
-        self._prev_token = None
         return token
 
     def _putback(self, token):
@@ -136,9 +136,8 @@ class Parser:
                     str(self._prev_token))
         self._prev_token = token
 
-    def _match(self, *matches, **kwargs):
-        '''Match this token.'''
-        required = kwargs.get('required', True)
+    def _may_match(self, *matches):
+        '''Match an optional token.'''
         token = self._next()
         for match in matches:
             kind, spellings = match[0], match[1:]
@@ -146,13 +145,25 @@ class Parser:
                 continue
             if spellings and token.spelling not in spellings:
                 continue
-            if token.kind is Token.END:
-                self._putback(token)
             return token
-        if required:
-            raise CSyntaxError('Could not match %s' % str(token))
+        # Not match, put the token back...
         self._putback(token)
         return None
+
+    def _match(self, *matches):
+        '''Match this token.'''
+        token = self._may_match(*matches)
+        if not token:
+            raise CSyntaxError('Could not match %s' % str(matches))
+        return token
+
+    def _lookahead(self, *matches):
+        '''Look ahead of token sequence.'''
+        token = self._may_match(*matches)
+        if token:
+            # Put token back if it is matched...
+            self._putback(token)
+        return token
 
     def _expr_stmt(self):
         '''Parse expression statement.'''
@@ -166,14 +177,14 @@ class Parser:
     def _cond_expr(self):
         '''Parse conditional expression.'''
         cond = self._binop_expr(self.BINARY_OPERATOR_PRECEDENCE)
-        qmark = self._match((Token.MISC, '?'), required=False)
+        qmark = self._may_match((Token.MISC, '?'))
         if not qmark:
             return cond
         true = self._cond_expr()
         self._match((Token.MISC, ':'))
         false = self._cond_expr()
         this = Token(kind=Token.TRIOP, spelling='?:')
-        return Expression.make(this=this, children=(cond, true, false))
+        return Expression(this=this, children=(cond, true, false))
 
     def _binop_expr(self, binops):
         '''Parse binary operator expression.'''
@@ -184,45 +195,41 @@ class Parser:
             match_op = (Token.BINOP,) + binops[0]
         else:
             match_op = (Token.BINOP, binops[0])
-        this = self._match(match_op, (Token.END,), required=False)
-        if not this or this.kind is Token.END:
+        this = self._may_match(match_op)
+        if not this:
             return left
         right = self._binop_expr(binops)
-        return Expression.make(this=this, children=(left, right))
+        return Expression(this=this, children=(left, right))
 
     def _uniop_expr(self):
         '''Parse uniary operator expression.'''
-        operator = self._match((None, '+', '-', '~', '!'), required=False)
+        operator = self._may_match((None, '+', '-', '~', '!'))
         if not operator:
             return self._postfix_expr()
         operand = self._uniop_expr()
         this = Token(kind=Token.UNIOP, spelling=operator.spelling)
-        return Expression.make(this=this, children=(operand,))
+        return Expression(this=this, children=(operand,))
 
     def _postfix_expr(self):
         '''Parse postfix expression.'''
         primary = self._primary_expr()
-        rpar = self._match((Token.PARENTHESES, '('), required=False)
-        if not rpar:
+        if not self._may_match((Token.PARENTHESES, '(')):
             return primary
         args = self._arg_expr_list()
         self._match((Token.PARENTHESES, ')'))
         this = Token(kind=Token.FUNCTION, spelling='()')
-        return Expression.make(this=this, children=(primary,) + args)
+        return Expression(this=this, children=(primary,) + args)
 
     def _arg_expr_list(self):
         '''Parse argument list.'''
+        if self._lookahead((Token.PARENTHESES, ')')):
+            # Empty argument list
+            return ()
         args = []
-        first = True
         while True:
-            rpar = self._match((Token.PARENTHESES, ')'), required=False)
-            if rpar:
-                self._putback(rpar)
-                break
-            if not first:
-                self._match((Token.MISC, ','))
             args.append(self._cond_expr())
-            first = False
+            if not self._may_match((Token.MISC, ',')):
+                break
         return tuple(args)
 
     def _primary_expr(self):
@@ -235,26 +242,19 @@ class Parser:
         if this.kind is Token.PARENTHESES:
             expr = self._cond_expr()
             self._match((Token.PARENTHESES, ')'))
-            # pylint: disable=E1103
-            return Expression.make(this=expr.this, children=expr.children,
-                    parentheses=True)
-        return Expression.make(this=this)
+            par = Token(kind=Token.PARENTHESES, spelling='()')
+            return Expression(this=par, children=(expr,))
+        return Expression(this=this, children=())
 
 
-class Expression(namedtuple('Expression', 'this children parentheses')):
+class Expression(namedtuple('Expression', 'this children')):
     '''C expression.'''
 
-    # pylint: disable=W0232,E1101
-
-    @classmethod
-    def make(cls, this, children=(), parentheses=False):
-        '''Make an expression with sensible initial values.'''
-        return cls(this=this, children=children, parentheses=parentheses)
+    # pylint: disable=W0232,E1101,R0903
 
     def translate(self, output):
         '''Translate C expression to Python codes.'''
         if self.this.kind is Token.FUNCTION:
-            # Function call
             self.children[0].translate(output)
             output.write('(')
             first = True
@@ -264,6 +264,10 @@ class Expression(namedtuple('Expression', 'this children parentheses')):
                 child.translate(output)
                 first = False
             output.write(')')
+        elif self.this.kind is Token.PARENTHESES:
+            output.write('(')
+            self.children[0].translate(output)
+            output.write(')')
         elif self.this.kind is Token.TRIOP:
             self.children[1].translate(output)
             output.write(' if ')
@@ -271,15 +275,11 @@ class Expression(namedtuple('Expression', 'this children parentheses')):
             output.write(' else ')
             self.children[2].translate(output)
         elif self.this.kind is Token.BINOP:
-            if self.parentheses:
-                output.write('(')
             self.children[0].translate(output)
             output.write(' ')
             self.this.translate(output)
             output.write(' ')
             self.children[1].translate(output)
-            if self.parentheses:
-                output.write(')')
         elif self.this.kind is Token.UNIOP:
             if self.this.spelling == '!':
                 output.write('not ')

@@ -93,7 +93,7 @@ class TestExpression(unittest.TestCase):
                     ('-',
                         ('*', 'yy', 'zz'),
                         ('/',
-                            ('-', '1', '3.14'),
+                            ('()', ('-', '1', '3.14')),
                             'a'
                             )
                         )
