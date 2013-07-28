@@ -256,8 +256,15 @@ class Parser:
         # Spacial case for string literal...
         this = self._may_match((Token.STR_LITERAL,))
         if this:
+            parts = [this]
+            while True:
+                this = self._may_match((Token.STR_LITERAL,))
+                if not this:
+                    break
+                parts.append(this)
             self._match((Token.END,))
-            return Expression(this=this, children=())
+            cat = Token(kind=Token.CAT, spelling=parts)
+            return Expression(this=cat, children=())
         # It is quite common that a macro ends without semicolon...
         expr = self._cond_expr()
         semicolon = self._match((Token.MISC, ';'), (Token.END,))
@@ -438,6 +445,7 @@ class Token(namedtuple('Token', 'kind spelling')):
     FP_LITERAL      = 'FP_LITERAL'
     PARENTHESES     = 'PARENTHESES'
     MISC            = 'MISC'
+    CAT             = 'CAT'
     END             = 'END'
 
     @classmethod
@@ -475,6 +483,11 @@ class Token(namedtuple('Token', 'kind spelling')):
             output.write('or')
         elif self.kind is self.INT_LITERAL or self.kind is self.FP_LITERAL:
             output.write(self.spelling.rstrip('fFuUlL'))
+        elif self.kind is self.CAT:
+            self.spelling[0].translate(output)
+            for part in self.spelling[1:]:
+                output.write(' ')
+                part.translate(output)
         else:
             output.write(self.spelling)
 

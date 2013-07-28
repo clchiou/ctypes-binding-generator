@@ -33,12 +33,13 @@ B = A * 3
 
     def test_macro_str(self):
         self.run_test('''
-#define A "hello" " world"
+#define A "hello"    " world"
 #define B 'a'
 #define C 'a' + 3
 #define D __func__
 #define E "this is " __func__
         ''', '''
+A = "hello" " world"
 B = ord('a')
 C = ord('a') + 3
         ''',
