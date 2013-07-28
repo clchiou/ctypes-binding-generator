@@ -204,7 +204,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
     @classmethod
     def process(cls, c_path, args):
         '''Run GCC preprocessor and return an iterator MacroSymbol.'''
-        gcc = ['gcc', '-E', '-dM', c_path]
+        gcc = ['gcc', '-E', '-dD', c_path]
         gcc.extend(args or ())
         macros = StringIO(subprocess.check_output(gcc))
         for define_line in macros:

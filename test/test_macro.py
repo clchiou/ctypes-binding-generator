@@ -22,6 +22,15 @@ F = "hello world"
 G = 0x1f
         ''')
 
+    def test_macro_dictionary_order(self):
+        self.run_test('''
+#define B 1
+#define A (B + 1)
+        ''', '''
+B = 1
+A = (B + 1)
+        ''')
+
     def test_macro_int(self):
         self.run_test('''
 struct foo {
