@@ -22,14 +22,21 @@ F = "hello world"
 
     def test_macro_int(self):
         self.run_test('''
+struct foo {
+    int i;
+};
+
 #define A (1 + 1)
 #define B A * 3
-#define C sizeof(int)
+#define C sizeof(int*)
+#define D sizeof(struct foo)
         ''', '''
 A = (1 + 1)
 B = A * 3
+C = 8
+D = 4
         ''',
-        macro_int='[AB]')
+        macro_int='C|D')
 
     def test_macro_str(self):
         self.run_test('''
@@ -42,8 +49,7 @@ B = A * 3
 A = "hello" " world"
 B = ord('a')
 C = ord('a') + 3
-        ''',
-        macro_int='C')
+        ''')
 
     def test_macro_function(self):
         self.run_test('''

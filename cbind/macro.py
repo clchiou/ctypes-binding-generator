@@ -19,6 +19,8 @@ class MacroException(Exception):
 class MacroGenerator:
     '''Generate Python code from macro constants.'''
 
+    MAGIC = '__macro_symbol_magic'
+
     def __init__(self, macro_include=None, macro_exclude=None, macro_int=None):
         '''Initialize object.'''
         self.symbol_table = OrderedDict()
@@ -53,16 +55,15 @@ class MacroGenerator:
                     continue
             if self._parse_symbol(symbol):
                 pass
-            elif self.macro_int(symbol.name):
-                # We could not parse the value, but since user assures us that
-                # this value is integer-typed, we will give it another try...
+            elif symbol.args is None and self.macro_int(symbol.name):
+                # We could not parse this symbol, but since user assures us
+                # that it is a constant integer, let us give it another try...
                 self.symbol_table[symbol.name] = None
                 int_symbols.append(symbol)
             else:
                 logging.info('Could not parse macro: %s', symbol.macro)
         if int_symbols:
-            gen = translate_integer_expr(c_path, args, int_symbols)
-            for symbol in gen:
+            for symbol in self._translate_const_int(c_path, args, int_symbols):
                 self.symbol_table[symbol.name] = symbol
         self._check_bound_name()
 
@@ -76,6 +77,64 @@ class MacroGenerator:
         # pylint: disable=E1101
         self.symbol_table[new_symbol.name] = new_symbol
         return True
+
+    @classmethod
+    def _translate_const_int(cls, c_path, args, symbols):
+        '''Translate constant integers with libclang.'''
+        enums = cls._clang_const_int(c_path, args, symbols)
+        regex_name = re.compile('^%s_(\w+)$' % cls.MAGIC)
+        symbol_map = dict((symbol.name, symbol) for symbol in symbols)
+        for enum in enums:
+            match = regex_name.match(enum.spelling)
+            if match:
+                yield cls._make_int_literal(symbol_map[match.group(1)],
+                        enum.enum_value)
+
+    @staticmethod
+    def _make_int_literal(symbol, value):
+        '''Make a new symbol for integer literal expression.'''
+        int_literal = Token(kind=Token.INT_LITERAL, spelling=str(value))
+        expr = Expression(this=int_literal, children=())
+        return MacroSymbol.set_expr(symbol, expr)
+
+    @classmethod
+    def _clang_const_int(cls, c_path, args, symbols):
+        '''Run clang on constant integers.'''
+        tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
+        try:
+            with os.fdopen(tmp_src_fd, 'w') as tmp_src:
+                c_abs_path = os.path.abspath(c_path)
+                tmp_src.write('#include "%s"\n' % c_abs_path)
+                tmp_src.write('enum {\n')
+                for symbol in symbols:
+                    tmp_src.write('%s_%s = %s,\n' %
+                            (cls.MAGIC, symbol.name, symbol.body))
+                tmp_src.write('};\n')
+            index = Index.create()
+            tunit = index.parse(tmp_src_path, args=args)
+            if not tunit:
+                msg = 'Could not parse generated C source'
+                raise MacroException(msg)
+        finally:
+            os.remove(tmp_src_path)
+        return cls._find_enums(tunit)
+
+    @staticmethod
+    def _find_enums(tunit):
+        '''Find enums of translation unit.'''
+        nodes = []
+        def search_enum_def(cursor):
+            '''Test if the cursor is an enum definition.'''
+            if cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
+                nodes.append(cursor)
+        walk_astree(tunit.cursor, search_enum_def)
+        if not nodes:
+            msg = 'Could not find enum in generated C source'
+            raise MacroException(msg)
+        enum_nodes = []
+        for node in nodes:
+            enum_nodes.extend(node.get_children())
+        return enum_nodes
 
     def _check_bound_name(self):
         '''Check if there are references to undefined symbols.'''
@@ -510,47 +569,3 @@ class Token(namedtuple('Token', 'kind spelling')):
                 part.translate(output)
         else:
             output.write(self.spelling)
-
-
-def translate_integer_expr(c_path, args, symbols,
-        magic='__macro_symbol_magic'):
-    '''Translate integer-typed expression with libclang.'''
-
-    def run_clang(c_path, args, symbols, magic):
-        '''Run clang on integer symbols.'''
-        tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
-        try:
-            with os.fdopen(tmp_src_fd, 'w') as tmp_src:
-                c_abs_path = os.path.abspath(c_path)
-                tmp_src.write('#include "%s"\n' % c_abs_path)
-                tmp_src.write('enum {\n')
-                for symbol in symbols:
-                    tmp_src.write('%s_%s = %s,\n' %
-                            (magic, symbol.name, symbol.body))
-                tmp_src.write('};\n')
-            index = Index.create()
-            tunit = index.parse(tmp_src_path, args=args)
-            if not tunit:
-                msg = 'Could not parse generated C source'
-                raise MacroException(msg)
-        finally:
-            os.remove(tmp_src_path)
-        return tunit
-    tunit = run_clang(c_path, args, symbols, magic)
-
-    nodes = []
-    def search_enum_def(cursor):
-        '''Test if the cursor is an enum definition.'''
-        if cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
-            nodes.append(cursor)
-    walk_astree(tunit.cursor, search_enum_def)
-    if not nodes:
-        msg = 'Could not find enum in generated C source'
-        raise MacroException(msg)
-
-    regex_name = re.compile('^%s_(\w+)$' % magic)
-    for cursor in nodes:
-        for enum in cursor.get_children():
-            match = regex_name.match(enum.spelling)
-            if match:
-                yield (match.group(1), str(enum.enum_value))
