@@ -10,6 +10,7 @@ from ctypes import (cdll, byref, create_string_buffer,
         c_void_p, c_size_t, c_ssize_t)
 
 from linux_input import *
+from linux_input import _IOR, _IOW
 
 
 EVENTS = {
@@ -456,6 +457,11 @@ EV_NAMES = {
         EV_SND: SOUNDS,
         EV_REP: REPEATS,
 }
+
+
+# Manually translated C macros that cbind is unable to do so
+EVIOCGABS = lambda abs: _IOR(ord('E'), 0x40 + abs, input_absinfo)
+EVIOCSABS = lambda abs: _IOW(ord('E'), 0xc0 + abs, input_absinfo)
 
 
 class CLibrary:
