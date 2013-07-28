@@ -19,21 +19,41 @@ class MacroException(Exception):
 class MacroGenerator:
     '''Generate Python code from macro constants.'''
 
-    def __init__(self):
+    def __init__(self, macro_include=None, macro_exclude=None, macro_int=None):
         '''Initialize object.'''
         self.symbol_table = OrderedDict()
         self.parser = Parser()
+        match_nothing = lambda s: False
+        if macro_include:
+            self.macro_include = re.compile(macro_include).match
+        else:
+            self.macro_include = match_nothing
+        if macro_exclude:
+            self.macro_exclude = re.compile(macro_exclude).match
+        else:
+            self.macro_exclude = match_nothing
+        if macro_int:
+            self.macro_int = re.compile(macro_int).match
+        else:
+            self.macro_int = match_nothing
 
-    def parse(self, c_path, args=None, regex_integer_typed=None):
+    def parse(self, c_path, args):
         '''Parse the source files.'''
         int_symbols = []
         candidates = MacroSymbol.enumerate_candidates(c_path)
         for symbol in MacroSymbol.process(c_path, args):
-            if symbol.name not in candidates or not symbol.body:
+            if not symbol.body:
+                # Ignore empty macros
+                continue
+            if symbol.name not in candidates:
+                if not self.macro_include(symbol.name):
+                    continue
+            else:
+                if self.macro_exclude(symbol.name):
+                    continue
+            if self._parse_symbol(symbol):
                 pass
-            elif self._parse_symbol(symbol):
-                pass
-            elif regex_integer_typed and regex_integer_typed.match(symbol.name):
+            elif self.macro_int(symbol.name):
                 # We could not parse the value, but since user assures us that
                 # this value is integer-typed, we will give it another try...
                 self.symbol_table[symbol.name] = None
@@ -399,7 +419,7 @@ class Token(namedtuple('Token', 'kind spelling')):
 
     # pylint: disable=W0232,E1101
 
-    regex_token = re.compile(r'''
+    REGEX_TOKEN = re.compile(r'''
             (?P<symbol>[a-zA-Z_]\w*) |
             (?P<string_literal>
                 \w?"(?:\\"|[^"])*"
@@ -453,7 +473,7 @@ class Token(namedtuple('Token', 'kind spelling')):
         '''Make token list from C expression.'''
         pos = 0
         while True:
-            match = cls.regex_token.match(c_expr, pos)
+            match = cls.REGEX_TOKEN.match(c_expr, pos)
             if not match:
                 break
             pos = match.end()

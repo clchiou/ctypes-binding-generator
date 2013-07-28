@@ -1,7 +1,6 @@
 '''Unit testing helpers.'''
 
 import os
-import re
 import tempfile
 import token
 import tokenize
@@ -39,19 +38,13 @@ class TestMacroGenerator(unittest.TestCase):
     def tearDown(self):
         os.remove(self.header_path)
 
-    def run_test(self, c_code, python_code,
-            args=None, regex_integer_typed=None):
+    def run_test(self, c_code, python_code, args=None, macro_int=None):
         '''Generate Python code from C code and compare it to the answer.'''
         with os.fdopen(self.header_fd, 'w') as header_file:
             header_file.write(c_code)
 
-        if regex_integer_typed:
-            regex_integer_typed = re.compile(regex_integer_typed)
-
-        mcgen = MacroGenerator()
-        mcgen.parse(self.header_path,
-                args=args,
-                regex_integer_typed=regex_integer_typed)
+        mcgen = MacroGenerator(macro_int=macro_int)
+        mcgen.parse(self.header_path, args)
         output = StringIO()
         mcgen.generate(output)
         gen_code = output.getvalue()

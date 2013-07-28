@@ -29,7 +29,7 @@ F = "hello world"
 A = (1 + 1)
 B = A * 3
         ''',
-        regex_integer_typed='[AB]')
+        macro_int='[AB]')
 
     def test_macro_str(self):
         self.run_test('''
@@ -43,7 +43,7 @@ A = "hello" " world"
 B = ord('a')
 C = ord('a') + 3
         ''',
-        regex_integer_typed='C')
+        macro_int='C')
 
     def test_macro_function(self):
         self.run_test('''

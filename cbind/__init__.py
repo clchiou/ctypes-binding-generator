@@ -7,10 +7,9 @@ from cbind.macro import MacroGenerator
 def parse_args():
     '''Parse command-line arguments.'''
     import argparse
-    import re
-    parser = argparse.ArgumentParser(
-            description='Generate ctypes binding from C source files '
-                        'with clang.')
+    parser = argparse.ArgumentParser(description='''
+            Generate ctypes binding from C source files with clang.
+            ''')
     parser.add_argument('-v', action='count', default=0,
             help='verbosity')
     parser.add_argument('-i', metavar='SOURCE', action='append',
@@ -27,10 +26,19 @@ def parse_args():
     group.add_argument('--epilog', metavar='FILE', type=file,
             help='epilog of generated Python output')
     group.add_argument('--epilog-str', metavar='STR')
-    parser.add_argument('--parse-macro', action='store_true',
-            help='generate Python codes from macro constants (experimental)')
-    parser.add_argument('--macro-int', metavar='REGEX', type=re.compile,
-            help='assure that macro matched by REGEX are integer-typed')
+    group = parser.add_argument_group(title='macro parser arguments',
+            description='''
+            Translate C macros into Python codes (experimental). The PATTERN
+            argument will match macro name.
+            ''')
+    group.add_argument('--macro-enable', action='store_true',
+            help='enable macro translation')
+    group.add_argument('--macro-include', metavar='PATTERN',
+            help='translate these macros as well')
+    group.add_argument('--macro-exclude', metavar='PATTERN',
+            help='do not translate these macros')
+    group.add_argument('--macro-int', metavar='PATTERN',
+            help='assure that these macros are integer constants')
     parser.add_argument('ccargs', metavar='CCARGS', nargs=argparse.REMAINDER,
             help='arguments passed to clang, separated by an optional \'--\' '
                  'from those passed to %(prog)s')
@@ -73,13 +81,14 @@ def main():
 
     cbgen = CtypesBindingGenerator(args.variable)
     for c_src in args.i:
-        cbgen.parse(c_src, args=clang_args)
-    if args.parse_macro:
-        mcgen = MacroGenerator()
+        cbgen.parse(c_src, clang_args)
+    if args.macro_enable:
+        mcgen = MacroGenerator(
+                macro_include=args.macro_include,
+                macro_exclude=args.macro_exclude,
+                macro_int=args.macro_int)
         for c_src in args.i:
-            mcgen.parse(c_src,
-                    args=clang_args,
-                    regex_integer_typed=args.macro_int)
+            mcgen.parse(c_src, clang_args)
 
     if args.o == '-':
         output = sys.stdout
@@ -90,7 +99,7 @@ def main():
                 'from ctypes import *\n\n' % parser.prog)
         make_section('prolog', args, output)
         cbgen.generate(output)
-        if args.parse_macro:
+        if args.macro_enable:
             mcgen.generate(output)
         make_section('epilog', args, output)
 
