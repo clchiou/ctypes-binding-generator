@@ -93,12 +93,12 @@ class MacroGenerator:
                     return
                 if token.spelling in env:
                     return
-                msg = 'Could not find symbol definition: %s'
-                raise CSyntaxError(msg, token.spelling)
+                raise CSyntaxError(token.spelling)
             try:
                 symbol.expr.traverse(check_symbol_name)
-            except CSyntaxError:
-                logging.info('Could not resolve reference: %s', symbol.macro)
+            except CSyntaxError as err:
+                logging.info('Could not resolve reference to "%s" in %s',
+                        err.args[0], symbol.macro)
                 self.symbol_table[name] = None
 
     def generate(self, output):
