@@ -561,7 +561,11 @@ class Token(namedtuple('Token', 'kind spelling')):
         elif self.kind is self.BINOP and self.spelling == '||':
             output.write('or')
         elif self.kind is self.INT_LITERAL or self.kind is self.FP_LITERAL:
-            output.write(self.spelling.rstrip('fFuUlL'))
+            if (self.spelling.startswith('0x') or
+                    self.spelling.startswith('0X')):
+                output.write(self.spelling.rstrip('uUlL'))
+            else:
+                output.write(self.spelling.rstrip('fFuUlL'))
         elif self.kind is self.CAT:
             self.spelling[0].translate(output)
             for part in self.spelling[1:]:

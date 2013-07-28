@@ -12,12 +12,14 @@ class TestMacro(helper.TestMacroGenerator):
 #define D 007
 #define E 3.14
 #define F "hello world"
+#define G 0x1f
         ''', '''
 B = 1
 C = 0x10
 D = 007
 E = 3.14
 F = "hello world"
+G = 0x1f
         ''')
 
     def test_macro_int(self):

@@ -26,6 +26,7 @@ class TestToken(unittest.TestCase):
                 3.14
                 + - * /
                 1ul
+                0x1f
                 () [] {}
                 ,
                 ||
@@ -41,6 +42,7 @@ class TestToken(unittest.TestCase):
                 Token(Token.BINOP, '*'),
                 Token(Token.BINOP, '/'),
                 Token(Token.INT_LITERAL, '1ul'),
+                Token(Token.INT_LITERAL, '0x1f'),
                 Token(Token.PARENTHESES, '('), Token(Token.PARENTHESES, ')'),
                 Token(Token.PARENTHESES, '['), Token(Token.PARENTHESES, ']'),
                 Token(Token.PARENTHESES, '{'), Token(Token.PARENTHESES, '}'),
