@@ -62,6 +62,7 @@ def main():
         parser.print_usage()
         return 0
 
+    logging.basicConfig(format='%(filename)s: %(message)s')
     if args.v > 0:
         logging.getLogger().setLevel(logging.INFO)
 
