@@ -13,6 +13,7 @@ class TestMacro(helper.TestMacroGenerator):
 #define E 3.14
 #define F "hello world"
 #define G 0x1f
+#define H sizeof(int)
         ''', '''
 B = 1
 C = 0x10
@@ -20,6 +21,7 @@ D = 007
 E = 3.14
 F = "hello world"
 G = 0x1f
+H = sizeof(c_int)
         ''')
 
     def test_macro_dictionary_order(self):

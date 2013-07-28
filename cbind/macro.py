@@ -11,6 +11,20 @@ from clang.cindex import Index, CursorKind
 from cbind.util import walk_astree
 
 
+# List of direct-translation symbols.
+CTYPES_SYMBOLS = {
+        'char':     'c_byte',
+        'double':   'c_double',
+        'float':    'c_float',
+        'int':      'c_int',
+        'long':     'c_long',
+        'short':    'c_short',
+        'sizeof':   'sizeof',
+        'unsigned': 'c_uint',
+        'wchar_t':  'c_wchar',
+}
+
+
 class MacroException(Exception):
     '''Exception raised by MacroGenerator class.'''
     pass
@@ -138,10 +152,13 @@ class MacroGenerator:
 
     def _check_bound_name(self):
         '''Check if there are references to undefined symbols.'''
-        bound_names = frozenset(name for name in self.symbol_table
+        bound_names = set(CTYPES_SYMBOLS)
+        bound_names.update(name for name in self.symbol_table
                 if self.symbol_table[name])
-        for name in bound_names:
+        for name in self.symbol_table.keys():
             symbol = self.symbol_table[name]
+            if not symbol:
+                continue
             if symbol.args:
                 env = bound_names.union(symbol.args)
             else:
@@ -571,5 +588,7 @@ class Token(namedtuple('Token', 'kind spelling')):
             for part in self.spelling[1:]:
                 output.write(' ')
                 part.translate(output)
+        elif self.kind is self.SYMBOL:
+            output.write(CTYPES_SYMBOLS.get(self.spelling, self.spelling))
         else:
             output.write(self.spelling)
