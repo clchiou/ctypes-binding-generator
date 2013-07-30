@@ -8,7 +8,7 @@ source files.
 Examples
 --------
 
-**ctypes-binding-generator** includes a small command-line program called
+ctypes-binding-generator includes a small command-line program called
 **cbind**.  You may use it to generate ctypes binding for, say, stdio.h.
 
     $ cbind -i /usr/include/stdio.h -o stdio.py --prolog-str '_lib = cdll.LoadLibrary("libc.so.6")'
@@ -87,9 +87,14 @@ to tell cbind where to look through --macro-int PATTERN flag.
     macro.py: Could not parse macro: #define EVIOCSABS(abs) _IOW('E', 0xc0 + (abs), struct input_absinfo)
 
 We reduce the macros that cbind cannot understand to two.  It is good
-enough for now.  Let's move on.  Under demo/ directory there is the evtest
-program which uses the just-generated linux\_input.py binding.  It will
-require root permission to access device file.  Press Ctrl-C to break evtest.
+enough for now.  Let's manually translate them to Python codes and move on.
+
+    EVIOCGABS = lambda abs: _IOR(ord('E'), 0x40 + abs, input_absinfo)
+    EVIOCSABS = lambda abs: _IOW(ord('E'), 0xc0 + abs, input_absinfo)
+
+Under demo/ directory there is the **evtest** program which uses the
+linux\_input.py binding we generated.  It will require root permission to
+access device file.  Press Ctrl-C to break evtest.
 
     $ sudo demo/evtest /dev/input/event0
     input driver version     : 1.0.1
