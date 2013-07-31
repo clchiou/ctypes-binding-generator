@@ -96,7 +96,7 @@ class MacroGenerator:
     def _translate_const_int(cls, c_path, args, symbols):
         '''Translate constant integers with libclang.'''
         enums = cls._clang_const_int(c_path, args, symbols)
-        regex_name = re.compile('^%s_(\w+)$' % cls.MAGIC)
+        regex_name = re.compile(r'^%s_(\w+)$' % cls.MAGIC)
         symbol_map = dict((symbol.name, symbol) for symbol in symbols)
         for enum in enums:
             match = regex_name.match(enum.spelling)

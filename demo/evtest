@@ -517,7 +517,8 @@ def show_info(libc, dev):
                 device_id[ID_VENDOR], device_id[ID_PRODUCT],
                 device_id[ID_VERSION]))
 
-    name = create_string_buffer('\0', 256)
+    name = create_string_buffer(256)
+    memset(name, 0, sizeof(name))
     if libc.ioctl(dev, EVIOCGNAME(sizeof(name)), name) < 0:
         libc.perror()
     print '%s: \'%s\'' % ('input device name'.ljust(tag_columns), name.value)
