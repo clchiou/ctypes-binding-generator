@@ -42,11 +42,20 @@ array2 = (((c_int * 5) * 4) * 3).in_dll(_lib, 'array2')
 
     def test_funcptr(self):
         self.run_test('''
+enum X {
+    x = 0
+};
+
 void (*foo)(void);
 void (*bar)(...);
+enum X (*spam)(void);
         ''', '''
+X = c_uint
+x = X(0)
+
 foo = CFUNCTYPE(None).in_dll(_lib, 'foo')
 bar = c_void_p.in_dll(_lib, 'bar')
+spam = CFUNCTYPE(X).in_dll(_lib, 'spam')
         ''')
 
 

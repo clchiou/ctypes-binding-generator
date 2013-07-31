@@ -291,7 +291,7 @@ class CtypesBindingGenerator:
     def _make_type(self, type_):
         '''Generate ctypes binding of a clang type.'''
         c_type = None
-        if type_.kind in BLOB_TYPE:
+        if type_.kind in BLOB_TYPE or type_.kind is TypeKind.ENUM:
             cursor = type_.get_declaration()
             if cursor.spelling:
                 c_type = cursor.spelling

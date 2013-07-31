@@ -81,6 +81,21 @@ static inline int bar(void) { return 0; }
         ''', '''
         ''')
 
+    def test_enum_return_type(self):
+        self.run_test('''
+enum X {
+    x = 0
+};
+
+enum X foo(void);
+        ''', '''
+X = c_uint
+x = X(0)
+
+foo = _lib.foo
+foo.restype = X
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()
