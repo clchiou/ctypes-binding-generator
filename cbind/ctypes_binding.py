@@ -478,12 +478,8 @@ class CtypesBindingGenerator:
         if cursor.spelling:
             output.write('%s = %s\n' %
                     (cursor.spelling, self._make_type(cursor.enum_type)))
-            c_type = cursor.spelling
-        else:
-            c_type = self._make_type(cursor.enum_type)
         for enum in cursor.get_children():
-            output.write('%s = %s(%s)\n' %
-                    (enum.spelling, c_type, enum.enum_value))
+            output.write('%s = %s\n' % (enum.spelling, enum.enum_value))
 
     def _make_var(self, cursor, output):
         '''Generate ctypes binding of a variable declaration.'''

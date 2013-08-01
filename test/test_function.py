@@ -90,7 +90,7 @@ enum X {
 enum X foo(void);
         ''', '''
 X = c_uint
-x = X(0)
+x = 0
 
 foo = _lib.foo
 foo.restype = X

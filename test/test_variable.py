@@ -51,7 +51,7 @@ void (*bar)(...);
 enum X (*spam)(void);
         ''', '''
 X = c_uint
-x = X(0)
+x = 0
 
 foo = CFUNCTYPE(None).in_dll(_lib, 'foo')
 bar = c_void_p.in_dll(_lib, 'bar')

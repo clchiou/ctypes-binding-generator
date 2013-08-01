@@ -11,8 +11,8 @@ enum {
     bar,
 };
         ''', '''
-foo = c_uint(0)
-bar = c_uint(1)
+foo = 0
+bar = 1
         ''')
 
 

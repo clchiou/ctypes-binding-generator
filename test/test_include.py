@@ -113,8 +113,8 @@ enum my_enum {
 my_enum x;
         ''', '''
 my_enum = c_uint
-X = my_enum(0)
-Y = my_enum(1)
+X = 0
+Y = 1
 
 x = my_enum.in_dll(_lib, 'x')
         ''')
