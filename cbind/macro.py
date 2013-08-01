@@ -132,19 +132,19 @@ class MacroGenerator:
     @staticmethod
     def _find_enums(syntax_tree):
         '''Find enums of translation unit.'''
-        nodes = []
-        def search_enum_def(cursor):
-            '''Test if the cursor is an enum definition.'''
-            if cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
-                nodes.append(cursor)
+        enum_trees = []
+        def search_enum_def(tree):
+            '''Test if the tree is an enum definition.'''
+            if tree.kind is CursorKind.ENUM_DECL and tree.is_definition():
+                enum_trees.append(tree)
         syntax_tree.traverse(search_enum_def)
-        if not nodes:
-            msg = 'Could not find enum in generated C source'
-            raise MacroException(msg)
-        enum_nodes = []
-        for node in nodes:
-            enum_nodes.extend(node.get_children())
-        return enum_nodes
+        if not enum_trees:
+            message = 'Could not find enum in generated C source'
+            raise MacroException(message)
+        enum_field_trees = []
+        for enum_tree in enum_trees:
+            enum_field_trees.extend(enum_tree.get_children())
+        return enum_field_trees
 
     def _check_bound_name(self):
         '''Check if there are references to undefined symbols.'''
