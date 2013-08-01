@@ -7,8 +7,8 @@ import subprocess
 import tempfile
 from collections import OrderedDict, namedtuple
 from cStringIO import StringIO
-from clang.cindex import Index, CursorKind
-from cbind.util import walk_astree
+from clang.cindex import CursorKind
+from cbind.source import SyntaxTree
 
 
 # List of direct-translation symbols.
@@ -124,24 +124,20 @@ class MacroGenerator:
                     tmp_src.write('%s_%s = %s,\n' %
                             (cls.MAGIC, symbol.name, symbol.body))
                 tmp_src.write('};\n')
-            index = Index.create()
-            tunit = index.parse(tmp_src_path, args=args)
-            if not tunit:
-                msg = 'Could not parse generated C source'
-                raise MacroException(msg)
+            syntax_tree = SyntaxTree.parse(tmp_src_path, args=args)
         finally:
             os.remove(tmp_src_path)
-        return cls._find_enums(tunit)
+        return cls._find_enums(syntax_tree)
 
     @staticmethod
-    def _find_enums(tunit):
+    def _find_enums(syntax_tree):
         '''Find enums of translation unit.'''
         nodes = []
         def search_enum_def(cursor):
             '''Test if the cursor is an enum definition.'''
             if cursor.kind is CursorKind.ENUM_DECL and cursor.is_definition():
                 nodes.append(cursor)
-        walk_astree(tunit.cursor, search_enum_def)
+        syntax_tree.traverse(search_enum_def)
         if not nodes:
             msg = 'Could not find enum in generated C source'
             raise MacroException(msg)
