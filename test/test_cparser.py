@@ -118,3 +118,7 @@ class TestExpression(unittest.TestCase):
         self.run_test('f(1, 2, 3)', ('()', 'f', '1', '2', '3'))
         self.run_test('f(x)', ('()', 'f', 'x'))
         self.run_test('f()', ('()', 'f'))
+
+
+if __name__ == '__main__':
+    unittest.main()

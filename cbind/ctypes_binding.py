@@ -58,11 +58,6 @@ C_TYPE_MAP = {
 INDENT = '    '
 
 
-class CtypesBindingException(Exception):
-    '''Exception raised by CtypesBindingGenerator class.'''
-    pass
-
-
 class CtypesBindingGenerator:
     '''Generate ctypes binding from C source files with libclang.'''
 
@@ -227,9 +222,6 @@ class CtypesBindingGenerator:
 
     def _make_pod(self, tree, output, declared=False, declaration=False):
         '''Generate ctypes binding of a POD definition.'''
-        if declared and declaration:
-            # Don't declare twice.
-            return
         name = self._make_pod_name(tree)
         output_header = not declared
         output_body = not declaration

@@ -8,6 +8,6 @@ setup(
     description='Generate ctypes binding from C source files',
     author='Che-Liang Chiou',
     author_email='clchiou@gmail.com',
-    packages=['cbind'],
+    packages=['cbind', 'cbind/passes'],
     scripts=['bin/cbind'],
 )
