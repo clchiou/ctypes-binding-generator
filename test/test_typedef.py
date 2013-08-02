@@ -10,6 +10,10 @@ typedef int my_type;
 typedef struct foo bar;
         ''', '''
 my_type = c_int
+
+class foo(Structure):
+    pass
+
 bar = foo
         ''')
 
@@ -18,6 +22,9 @@ bar = foo
 typedef struct type_0 type_1;
 typedef type_1 type_2;
         ''', '''
+class type_0(Structure):
+    pass
+
 type_1 = type_0
 type_2 = type_0
         ''')

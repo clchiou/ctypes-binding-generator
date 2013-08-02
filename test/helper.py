@@ -24,7 +24,7 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         gen_code = output.getvalue()
 
         error_message = prepare_error_message(python_code, gen_code,
-                tunits=cbgen.parser.translation_units)
+                tunits=cbgen.get_translation_units())
         self.assertTrue(compare_codes(gen_code, python_code), error_message)
         compile(gen_code, 'output.py', 'exec')
 
