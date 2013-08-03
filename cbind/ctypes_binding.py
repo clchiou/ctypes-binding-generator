@@ -3,7 +3,8 @@
 import logging
 from clang.cindex import CursorKind, TypeKind
 from cbind.source import SyntaxTree
-from cbind.passes import scan_required_nodes, scan_forward_decl
+from cbind.passes import (scan_required_nodes, scan_forward_decl,
+        scan_va_list_tag)
 
 
 # Map of clang type to ctypes type
@@ -51,6 +52,9 @@ C_TYPE_MAP = {
         TypeKind.FUNCTIONNOPROTO:   None,
         TypeKind.FUNCTIONPROTO:     None,
         TypeKind.CONSTANTARRAY:     None,
+        TypeKind.INCOMPLETEARRAY:   None,
+        TypeKind.VARIABLEARRAY:     None,
+        TypeKind.DEPENDENTSIZEDARRAY: None,
         TypeKind.VECTOR:            None,
 }
 
@@ -72,6 +76,7 @@ class CtypesBindingGenerator:
         syntax_tree = SyntaxTree.parse(path, contents=contents, args=args)
         scan_required_nodes(syntax_tree, path)
         scan_forward_decl(syntax_tree)
+        scan_va_list_tag(syntax_tree)
         self.syntax_trees.append(syntax_tree)
 
     def get_translation_units(self):
@@ -81,6 +86,13 @@ class CtypesBindingGenerator:
 
     def generate(self, output):
         '''Generate ctypes binding.'''
+        for syntax_tree in self.syntax_trees:
+            va_list_tag = syntax_tree.get_annotation('use_va_list_tag', False)
+            if va_list_tag:
+                self._make_pod(va_list_tag, output,
+                        declared=False, declaration=False)
+                output.write('\n')
+                break
         preorder = lambda tree: self._make_forward_decl(tree, output)
         postorder = lambda tree: self._make(tree, output)
         for syntax_tree in self.syntax_trees:
