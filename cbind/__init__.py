@@ -81,14 +81,14 @@ def main():
 
     cbgen = CtypesBindingGenerator(args.variable)
     for c_src in args.i:
-        cbgen.parse(c_src, clang_args)
+        cbgen.parse(c_src, args=clang_args)
     if args.macro_enable:
         mcgen = MacroGenerator(
                 macro_include=args.macro_include,
                 macro_exclude=args.macro_exclude,
                 macro_int=args.macro_int)
         for c_src in args.i:
-            mcgen.parse(c_src, clang_args)
+            mcgen.parse(c_src, args=clang_args)
 
     if args.o == '-':
         output = sys.stdout

@@ -27,7 +27,7 @@ class foo(Structure):
         self.run_test('''
 struct bar {
     struct foo {
-        int i
+        int i;
     } s;
 };
         ''', '''

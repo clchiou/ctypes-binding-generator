@@ -110,7 +110,7 @@ enum my_enum {
 };
         ''', '''
 #include "%s"
-my_enum x;
+enum my_enum x;
         ''', '''
 my_enum = c_uint
 X = 0

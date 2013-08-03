@@ -63,7 +63,16 @@ class SyntaxTree:
         tunit = cls._index.parse(path, args=args, unsaved_files=unsaved_files)
         if not tunit:
             message = 'Could not parse C source: %s' % path
-            raise ValueError(message)
+            raise SyntaxError(message)
+        for diag in tunit.diagnostics:
+            if diag.severity >= diag.Warning:
+                if diag.location.file:
+                    filename = diag.location.file.name
+                else:
+                    filename = 'None'
+                raise SyntaxError('%s:%d:%d: %s' %
+                        (filename, diag.location.line, diag.location.column,
+                            diag.spelling))
         return cls(tunit.cursor, tunit, defaultdict(dict))
 
     def __init__(self, cursor, translation_unit, annotation_table):

@@ -23,10 +23,10 @@ foo.restype = c_int
 
     def test_pointer_arg(self):
         self.run_test('''
-void foo(int *, char *, wchar_t *, void *);
+void foo(int *, char *, void *);
         ''', '''
 foo = _lib.foo
-foo.argtypes = [POINTER(c_int), c_char_p, POINTER(c_int), c_void_p]
+foo.argtypes = [POINTER(c_int), c_char_p, c_void_p]
         ''')
 
     def test_variadic(self):
