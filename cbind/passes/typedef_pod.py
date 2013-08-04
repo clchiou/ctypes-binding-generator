@@ -2,6 +2,7 @@
 
 from clang.cindex import CursorKind, TypeKind
 from cbind.passes.util import traverse_postorder
+import cbind.annotations as annotations
 
 
 def scan_typedef_pod(syntax_tree):
@@ -19,5 +20,5 @@ def _scan_tree(tree):
     decl = type_.get_declaration()
     if decl.spelling:
         return
-    decl.annotate('name', tree.spelling)
-    tree.annotate('required', False)
+    decl.annotate(annotations.NAME, tree.spelling)
+    tree.annotate(annotations.REQUIRED, False)

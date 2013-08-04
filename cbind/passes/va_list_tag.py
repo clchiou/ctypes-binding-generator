@@ -1,6 +1,7 @@
 '''Scan syntax tree's use of __va_list_tag.'''
 
 from cbind.passes.util import traverse_postorder, strip_type
+import cbind.annotations as annotations
 
 
 def scan_va_list_tag(syntax_tree):
@@ -14,12 +15,12 @@ def scan_va_list_tag(syntax_tree):
 
 def _scan_tree(tree, root):
     '''Scan this tree for __va_list_tag.'''
-    if not tree.get_annotation('required', False):
+    if not tree.get_annotation(annotations.REQUIRED, False):
         return
     type_ = tree.type
     while True:
         if tree.spelling == '__va_list_tag':
-            root.annotate('use_va_list_tag', tree)
+            root.annotate(annotations.USE_VA_LIST_TAG, tree)
             raise StopIteration()  # Return from deeply recursion
         while True:
             type_ = strip_type(type_)

@@ -1,6 +1,7 @@
 '''Scan syntax tree for required nodes.'''
 
 from cbind.passes.util import traverse_postorder, strip_type
+import cbind.annotations as annotations
 
 
 def scan_required_nodes(syntax_tree, path):
@@ -16,7 +17,7 @@ def scan_required_nodes(syntax_tree, path):
         trees = list(todo)
         todo[:] = []
         for tree in trees:
-            tree.annotate('required', True)
+            tree.annotate(annotations.REQUIRED, True)
             traverse_postorder(tree, call_scan_type_definition)
 
 
@@ -24,7 +25,7 @@ def _check_locally_defined(tree, path, todo, visited):
     '''Mark locally defined nodes.'''
     if not tree.location.file or tree.location.file.name != path:
         return
-    tree.annotate('required', True)
+    tree.annotate(annotations.REQUIRED, True)
     _scan_type_definition(tree.type, todo, visited)
 
 

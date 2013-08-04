@@ -5,6 +5,7 @@ from clang.cindex import CursorKind, TypeKind
 from cbind.source import SyntaxTree
 from cbind.passes import (scan_required_nodes, scan_forward_decl,
         scan_va_list_tag, scan_typedef_pod)
+import cbind.annotations as annotations
 
 
 # Map of clang type to ctypes type
@@ -88,7 +89,8 @@ class CtypesBindingGenerator:
     def generate(self, output):
         '''Generate ctypes binding.'''
         for syntax_tree in self.syntax_trees:
-            va_list_tag = syntax_tree.get_annotation('use_va_list_tag', False)
+            va_list_tag = syntax_tree.get_annotation(
+                    annotations.USE_VA_LIST_TAG, False)
             if va_list_tag:
                 self._make_pod(va_list_tag, output,
                         declared=False, declaration=False)
@@ -101,20 +103,20 @@ class CtypesBindingGenerator:
 
     def _make_forward_decl(self, tree, output):
         '''Generate forward declaration for nodes.'''
-        if not tree.get_annotation('required', False):
+        if not tree.get_annotation(annotations.REQUIRED, False):
             return
-        if not tree.get_annotation('forward-declaration', False):
+        if not tree.get_annotation(annotations.FORWARD_DECLARATION, False):
             return
-        declared = tree.get_annotation('declared', False)
+        declared = tree.get_annotation(annotations.DECLARED, False)
         self._make_pod(tree, output, declared=declared, declaration=True)
-        tree.annotate('declared', True)
+        tree.annotate(annotations.DECLARED, True)
 
     def _make(self, tree, output):
         '''Generate ctypes binding from a AST node.'''
-        if not tree.get_annotation('required', False):
+        if not tree.get_annotation(annotations.REQUIRED, False):
             return
         # Do not define a node twice.
-        if tree.get_annotation('defined', False):
+        if tree.get_annotation(annotations.DEFINED, False):
             return
         declaration = False
         if tree.kind is CursorKind.TYPEDEF_DECL:
@@ -123,7 +125,7 @@ class CtypesBindingGenerator:
             self._make_function(tree, output)
         elif (tree.kind is CursorKind.STRUCT_DECL or
                 tree.kind is CursorKind.UNION_DECL):
-            declared = tree.get_annotation('declared', False)
+            declared = tree.get_annotation(annotations.DECLARED, False)
             declaration = not tree.is_definition()
             self._make_pod(tree, output,
                     declared=declared, declaration=declaration)
@@ -135,9 +137,9 @@ class CtypesBindingGenerator:
             return
         output.write('\n')
         if declaration:
-            tree.annotate('declared', True)
+            tree.annotate(annotations.DECLARED, True)
         else:
-            tree.annotate('defined', True)
+            tree.annotate(annotations.DEFINED, True)
 
     def _make_type(self, type_):
         '''Generate ctypes binding of a clang type.'''
@@ -149,7 +151,7 @@ class CtypesBindingGenerator:
             elif tree.kind is CursorKind.ENUM_DECL:
                 c_type = self._make_type(tree.enum_type)
             else:
-                c_type = tree.get_annotation('name')
+                c_type = tree.get_annotation(annotations.NAME)
         elif type_.kind is TypeKind.TYPEDEF:
             c_type = self._make_type(type_.get_canonical())
         elif type_.kind is TypeKind.CONSTANTARRAY:
@@ -247,14 +249,14 @@ class CtypesBindingGenerator:
         '''Generate the name of the POD.'''
         if tree.spelling:
             return tree.spelling
-        name = tree.get_annotation('name', False)
+        name = tree.get_annotation(annotations.NAME, False)
         if not name:
             if tree.kind is CursorKind.STRUCT_DECL:
                 name = '_anonymous_struct_%04d'
             else:
                 name = '_anonymous_union_%04d'
             name = name % self._next_anonymous_serial()
-            tree.annotate('name', name)
+            tree.annotate(annotations.NAME, name)
         return name
 
     @staticmethod

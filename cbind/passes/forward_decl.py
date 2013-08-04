@@ -2,6 +2,7 @@
 
 from clang.cindex import CursorKind
 from cbind.passes.util import traverse_postorder, strip_type
+import cbind.annotations as annotations
 
 
 def scan_forward_decl(syntax_tree):
@@ -28,7 +29,7 @@ def _scan_type_forward_decl(type_, has_seen):
     if type_.is_user_defined_type():
         tree = type_.get_declaration()
         if tree.is_user_defined_type_decl() and tree not in has_seen:
-            tree.annotate('forward-declaration', True)
+            tree.annotate(annotations.FORWARD_DECLARATION, True)
         return
 
     stripped_type = strip_type(type_)
