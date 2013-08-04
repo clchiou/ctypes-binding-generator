@@ -1,16 +1,14 @@
 '''Scan syntax tree for required nodes.'''
 
-from clang.cindex import CursorKind
-from cbind.passes.util import strip_type
+from cbind.passes.util import traverse_postorder, strip_type
 
 
 def scan_required_nodes(syntax_tree, path):
     '''Breadth-first scan for required symbols.'''
     visited = set()
     todo = []
-    syntax_tree.traverse(
-            lambda tree: _check_locally_defined(tree, path, todo, visited),
-            prune=lambda tree: tree.kind is CursorKind.COMPOUND_STMT)
+    traverse_postorder(syntax_tree,
+            lambda tree: _check_locally_defined(tree, path, todo, visited))
     call_scan_type_definition = lambda tree: _scan_type_definition(tree.type,
             todo, visited)
     while todo:
@@ -19,8 +17,7 @@ def scan_required_nodes(syntax_tree, path):
         todo[:] = []
         for tree in trees:
             tree.annotate('required', True)
-            tree.traverse(call_scan_type_definition,
-                    prune=lambda tree: tree.kind is CursorKind.COMPOUND_STMT)
+            traverse_postorder(tree, call_scan_type_definition)
 
 
 def _check_locally_defined(tree, path, todo, visited):

@@ -36,12 +36,11 @@ typedef struct {
 } type_1;
 typedef type_1 type_2;
         ''', '''
-class _anonymous_struct_0001(Structure):
+class type_1(Structure):
     _pack_ = 4
     _fields_ = [('i', c_int)]
 
-type_1 = _anonymous_struct_0001
-type_2 = _anonymous_struct_0001
+type_2 = type_1
         ''')
 
     def test_forward_decl(self):

@@ -1,15 +1,13 @@
 '''Scan syntax tree's use of __va_list_tag.'''
 
-from clang.cindex import CursorKind
-from cbind.passes.util import strip_type
+from cbind.passes.util import traverse_postorder, strip_type
 
 
 def scan_va_list_tag(syntax_tree):
     '''Scan use of __va_list_tag.'''
     try:
-        syntax_tree.traverse(
-                postorder=lambda tree: _scan_tree(tree, syntax_tree),
-                prune=lambda tree: tree.kind is CursorKind.COMPOUND_STMT)
+        traverse_postorder(syntax_tree,
+                lambda tree: _scan_tree(tree, syntax_tree))
     except StopIteration:
         pass
 

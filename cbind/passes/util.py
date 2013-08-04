@@ -1,6 +1,12 @@
 '''Utility functions.'''
 
-from clang.cindex import TypeKind
+from clang.cindex import CursorKind, TypeKind
+
+
+def traverse_postorder(syntax_tree, postorder):
+    '''Traverse syntax tree post order.'''
+    syntax_tree.traverse(postorder=postorder,
+            prune=lambda tree: tree.kind is CursorKind.COMPOUND_STMT)
 
 
 def strip_type(type_):

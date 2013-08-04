@@ -1,14 +1,13 @@
 '''Scan syntax tree for forward declarations.'''
 
 from clang.cindex import CursorKind
-from cbind.passes.util import strip_type
+from cbind.passes.util import traverse_postorder, strip_type
 
 
 def scan_forward_decl(syntax_tree):
     '''Scan syntax tree for forward declarations.'''
     has_seen = set()
-    syntax_tree.traverse(postorder=lambda tree: _scan_tree(tree, has_seen),
-            prune=lambda tree: tree.kind is CursorKind.COMPOUND_STMT)
+    traverse_postorder(syntax_tree, lambda tree: _scan_tree(tree, has_seen))
 
 
 def _scan_tree(tree, has_seen):

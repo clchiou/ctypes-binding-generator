@@ -70,13 +70,13 @@ typedef struct {
 #include "%s"
 my_blob foo(my_blob);
         ''', '''
-class _anonymous_struct_0001(Structure):
+class my_blob(Structure):
     _pack_ = 4
     _fields_ = [('i', c_int)]
 
 foo = _lib.foo
-foo.argtypes = [_anonymous_struct_0001]
-foo.restype = _anonymous_struct_0001
+foo.argtypes = [my_blob]
+foo.restype = my_blob
         ''')
 
     def test_typedef(self):
@@ -93,13 +93,13 @@ typedef struct {
 typedef other_type my_type;
 my_type x;
         ''', '''
-class _anonymous_struct_0001(Structure):
+class other_type(Structure):
     _pack_ = 4
     _fields_ = [('i', c_int)]
 
-my_type = _anonymous_struct_0001
+my_type = other_type
 
-x = _anonymous_struct_0001.in_dll(_lib, 'x')
+x = other_type.in_dll(_lib, 'x')
         ''')
 
     def test_enum(self):
@@ -209,7 +209,7 @@ struct foo {
     my_blob blob;
 };
         ''', '''
-class _anonymous_struct_0001(Structure):
+class my_blob(Structure):
     _pack_ = 4
     _fields_ = [('i', c_int)]
 
@@ -217,7 +217,7 @@ class foo(Structure):
     pass
 
 foo._pack_ = 4
-foo._fields_ = [('blob', _anonymous_struct_0001)]
+foo._fields_ = [('blob', my_blob)]
         ''')
 
 

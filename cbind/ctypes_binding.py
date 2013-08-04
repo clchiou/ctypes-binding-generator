@@ -4,7 +4,7 @@ import logging
 from clang.cindex import CursorKind, TypeKind
 from cbind.source import SyntaxTree
 from cbind.passes import (scan_required_nodes, scan_forward_decl,
-        scan_va_list_tag)
+        scan_va_list_tag, scan_typedef_pod)
 
 
 # Map of clang type to ctypes type
@@ -77,6 +77,7 @@ class CtypesBindingGenerator:
         scan_required_nodes(syntax_tree, path)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
+        scan_typedef_pod(syntax_tree)
         self.syntax_trees.append(syntax_tree)
 
     def get_translation_units(self):
@@ -245,8 +246,9 @@ class CtypesBindingGenerator:
     def _make_pod_name(self, tree):
         '''Generate the name of the POD.'''
         if tree.spelling:
-            name = tree.spelling
-        else:
+            return tree.spelling
+        name = tree.get_annotation('name', False)
+        if not name:
             if tree.kind is CursorKind.STRUCT_DECL:
                 name = '_anonymous_struct_%04d'
             else:
