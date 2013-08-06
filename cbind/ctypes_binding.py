@@ -69,14 +69,16 @@ BUILTIN_TYPEDEFS = {
 # Indent by 4 speces
 INDENT = '    '
 
+# Name of the library
+LIBNAME = '_lib'
+
 
 class CtypesBindingGenerator:
     '''Generate ctypes binding from C source files with libclang.'''
 
-    def __init__(self, libvar=None):
+    def __init__(self):
         '''Initialize the object.'''
         self.syntax_trees = []
-        self.libvar = libvar or '_lib'
         self.anonymous_serial = 0
 
     def parse(self, path, contents=None, args=None):
@@ -234,7 +236,7 @@ class CtypesBindingGenerator:
         if not tree.is_external_linkage():
             return
         name = tree.spelling
-        output.write('{0} = {1}.{0}\n'.format(name, self.libvar))
+        output.write('{0} = {1}.{0}\n'.format(name, LIBNAME))
         argtypes = self._make_function_arguments(tree)
         if argtypes:
             output.write('%s.argtypes = [%s]\n' % (name, argtypes))
@@ -352,7 +354,7 @@ class CtypesBindingGenerator:
         name = tree.spelling
         c_type = self._make_type(tree.type)
         output.write('{0} = {1}.in_dll({2}, \'{0}\')\n'.
-                format(name, c_type, self.libvar))
+                format(name, c_type, LIBNAME))
 
     def _next_anonymous_serial(self):
         '''Generate a serial number for anonymous stuff.'''

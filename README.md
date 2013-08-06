@@ -11,7 +11,7 @@ Examples
 ctypes-binding-generator includes a small command-line program called
 **cbind**.  You may use it to generate ctypes binding for, say, stdio.h.
 
-    $ cbind -i /usr/include/stdio.h -o stdio.py --prolog-str '_lib = cdll.LoadLibrary("libc.so.6")' \
+    $ cbind -i /usr/include/stdio.h -o stdio.py -l libc.so.6 \
         -- -I/usr/local/lib/clang/3.4/include
 
 Then you may test the generated ctypes binding of stdio.h.
