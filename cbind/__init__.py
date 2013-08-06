@@ -66,15 +66,12 @@ def parse_args():
 
 def insert_loader(args, output):
     '''Insert library loader.'''
-    if not args.l:
+    if not (args.l or args.darwin_lib or args.win_dll):
         return
     if args.loader_codes:
         loader_codes = args.loader_codes.read()
     else:
         loader_codes = DEFAULT_LOADER_CODES
-    libraries = {'posix_library': args.l}
-    libraries['darwin_library'] = args.darwin_lib
-    libraries['windows_library'] = args.win_dll
     output.write(loader_codes.format(posix_library=args.l,
         darwin_library=args.darwin_lib,
         windows_library=args.win_dll))
