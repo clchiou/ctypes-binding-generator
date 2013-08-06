@@ -59,6 +59,13 @@ C_TYPE_MAP = {
         TypeKind.VECTOR:            None,
 }
 
+# Typedef'ed types of stddef.h, etc.
+BUILTIN_TYPEDEFS = {
+        'size_t': 'c_size_t',
+        'ssize_t': 'c_ssize_t',
+        'wchar_t': 'c_wchar_t',
+}
+
 # Indent by 4 speces
 INDENT = '    '
 
@@ -153,7 +160,9 @@ class CtypesBindingGenerator:
             else:
                 c_type = tree.get_annotation(annotations.NAME)
         elif type_.kind is TypeKind.TYPEDEF:
-            c_type = self._make_type(type_.get_canonical())
+            tree = type_.get_declaration()
+            c_type = (BUILTIN_TYPEDEFS.get(tree.spelling) or
+                    self._make_type(type_.get_canonical()))
         elif type_.kind is TypeKind.CONSTANTARRAY:
             # TODO(clchiou): Make parentheses context-sensitive
             element_type = self._make_type(type_.get_array_element_type())
@@ -174,20 +183,25 @@ class CtypesBindingGenerator:
         if pointer_type:
             pointee_type = pointer_type.get_pointee()
         canonical = pointee_type.get_canonical()
+        decl = pointee_type.get_declaration()
         if pointee_type.kind is TypeKind.CHAR_S:
-            return 'c_char_p'
+            c_type = 'c_char_p'
         elif pointee_type.kind is TypeKind.WCHAR:
-            return 'c_wchar_p'
+            c_type = 'c_wchar_p'
         elif pointee_type.kind is TypeKind.VOID:
-            return 'c_void_p'
+            c_type = 'c_void_p'
         elif (pointee_type.kind is TypeKind.TYPEDEF and
                 canonical.kind is TypeKind.VOID):
             # Handle special case "typedef void foo;"
-            return 'c_void_p'
+            c_type = 'c_void_p'
+        elif (pointee_type.kind is TypeKind.TYPEDEF and
+                decl.spelling == 'wchar_t'):
+            c_type = 'c_wchar_p'
         elif canonical.kind is TypeKind.FUNCTIONPROTO:
-            return self._make_function_pointer(canonical)
+            c_type = self._make_function_pointer(canonical)
         else:
-            return 'POINTER(%s)' % self._make_type(pointee_type)
+            c_type = 'POINTER(%s)' % self._make_type(pointee_type)
+        return c_type
 
     def _make_function_pointer(self, type_):
         '''Generate ctypes binding of a function pointer.'''
