@@ -11,8 +11,9 @@ struct foo {
 };
         ''', '''
 class foo(Structure):
-    _pack_ = 4
-    _fields_ = [('bar', c_int)]
+    pass
+foo._pack_ = 4
+foo._fields_ = [('bar', c_int)]
         ''')
 
     def test_empty_struct(self):
@@ -32,12 +33,14 @@ struct bar {
 };
         ''', '''
 class foo(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+foo._pack_ = 4
+foo._fields_ = [('i', c_int)]
 
 class bar(Structure):
-    _pack_ = 4
-    _fields_ = [('s', foo)]
+    pass
+bar._pack_ = 4
+bar._fields_ = [('s', foo)]
         ''')
 
     def test_self_reference(self):
@@ -66,8 +69,9 @@ class blob1(Structure):
     pass
 
 class blob2(Structure):
-    _pack_ = 8
-    _fields_ = [('bp1', POINTER(blob1))]
+    pass
+blob2._pack_ = 8
+blob2._fields_ = [('bp1', POINTER(blob1))]
 
 blob1._pack_ = 8
 blob1._fields_ = [('b2', blob2)]
@@ -82,13 +86,15 @@ struct foo {
 };
         ''', '''
 class _anonymous_struct_0001(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+_anonymous_struct_0001._pack_ = 4
+_anonymous_struct_0001._fields_ = [('i', c_int)]
 
 class foo(Structure):
-    _anonymous_ = ('s',)
-    _pack_ = 4
-    _fields_ = [('s', _anonymous_struct_0001)]
+    pass
+foo._anonymous_ = ('s',)
+foo._pack_ = 4
+foo._fields_ = [('s', _anonymous_struct_0001)]
         ''')
 
     def test_bitfield(self):
@@ -99,8 +105,9 @@ struct foo {
 };
         ''', '''
 class foo(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int, 1),
+    pass
+foo._pack_ = 4
+foo._fields_ = [('i', c_int, 1),
                 ('j', c_int, 31)]
         ''')
 
@@ -120,11 +127,33 @@ class blob1(Structure):
     pass
 
 class blob2(Structure):
-    _pack_ = 8
-    _fields_ = [('b1', POINTER(blob1))]
+    pass
+blob2._pack_ = 8
+blob2._fields_ = [('b1', POINTER(blob1))]
 
 blob1._pack_ = 8
 blob1._fields_ = [('b2', POINTER(blob2))]
+        ''')
+
+    def test_name_mangling(self):
+        self.run_test('''
+struct __foo {
+    int i;
+};
+
+struct bar{
+    struct __foo foo;
+};
+        ''', '''
+class __foo(Structure):
+    pass
+__foo._pack_ = 4
+__foo._fields_ = [('i', c_int)]
+
+class bar(Structure):
+    pass
+bar._pack_ = 4
+bar._fields_ = [('foo', __foo)]
         ''')
 
 

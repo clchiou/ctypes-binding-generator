@@ -254,12 +254,10 @@ class CtypesBindingGenerator:
     def _make_pod(self, tree, output, declared=False, declaration=False):
         '''Generate ctypes binding of a POD definition.'''
         name = self._make_pod_name(tree)
-        output_header = not declared
-        output_body = not declaration
-        if output_header:
-            self._make_pod_header(tree, name, output_body, output)
-        if output_body:
-            self._make_pod_body(tree, name, output_header, output)
+        if not declared:
+            self._make_pod_header(tree, name, output)
+        if not declaration:
+            self._make_pod_body(tree, name, output)
 
     def _make_pod_name(self, tree):
         '''Generate the name of the POD.'''
@@ -276,28 +274,21 @@ class CtypesBindingGenerator:
         return name
 
     @staticmethod
-    def _make_pod_header(tree, name, output_body, output):
+    def _make_pod_header(tree, name, output):
         '''Generate the 'class ...' part of POD.'''
         if tree.kind is CursorKind.STRUCT_DECL:
             pod_kind = 'Structure'
         else:
             pod_kind = 'Union'
         output.write('class {0}({1}):\n'.format(name, pod_kind))
-        if not output_body:
-            output.write('%spass\n' % INDENT)
+        output.write('%spass\n' % INDENT)
 
-    def _make_pod_body(self, tree, name, output_header, output):
+    def _make_pod_body(self, tree, name, output):
         '''Generate the body part of POD.'''
-        fields = [field for field in tree.get_children()
-                if field.kind is CursorKind.FIELD_DECL]
+        fields = tuple(tree.get_field_declaration())
         if not fields:
-            if output_header:
-                output.write('%spass\n' % INDENT)
             return
-        if output_header:
-            begin = INDENT
-        else:
-            begin = '%s.' % name
+        begin = '%s.' % name
         # Generate _anonymous_
         anonymous = []
         for field in fields:

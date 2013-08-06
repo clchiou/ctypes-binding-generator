@@ -12,8 +12,9 @@ union foo {
 };
         ''', '''
 class foo(Union):
-    _pack_ = 4
-    _fields_ = [('i', c_int),
+    pass
+foo._pack_ = 4
+foo._fields_ = [('i', c_int),
                 ('c', c_char)]
         ''')
 

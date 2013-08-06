@@ -32,12 +32,14 @@ struct blob2 {
 struct blob2 b2;
         ''', '''
 class blob1(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+blob1._pack_ = 4
+blob1._fields_ = [('i', c_int)]
 
 class blob2(Structure):
-    _pack_ = 8
-    _fields_ = [('bp1', POINTER(blob1))]
+    pass
+blob2._pack_ = 8
+blob2._fields_ = [('bp1', POINTER(blob1))]
 
 b2 = blob2.in_dll(_lib, 'b2')
         ''')
@@ -71,8 +73,9 @@ typedef struct {
 my_blob foo(my_blob);
         ''', '''
 class my_blob(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+my_blob._pack_ = 4
+my_blob._fields_ = [('i', c_int)]
 
 foo = _lib.foo
 foo.argtypes = [my_blob]
@@ -94,8 +97,9 @@ typedef other_type my_type;
 my_type x;
         ''', '''
 class other_type(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+other_type._pack_ = 4
+other_type._fields_ = [('i', c_int)]
 
 my_type = other_type
 
@@ -131,12 +135,14 @@ struct my_struct {
 };
         ''', '''
 class other_struct(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+other_struct._pack_ = 4
+other_struct._fields_ = [('i', c_int)]
 
 class my_struct(Structure):
-    _pack_ = 4
-    _fields_ = [('o', other_struct)]
+    pass
+my_struct._pack_ = 4
+my_struct._fields_ = [('o', other_struct)]
         ''')
 
     def test_nested_struct(self):
@@ -159,21 +165,25 @@ struct blob1 var_b1;
 struct blob3 var_b3;
         ''', '''
 class blob2(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+blob2._pack_ = 4
+blob2._fields_ = [('i', c_int)]
 
 class blob1(Structure):
-    _pack_ = 4
-    _fields_ = [('b2', blob2)]
+    pass
+blob1._pack_ = 4
+blob1._fields_ = [('b2', blob2)]
 
 class _anonymous_struct_0001(Structure):
-    _pack_ = 4
-    _fields_ = [('j', c_int)]
+    pass
+_anonymous_struct_0001._pack_ = 4
+_anonymous_struct_0001._fields_ = [('j', c_int)]
 
 class blob3(Structure):
-    _anonymous_ = ('b',)
-    _pack_ = 4
-    _fields_ = [('b', _anonymous_struct_0001)]
+    pass
+blob3._anonymous_ = ('b',)
+blob3._pack_ = 4
+blob3._fields_ = [('b', _anonymous_struct_0001)]
 
 var_b1 = blob1.in_dll(_lib, 'var_b1')
 var_b3 = blob3.in_dll(_lib, 'var_b3')
@@ -189,8 +199,9 @@ struct my_blob {
 struct my_blob b;
         ''', '''
 class my_blob(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+my_blob._pack_ = 4
+my_blob._fields_ = [('i', c_int)]
 
 b = my_blob.in_dll(_lib, 'b')
         ''')
@@ -210,8 +221,9 @@ struct foo {
 };
         ''', '''
 class my_blob(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+my_blob._pack_ = 4
+my_blob._fields_ = [('i', c_int)]
 
 class foo(Structure):
     pass
@@ -257,12 +269,14 @@ struct blob_2 {
 struct blob_2 b2;
         ''', '''
 class blob_1(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+blob_1._pack_ = 4
+blob_1._fields_ = [('i', c_int)]
 
 class blob_2(Structure):
-    _pack_ = 4
-    _fields_ = [('b1', blob_1)]
+    pass
+blob_2._pack_ = 4
+blob_2._fields_ = [('b1', blob_1)]
 
 b2 = blob_2.in_dll(_lib, 'b2')
         ''')
@@ -289,8 +303,9 @@ class foo(Structure):
     pass
 
 class blob(Structure):
-    _pack_ = 4
-    _fields_ = [('i', c_int)]
+    pass
+blob._pack_ = 4
+blob._fields_ = [('i', c_int)]
 
 foo._pack_ = 8
 foo._fields_ = [('bp', POINTER(blob))]
