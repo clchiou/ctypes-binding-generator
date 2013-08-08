@@ -4,7 +4,7 @@ import logging
 from clang.cindex import CursorKind, TypeKind
 from cbind.source import SyntaxTree
 from cbind.passes import (scan_required_nodes, scan_forward_decl,
-        scan_va_list_tag, scan_typedef_pod)
+        scan_va_list_tag, scan_anonymous_pod)
 import cbind.annotations as annotations
 
 
@@ -79,7 +79,6 @@ class CtypesBindingGenerator:
     def __init__(self):
         '''Initialize the object.'''
         self.syntax_trees = []
-        self.anonymous_serial = 0
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
@@ -87,7 +86,7 @@ class CtypesBindingGenerator:
         scan_required_nodes(syntax_tree, path)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
-        scan_typedef_pod(syntax_tree)
+        scan_anonymous_pod(syntax_tree)
         self.syntax_trees.append(syntax_tree)
 
     def get_translation_units(self):
@@ -253,25 +252,13 @@ class CtypesBindingGenerator:
 
     def _make_pod(self, tree, output, declared=False, declaration=False):
         '''Generate ctypes binding of a POD definition.'''
-        name = self._make_pod_name(tree)
+        name = tree.spelling
+        if not name:
+            name = tree.get_annotation(annotations.NAME)
         if not declared:
             self._make_pod_header(tree, name, output)
         if not declaration:
             self._make_pod_body(tree, name, output)
-
-    def _make_pod_name(self, tree):
-        '''Generate the name of the POD.'''
-        if tree.spelling:
-            return tree.spelling
-        name = tree.get_annotation(annotations.NAME, False)
-        if not name:
-            if tree.kind is CursorKind.STRUCT_DECL:
-                name = '_anonymous_struct_%04d'
-            else:
-                name = '_anonymous_union_%04d'
-            name = name % self._next_anonymous_serial()
-            tree.annotate(annotations.NAME, name)
-        return name
 
     @staticmethod
     def _make_pod_header(tree, name, output):
@@ -346,8 +333,3 @@ class CtypesBindingGenerator:
         c_type = self._make_type(tree.type)
         output.write('{0} = {1}.in_dll({2}, \'{0}\')\n'.
                 format(name, c_type, LIBNAME))
-
-    def _next_anonymous_serial(self):
-        '''Generate a serial number for anonymous stuff.'''
-        self.anonymous_serial += 1
-        return self.anonymous_serial

@@ -78,23 +78,23 @@ blob1._fields_ = [('b2', blob2)]
         ''')
 
     def test_anonymous_struct(self):
-        self.run_test('''
+        self.run_test('''\
 struct foo {
     struct {
         int i;
     } s;
 };
         ''', '''
-class _anonymous_struct_0001(Structure):
+class _struct_input_c_2_5(Structure):
     pass
-_anonymous_struct_0001._pack_ = 4
-_anonymous_struct_0001._fields_ = [('i', c_int)]
+_struct_input_c_2_5._pack_ = 4
+_struct_input_c_2_5._fields_ = [('i', c_int)]
 
 class foo(Structure):
     pass
 foo._anonymous_ = ('s',)
 foo._pack_ = 4
-foo._fields_ = [('s', _anonymous_struct_0001)]
+foo._fields_ = [('s', _struct_input_c_2_5)]
         ''')
 
     def test_bitfield(self):
