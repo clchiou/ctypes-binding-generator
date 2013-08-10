@@ -38,7 +38,6 @@ typedef type_1 type_2;
         ''', '''
 class type_1(Structure):
     pass
-type_1._pack_ = 4
 type_1._fields_ = [('i', c_int)]
 
 type_2 = type_1
@@ -61,7 +60,6 @@ class blob(Structure):
 
 my_blob = blob
 
-blob._pack_ = 4
 blob._fields_ = [('i', c_int)]
         ''')
 

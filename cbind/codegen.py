@@ -235,26 +235,6 @@ def _make_pod_body(tree, name, output):
     if not fields:
         return
     begin = '%s.' % name
-    # Generate _anonymous_
-    anonymous = []
-    for field in fields:
-        if _is_pod_field_anonymous(field):
-            anonymous.append('\'%s\'' % field.spelling)
-    if len(anonymous) == 1:
-        output.write('%s_anonymous_ = (%s,)\n' %
-                (begin, anonymous[0]))
-    elif anonymous:
-        output.write('%s_anonymous_ = (%s)\n' %
-                (begin, ', '.join(anonymous)))
-    # Generate _pack_
-    output.write('%s_pack_ = %d\n' %
-            (begin, tree.type.get_align()))
-    # Generate _fields_
-    _make_pod_fields(begin, fields, output)
-
-
-def _make_pod_fields(begin, fields, output):
-    '''Generate ctypes _field_ statement.'''
     field_stmt = '%s_fields_ = [' % begin
     indent = ' ' * len(field_stmt)
     output.write(field_stmt)
@@ -270,14 +250,6 @@ def _make_pod_fields(begin, fields, output):
             output.write(',\n%s' % indent)
         output.write('%s' % field_stmt)
     output.write(']\n')
-
-
-def _is_pod_field_anonymous(field):
-    '''Test if this field is an anonymous one.'''
-    if field.type.kind is not TypeKind.UNEXPOSED:
-        return False
-    tree = field.type.get_declaration()
-    return not bool(tree.spelling)
 
 
 def _make_enum(tree, output):

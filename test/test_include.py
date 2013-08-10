@@ -38,12 +38,10 @@ struct blob2 b2;
         ''', '''
 class blob1(Structure):
     pass
-blob1._pack_ = 4
 blob1._fields_ = [('i', c_int)]
 
 class blob2(Structure):
     pass
-blob2._pack_ = 8
 blob2._fields_ = [('bp1', POINTER(blob1))]
 
 b2 = blob2.in_dll(_lib, 'b2')
@@ -62,7 +60,6 @@ struct blob b;
 class blob(Structure):
     pass
 
-blob._pack_ = 8
 blob._fields_ = [('bp', POINTER(blob))]
 
 b = blob.in_dll(_lib, 'b')
@@ -79,7 +76,6 @@ my_blob foo(my_blob);
         ''', '''
 class my_blob(Structure):
     pass
-my_blob._pack_ = 4
 my_blob._fields_ = [('i', c_int)]
 
 foo = _lib.foo
@@ -103,7 +99,6 @@ my_type x;
         ''', '''
 class other_type(Structure):
     pass
-other_type._pack_ = 4
 other_type._fields_ = [('i', c_int)]
 
 my_type = other_type
@@ -141,12 +136,10 @@ struct my_struct {
         ''', '''
 class other_struct(Structure):
     pass
-other_struct._pack_ = 4
 other_struct._fields_ = [('i', c_int)]
 
 class my_struct(Structure):
     pass
-my_struct._pack_ = 4
 my_struct._fields_ = [('o', other_struct)]
         ''')
 
@@ -171,23 +164,18 @@ struct blob3 var_b3;
         ''', '''
 class blob2(Structure):
     pass
-blob2._pack_ = 4
 blob2._fields_ = [('i', c_int)]
 
 class blob1(Structure):
     pass
-blob1._pack_ = 4
 blob1._fields_ = [('b2', blob2)]
 
 class _struct_{0}_8_5(Structure):
     pass
-_struct_{0}_8_5._pack_ = 4
 _struct_{0}_8_5._fields_ = [('j', c_int)]
 
 class blob3(Structure):
     pass
-blob3._anonymous_ = ('b',)
-blob3._pack_ = 4
 blob3._fields_ = [('b', _struct_{0}_8_5)]
 
 var_b1 = blob1.in_dll(_lib, 'var_b1')
@@ -205,7 +193,6 @@ struct my_blob b;
         ''', '''
 class my_blob(Structure):
     pass
-my_blob._pack_ = 4
 my_blob._fields_ = [('i', c_int)]
 
 b = my_blob.in_dll(_lib, 'b')
@@ -227,13 +214,11 @@ struct foo {
         ''', '''
 class my_blob(Structure):
     pass
-my_blob._pack_ = 4
 my_blob._fields_ = [('i', c_int)]
 
 class foo(Structure):
     pass
 
-foo._pack_ = 4
 foo._fields_ = [('blob', my_blob)]
         ''')
 
@@ -275,12 +260,10 @@ struct blob_2 b2;
         ''', '''
 class blob_1(Structure):
     pass
-blob_1._pack_ = 4
 blob_1._fields_ = [('i', c_int)]
 
 class blob_2(Structure):
     pass
-blob_2._pack_ = 4
 blob_2._fields_ = [('b1', blob_1)]
 
 b2 = blob_2.in_dll(_lib, 'b2')
@@ -309,10 +292,8 @@ class foo(Structure):
 
 class blob(Structure):
     pass
-blob._pack_ = 4
 blob._fields_ = [('i', c_int)]
 
-foo._pack_ = 8
 foo._fields_ = [('bp', POINTER(blob))]
 
 f = foo.in_dll(_lib, 'f')

@@ -12,7 +12,6 @@ struct foo {
         ''', '''
 class foo(Structure):
     pass
-foo._pack_ = 4
 foo._fields_ = [('bar', c_int)]
         ''')
 
@@ -34,12 +33,10 @@ struct bar {
         ''', '''
 class foo(Structure):
     pass
-foo._pack_ = 4
 foo._fields_ = [('i', c_int)]
 
 class bar(Structure):
     pass
-bar._pack_ = 4
 bar._fields_ = [('s', foo)]
         ''')
 
@@ -52,7 +49,6 @@ struct blob {
         ''', '''
 class blob(Structure):
     pass
-blob._pack_ = 8
 blob._fields_ = [('bp', POINTER(blob)),
                  ('i', c_int)]
         ''')
@@ -70,10 +66,8 @@ class blob1(Structure):
 
 class blob2(Structure):
     pass
-blob2._pack_ = 8
 blob2._fields_ = [('bp1', POINTER(blob1))]
 
-blob1._pack_ = 8
 blob1._fields_ = [('b2', blob2)]
         ''')
 
@@ -87,13 +81,10 @@ struct foo {
         ''', '''
 class _struct_input_c_2_5(Structure):
     pass
-_struct_input_c_2_5._pack_ = 4
 _struct_input_c_2_5._fields_ = [('i', c_int)]
 
 class foo(Structure):
     pass
-foo._anonymous_ = ('s',)
-foo._pack_ = 4
 foo._fields_ = [('s', _struct_input_c_2_5)]
         ''')
 
@@ -106,7 +97,6 @@ struct foo {
         ''', '''
 class foo(Structure):
     pass
-foo._pack_ = 4
 foo._fields_ = [('i', c_int, 1),
                 ('j', c_int, 31)]
         ''')
@@ -128,10 +118,8 @@ class blob1(Structure):
 
 class blob2(Structure):
     pass
-blob2._pack_ = 8
 blob2._fields_ = [('b1', POINTER(blob1))]
 
-blob1._pack_ = 8
 blob1._fields_ = [('b2', POINTER(blob2))]
         ''')
 
@@ -147,12 +135,10 @@ struct bar{
         ''', '''
 class __foo(Structure):
     pass
-__foo._pack_ = 4
 __foo._fields_ = [('i', c_int)]
 
 class bar(Structure):
     pass
-bar._pack_ = 4
 bar._fields_ = [('foo', __foo)]
         ''')
 

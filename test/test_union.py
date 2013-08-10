@@ -13,7 +13,6 @@ union foo {
         ''', '''
 class foo(Union):
     pass
-foo._pack_ = 4
 foo._fields_ = [('i', c_int),
                 ('c', c_char)]
         ''')
