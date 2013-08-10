@@ -1,6 +1,6 @@
 '''Scan syntax tree for forward declarations.'''
 
-from clang.cindex import CursorKind
+from cbind.cindex import CursorKind
 from cbind.passes.util import traverse_postorder, strip_type
 import cbind.annotations as annotations
 

@@ -1,6 +1,6 @@
 '''Utility functions.'''
 
-from clang.cindex import CursorKind, TypeKind
+from cbind.cindex import CursorKind, TypeKind
 
 
 def traverse_postorder(syntax_tree, postorder):

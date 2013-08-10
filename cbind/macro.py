@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from collections import OrderedDict, namedtuple
 from cStringIO import StringIO
-from clang.cindex import CursorKind
+from cbind.cindex import CursorKind
 from cbind.source import SyntaxTree
 
 

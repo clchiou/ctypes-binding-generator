@@ -1,10 +1,8 @@
 '''Data structures representing C source codes'''
 
 from collections import defaultdict
-from ctypes import c_uint
-
-import clang.cindex as cindex
-from clang.cindex import CursorKind, TypeKind
+from cbind.cindex import (Index, Cursor, CursorKind, Type, TypeKind,
+        clang_getCursorLinkage, clang_Cursor_getNumArguments)
 
 
 # clang Index.h enum CXLinkageKind
@@ -13,10 +11,6 @@ CXLINKAGE_NOLINKAGE = 1
 CXLINKAGE_INTERNAL = 2
 CXLINKAGE_UNIQUEEXTERNAL = 3
 CXLINKAGE_EXTERNAL = 4
-
-# Register libclang function.
-cindex.register_function(cindex.conf.lib,
-        ('clang_getCursorLinkage', [cindex.Cursor], c_uint), False)
 
 
 def _make_subtree_iterator(iter_cursors):
@@ -51,7 +45,7 @@ class SyntaxTree:
 
     HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL, CursorKind.UNION_DECL))
 
-    _index = cindex.Index.create()
+    _index = Index.create()
 
     @classmethod
     def parse(cls, path, contents=None, args=None):
@@ -108,14 +102,13 @@ class SyntaxTree:
             message = '\'%s\' object has no attribute \'%s\'' % (cls, name)
             raise AttributeError(message)
         attr = getattr(self.cursor, name)
-        if isinstance(attr, cindex.Type):
-            # Wrap cindex.Type instance
-            attr = Type(attr, self)
+        if isinstance(attr, Type):
+            attr = SyntaxTreeType(attr, self)
         return attr
 
     def is_external_linkage(self):
         '''Test if linkage is external.'''
-        linkage_kind = cindex.conf.lib.clang_getCursorLinkage(self.cursor)
+        linkage_kind = clang_getCursorLinkage(self.cursor)
         return linkage_kind == CXLINKAGE_EXTERNAL
 
     def is_user_defined_type_decl(self):
@@ -125,10 +118,10 @@ class SyntaxTree:
     @property
     def num_arguments(self):
         '''Get number of arguments.'''
-        return cindex.conf.lib.clang_Cursor_getNumArguments(self.cursor)
+        return clang_Cursor_getNumArguments(self.cursor)
 
-    get_children = _make_subtree_iterator(cindex.Cursor.get_children)
-    get_arguments = _make_subtree_iterator(cindex.Cursor.get_arguments)
+    get_children = _make_subtree_iterator(Cursor.get_children)
+    get_arguments = _make_subtree_iterator(Cursor.get_arguments)
 
     def get_field_declaration(self):
         '''Get direct sub-trees that are field declaration.'''
@@ -167,11 +160,11 @@ def _make_type_getter(getter):
     def wrapper(self):
         '''Wrapper of type getter.'''
         c_type = getter(self.c_type)
-        return Type(c_type, self.syntax_tree)
+        return SyntaxTreeType(c_type, self.syntax_tree)
     return wrapper
 
 
-class Type:
+class SyntaxTreeType:
     '''Class represents C type.'''
 
     PROPERTIES = frozenset('''
@@ -211,15 +204,14 @@ class Type:
         cursor = self.c_type.get_declaration()
         return SyntaxTree(cursor, None, self.syntax_tree.annotation_table)
 
-    get_array_element_type = \
-            _make_type_getter(cindex.Type.get_array_element_type)
-    get_canonical = _make_type_getter(cindex.Type.get_canonical)
-    get_pointee = _make_type_getter(cindex.Type.get_pointee)
-    get_result = _make_type_getter(cindex.Type.get_result)
+    get_array_element_type = _make_type_getter(Type.get_array_element_type)
+    get_canonical = _make_type_getter(Type.get_canonical)
+    get_pointee = _make_type_getter(Type.get_pointee)
+    get_result = _make_type_getter(Type.get_result)
 
     def get_argument_types(self):
         '''Get type of arguments.'''
-        return tuple(Type(c_type, self.syntax_tree)
+        return tuple(SyntaxTreeType(c_type, self.syntax_tree)
                 for c_type in self.c_type.argument_types())
 
     def is_user_defined_type(self):

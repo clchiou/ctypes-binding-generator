@@ -1,7 +1,7 @@
 '''Scan anonymous PODs.'''
 
 import re
-from clang.cindex import CursorKind, TypeKind
+from cbind.cindex import CursorKind, TypeKind
 from cbind.passes.util import traverse_postorder
 import cbind.annotations as annotations
 

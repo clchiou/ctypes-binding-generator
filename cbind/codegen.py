@@ -1,7 +1,7 @@
 '''Generate ctypes binding from syntax tree.'''
 
 import logging
-from clang.cindex import CursorKind, TypeKind
+from cbind.cindex import CursorKind, TypeKind
 import cbind.annotations as annotations
 
 
