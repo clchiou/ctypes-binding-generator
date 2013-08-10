@@ -7,9 +7,9 @@ from cbind.macro import MacroGenerator
 DEFAULT_LOADER_CODES = '''\
 import sys
 if sys.platform == 'darwin':
-    _lib = CDLL('{darwin_library}', RTLD_GLOBAL)
+    _lib = cdll.LoadLibrary('{darwin_library}')
 elif sys.platform == 'win32' or sys.platform == 'cygwin':
-    _lib = windll.LoadLibrary('{windows_library}')
+    _lib = cdll.LoadLibrary('{windows_library}')
 else:
     _lib = cdll.LoadLibrary('{posix_library}')
 del sys\n
@@ -23,25 +23,17 @@ def parse_args():
             Generate ctypes binding from C source files with clang.
             ''')
     parser.add_argument('-v', action='count', default=0,
-            help='verbosity')
+            help='increase verbosity level')
     parser.add_argument('-i', metavar='SOURCE', action='append',
             help='C source file')
     parser.add_argument('-o', metavar='OUTPUT', default='-',
             help='output file, default to \'-\' (stdout)')
 
-    group = parser.add_argument_group(title='library loader arguments',
-            description='''
-            Insert Python codes that load the library. If only the library is
-            provided, default loader codes are inserted.
-            ''')
+    group = parser.add_mutually_exclusive_group()
     group.add_argument('-l', metavar='LIBRARY',
-            help='Name of the library in POSIX systems')
-    group.add_argument('--win-dll', metavar='LIBRARY',
-            help='Name of the library in Windows systems')
-    group.add_argument('--darwin-lib', metavar='LIBRARY',
-            help='Name of the library in Darwin systems')
+            help='library name; use default loader codes')
     group.add_argument('--loader-codes', metavar='FILE', type=file,
-            help='Python loader codes')
+            help='customized Python loader codes')
 
     group = parser.add_argument_group(title='macro parser arguments',
             description='''
@@ -66,15 +58,13 @@ def parse_args():
 
 def insert_loader(args, output):
     '''Insert library loader.'''
-    if not (args.l or args.darwin_lib or args.win_dll):
-        return
-    if args.loader_codes:
-        loader_codes = args.loader_codes.read()
-    else:
-        loader_codes = DEFAULT_LOADER_CODES
-    output.write(loader_codes.format(posix_library=args.l,
-        darwin_library=args.darwin_lib,
-        windows_library=args.win_dll))
+    if args.l:
+        libname = args.l.partition('.so')[0]
+        output.write(DEFAULT_LOADER_CODES.format(posix_library=args.l,
+            darwin_library=libname + '.dylib',
+            windows_library=libname + '.dll'))
+    elif args.loader_codes:
+        output.write(args.loader_codes.read())
 
 
 def main():
