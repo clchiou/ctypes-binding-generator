@@ -16,9 +16,14 @@ class TestCtypesBindingGenerator(unittest.TestCase):
 
     def run_test(self, c_code, python_code, args=None):
         '''Generate Python code from C code and compare it to the answer.'''
-        c_src = StringIO(c_code)
         cbgen = CtypesBindingGenerator()
-        cbgen.parse('input.c', contents=c_src, args=args)
+        if isinstance(c_code, str):
+            c_src = StringIO(c_code)
+            cbgen.parse('input.c', contents=c_src, args=args)
+        else:
+            for filename, code in c_code:
+                c_src = StringIO(code)
+                cbgen.parse(filename, contents=c_src, args=args)
         output = StringIO()
         cbgen.generate(output)
         gen_code = output.getvalue()

@@ -1,6 +1,7 @@
 '''Data structures representing C source codes'''
 
 from collections import defaultdict
+from os.path import basename
 from cbind.cindex import (Index, Cursor, CursorKind, Type, TypeKind,
         clang_getCursorLinkage, clang_Cursor_getNumArguments)
 
@@ -11,6 +12,22 @@ CXLINKAGE_NOLINKAGE = 1
 CXLINKAGE_INTERNAL = 2
 CXLINKAGE_UNIQUEEXTERNAL = 3
 CXLINKAGE_EXTERNAL = 4
+
+
+class SyntaxTreeForest(list):
+    '''A list of syntax trees that share a common annotation table.'''
+
+    def __init__(self):
+        '''Initialize the object.'''
+        self.annotation_table = defaultdict(dict)
+        super(SyntaxTreeForest, self).__init__()
+
+    def parse(self, path, contents=None, args=None):
+        '''Parse C source file.'''
+        syntax_tree = SyntaxTree.parse(path, contents=contents, args=args,
+                annotation_table=self.annotation_table)
+        self.append(syntax_tree)
+        return syntax_tree
 
 
 def _make_subtree_iterator(iter_cursors):
@@ -48,7 +65,7 @@ class SyntaxTree:
     _index = Index.create()
 
     @classmethod
-    def parse(cls, path, contents=None, args=None):
+    def parse(cls, path, contents=None, args=None, annotation_table=None):
         '''Parse C source file.'''
         if contents:
             unsaved_files = [(path, contents)]
@@ -67,7 +84,9 @@ class SyntaxTree:
                 raise SyntaxError('%s:%d:%d: %s' %
                         (filename, diag.location.line, diag.location.column,
                             diag.spelling))
-        return cls(tunit.cursor, tunit, defaultdict(dict))
+        if annotation_table is None:
+            annotation_table = defaultdict(dict)
+        return cls(tunit.cursor, tunit, annotation_table)
 
     def __init__(self, cursor, translation_unit, annotation_table):
         '''Initialize the object.'''
@@ -89,7 +108,7 @@ class SyntaxTree:
         if cursor.spelling:
             return hash('%s:%s' % (cursor.kind, cursor.spelling))
         if cursor.location.file:
-            filename = cursor.location.file.name
+            filename = basename(cursor.location.file.name)
         else:
             filename = '?'
         return hash('%s:%s:%d' %

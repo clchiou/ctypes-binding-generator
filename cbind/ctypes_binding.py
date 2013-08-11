@@ -1,6 +1,6 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
-from cbind.source import SyntaxTree
+from cbind.source import SyntaxTreeForest
 from cbind.passes import (scan_required_nodes, scan_forward_decl,
         scan_va_list_tag, scan_anonymous_pod)
 from cbind.codegen import gen_tree_node, gen_record
@@ -12,25 +12,25 @@ class CtypesBindingGenerator:
 
     def __init__(self):
         '''Initialize the object.'''
-        self.syntax_trees = []
+        self.syntax_tree_forest = SyntaxTreeForest()
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
-        syntax_tree = SyntaxTree.parse(path, contents=contents, args=args)
+        syntax_tree = self.syntax_tree_forest.parse(path,
+                contents=contents, args=args)
         scan_required_nodes(syntax_tree, path)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
         scan_anonymous_pod(syntax_tree)
-        self.syntax_trees.append(syntax_tree)
 
     def get_translation_units(self):
         '''Get translation units.'''
-        for syntax_tree in self.syntax_trees:
+        for syntax_tree in self.syntax_tree_forest:
             yield syntax_tree.translation_unit
 
     def generate(self, output):
         '''Generate ctypes binding.'''
-        for syntax_tree in self.syntax_trees:
+        for syntax_tree in self.syntax_tree_forest:
             va_list_tag = syntax_tree.get_annotation(
                     annotations.USE_VA_LIST_TAG, False)
             if va_list_tag:
@@ -38,7 +38,7 @@ class CtypesBindingGenerator:
                         declared=False, declaration=False)
                 output.write('\n')
                 break
-        for syntax_tree in self.syntax_trees:
+        for syntax_tree in self.syntax_tree_forest:
             syntax_tree.traverse(
                     preorder=lambda tree: self._gen_forward_decl(tree, output),
                     postorder=lambda tree: gen_tree_node(tree, output))
