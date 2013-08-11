@@ -116,7 +116,8 @@ enum my_enum {
 #include "%s"
 enum my_enum x;
         ''', '''
-my_enum = c_uint
+class my_enum(c_uint):
+    pass
 X = 0
 Y = 1
 

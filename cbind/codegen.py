@@ -255,8 +255,8 @@ def _make_pod_body(tree, name, output):
 def _make_enum(tree, output):
     '''Generate ctypes binding of a enum definition.'''
     if tree.spelling:
-        output.write('%s = %s\n' %
-                (tree.spelling, _make_type(tree.enum_type)))
+        output.write('class %s(%s):\n%spass\n' %
+                (tree.spelling, _make_type(tree.enum_type), INDENT))
     for enum in tree.get_children():
         output.write('%s = %s\n' % (enum.spelling, enum.enum_value))
 

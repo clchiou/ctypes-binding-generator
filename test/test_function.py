@@ -89,7 +89,8 @@ enum X {
 
 enum X foo(void);
         ''', '''
-X = c_uint
+class X(c_uint):
+    pass
 x = 0
 
 foo = _lib.foo

@@ -43,7 +43,8 @@ void (*foo)(void);
 void (*bar)(char *fmt, ...);
 enum X (*spam)(void);
         ''', '''
-X = c_uint
+class X(c_uint):
+    pass
 x = 0
 
 foo = CFUNCTYPE(None).in_dll(_lib, 'foo')
