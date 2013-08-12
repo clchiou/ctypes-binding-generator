@@ -78,19 +78,19 @@ def gen_tree_node(tree, output):
     if tree.get_annotation(annotations.DEFINED, False):
         return
     declaration = False
-    if tree.kind is CursorKind.TYPEDEF_DECL:
+    if tree.kind == CursorKind.TYPEDEF_DECL:
         _make_typedef(tree, output)
-    elif tree.kind is CursorKind.FUNCTION_DECL:
+    elif tree.kind == CursorKind.FUNCTION_DECL:
         _make_function(tree, output)
-    elif (tree.kind is CursorKind.STRUCT_DECL or
-            tree.kind is CursorKind.UNION_DECL):
+    elif (tree.kind == CursorKind.STRUCT_DECL or
+            tree.kind == CursorKind.UNION_DECL):
         declared = tree.get_annotation(annotations.DECLARED, False)
         declaration = not tree.is_definition()
         gen_record(tree, output,
                 declared=declared, declaration=declaration)
-    elif tree.kind is CursorKind.ENUM_DECL and tree.is_definition():
+    elif tree.kind == CursorKind.ENUM_DECL and tree.is_definition():
         _make_enum(tree, output)
-    elif tree.kind is CursorKind.VAR_DECL:
+    elif tree.kind == CursorKind.VAR_DECL:
         _make_var(tree, output)
     else:
         return
@@ -119,22 +119,22 @@ def _make_type(type_):
         tree = type_.get_declaration()
         if tree.spelling:
             c_type = tree.spelling
-        elif tree.kind is CursorKind.ENUM_DECL:
+        elif tree.kind == CursorKind.ENUM_DECL:
             c_type = _make_type(tree.enum_type)
         else:
             c_type = tree.get_annotation(annotations.NAME)
-    elif type_.kind is TypeKind.TYPEDEF:
+    elif type_.kind == TypeKind.TYPEDEF:
         tree = type_.get_declaration()
         c_type = (BUILTIN_TYPEDEFS.get(tree.spelling) or
                 _make_type(type_.get_canonical()))
-    elif type_.kind is TypeKind.CONSTANTARRAY:
+    elif type_.kind == TypeKind.CONSTANTARRAY:
         # TODO(clchiou): Make parentheses context-sensitive
         element_type = _make_type(type_.get_array_element_type())
         c_type = '(%s * %d)' % (element_type, type_.get_array_size())
-    elif type_.kind is TypeKind.INCOMPLETEARRAY:
+    elif type_.kind == TypeKind.INCOMPLETEARRAY:
         pointee_type = type_.get_array_element_type()
         c_type = _make_pointer_type(pointee_type=pointee_type)
-    elif type_.kind is TypeKind.POINTER:
+    elif type_.kind == TypeKind.POINTER:
         c_type = _make_pointer_type(pointer_type=type_)
     else:
         c_type = C_TYPE_MAP.get(type_.kind)
@@ -149,20 +149,20 @@ def _make_pointer_type(pointer_type=None, pointee_type=None):
         pointee_type = pointer_type.get_pointee()
     canonical = pointee_type.get_canonical()
     decl = pointee_type.get_declaration()
-    if pointee_type.kind is TypeKind.CHAR_S:
+    if pointee_type.kind == TypeKind.CHAR_S:
         c_type = 'c_char_p'
-    elif pointee_type.kind is TypeKind.WCHAR:
+    elif pointee_type.kind == TypeKind.WCHAR:
         c_type = 'c_wchar_p'
-    elif pointee_type.kind is TypeKind.VOID:
+    elif pointee_type.kind == TypeKind.VOID:
         c_type = 'c_void_p'
-    elif (pointee_type.kind is TypeKind.TYPEDEF and
-            canonical.kind is TypeKind.VOID):
+    elif (pointee_type.kind == TypeKind.TYPEDEF and
+            canonical.kind == TypeKind.VOID):
         # Handle special case "typedef void foo;"
         c_type = 'c_void_p'
-    elif (pointee_type.kind is TypeKind.TYPEDEF and
+    elif (pointee_type.kind == TypeKind.TYPEDEF and
             decl.spelling == 'wchar_t'):
         c_type = 'c_wchar_p'
-    elif canonical.kind is TypeKind.FUNCTIONPROTO:
+    elif canonical.kind == TypeKind.FUNCTIONPROTO:
         c_type = _make_function_pointer(canonical)
     else:
         c_type = 'POINTER(%s)' % _make_type(pointee_type)
@@ -181,7 +181,7 @@ def _make_function_pointer(type_):
     else:
         argtypes = ''
     result_type = type_.get_result()
-    if result_type.kind is TypeKind.VOID:
+    if result_type.kind == TypeKind.VOID:
         restype = 'None'
     else:
         restype = _make_type(result_type)
@@ -192,7 +192,7 @@ def _make_typedef(tree, output):
     '''Generate ctypes binding of a typedef statement.'''
     type_ = tree.underlying_typedef_type
     # Handle special case "typedef void foo;"
-    if type_.kind is TypeKind.VOID:
+    if type_.kind == TypeKind.VOID:
         return
     output.write('%s = %s\n' % (tree.spelling, _make_type(type_)))
 
@@ -206,7 +206,7 @@ def _make_function(tree, output):
     argtypes = _make_function_arguments(tree)
     if argtypes:
         output.write('%s.argtypes = [%s]\n' % (name, argtypes))
-    if tree.result_type.kind is not TypeKind.VOID:
+    if tree.result_type.kind != TypeKind.VOID:
         restype = _make_type(tree.result_type)
         output.write('%s.restype = %s\n' % (name, restype))
 
@@ -221,7 +221,7 @@ def _make_function_arguments(tree):
 
 def _make_pod_header(tree, name, output):
     '''Generate the 'class ...' part of POD.'''
-    if tree.kind is CursorKind.STRUCT_DECL:
+    if tree.kind == CursorKind.STRUCT_DECL:
         pod_kind = 'Structure'
     else:
         pod_kind = 'Union'

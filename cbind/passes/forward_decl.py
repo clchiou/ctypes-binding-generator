@@ -16,7 +16,7 @@ def _scan_tree(tree, has_seen):
     if tree.is_user_defined_type_decl():
         has_seen.add(tree)
 
-    if tree.kind is CursorKind.FUNCTION_DECL:
+    if tree.kind == CursorKind.FUNCTION_DECL:
         for type_ in tree.type.get_argument_types():
             _scan_type_forward_decl(type_, has_seen)
         _scan_type_forward_decl(tree.result_type, has_seen)

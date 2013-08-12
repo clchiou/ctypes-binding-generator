@@ -147,7 +147,7 @@ class SyntaxTree:
         if self.kind not in self.HAS_FIELD_DECL:
             return
         for child_tree in self.get_children():
-            if child_tree.kind is CursorKind.FIELD_DECL:
+            if child_tree.kind == CursorKind.FIELD_DECL:
                 yield child_tree
 
     def traverse(self, preorder=None, postorder=None, prune=None):

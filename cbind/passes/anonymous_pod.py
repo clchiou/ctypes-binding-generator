@@ -13,10 +13,10 @@ def scan_anonymous_pod(syntax_tree):
 
 def _scan_tree(tree):
     '''Scan anonymous PODs.'''
-    if tree.kind is CursorKind.TYPEDEF_DECL:
+    if tree.kind == CursorKind.TYPEDEF_DECL:
         _typedef_pod(tree)
-    elif (tree.kind is CursorKind.STRUCT_DECL or
-            tree.kind is CursorKind.UNION_DECL):
+    elif (tree.kind == CursorKind.STRUCT_DECL or
+            tree.kind == CursorKind.UNION_DECL):
         _real_anonymous_pod(tree)
 
 
@@ -38,7 +38,7 @@ def _real_anonymous_pod(tree):
         return
     if tree.get_annotation(annotations.NAME, False):
         return
-    if tree.kind is CursorKind.STRUCT_DECL:
+    if tree.kind == CursorKind.STRUCT_DECL:
         kind = 'struct'
     else:
         kind = 'union'

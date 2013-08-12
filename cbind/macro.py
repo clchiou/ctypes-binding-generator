@@ -135,7 +135,7 @@ class MacroGenerator:
         enum_trees = []
         def search_enum_def(tree):
             '''Test if the tree is an enum definition.'''
-            if tree.kind is CursorKind.ENUM_DECL and tree.is_definition():
+            if tree.kind == CursorKind.ENUM_DECL and tree.is_definition():
                 enum_trees.append(tree)
         syntax_tree.traverse(search_enum_def)
         if not enum_trees:
@@ -161,7 +161,7 @@ class MacroGenerator:
                 env = bound_names
             def check_symbol_name(token):
                 '''Check if token name is defined.'''
-                if token.kind is not Token.SYMBOL:
+                if token.kind != Token.SYMBOL:
                     return
                 if token.spelling in env:
                     return
@@ -319,7 +319,7 @@ class Parser:
         token = self._next()
         for match in matches:
             kind, spellings = match[0], match[1:]
-            if kind and token.kind is not kind:
+            if kind and token.kind != kind:
                 continue
             if spellings and token.spelling not in spellings:
                 continue
@@ -360,7 +360,7 @@ class Parser:
         # It is quite common that a macro ends without semicolon...
         expr = self._cond_expr()
         semicolon = self._match((Token.MISC, ';'), (Token.END,))
-        if semicolon.kind is not Token.END:
+        if semicolon.kind != Token.END:
             self._match((Token.END,))
         return expr
 
@@ -429,7 +429,7 @@ class Parser:
                 (Token.CHAR_LITERAL,),
                 (Token.INT_LITERAL,),
                 (Token.FP_LITERAL,))
-        if this.kind is Token.PARENTHESES:
+        if this.kind == Token.PARENTHESES:
             expr = self._cond_expr()
             self._match((Token.PARENTHESES, ')'))
             par = Token(kind=Token.PARENTHESES, spelling='()')
@@ -450,7 +450,7 @@ class Expression(namedtuple('Expression', 'this children')):
 
     def translate(self, output):
         '''Translate C expression to Python codes.'''
-        if self.this.kind is Token.FUNCTION:
+        if self.this.kind == Token.FUNCTION:
             self.children[0].translate(output)
             output.write('(')
             first = True
@@ -460,23 +460,23 @@ class Expression(namedtuple('Expression', 'this children')):
                 child.translate(output)
                 first = False
             output.write(')')
-        elif self.this.kind is Token.PARENTHESES:
+        elif self.this.kind == Token.PARENTHESES:
             output.write('(')
             self.children[0].translate(output)
             output.write(')')
-        elif self.this.kind is Token.TRIOP:
+        elif self.this.kind == Token.TRIOP:
             self.children[1].translate(output)
             output.write(' if ')
             self.children[0].translate(output)
             output.write(' else ')
             self.children[2].translate(output)
-        elif self.this.kind is Token.BINOP:
+        elif self.this.kind == Token.BINOP:
             self.children[0].translate(output)
             output.write(' ')
             self.this.translate(output)
             output.write(' ')
             self.children[1].translate(output)
-        elif self.this.kind is Token.UNIOP:
+        elif self.this.kind == Token.UNIOP:
             if self.this.spelling == '!':
                 output.write('not ')
             else:
@@ -567,24 +567,24 @@ class Token(namedtuple('Token', 'kind spelling')):
 
     def translate(self, output):
         '''Translate this token to Python codes.'''
-        if self.kind is self.CHAR_LITERAL:
+        if self.kind == self.CHAR_LITERAL:
             output.write('ord(%s)' % self.spelling)
-        elif self.kind is self.BINOP and self.spelling == '&&':
+        elif self.kind == self.BINOP and self.spelling == '&&':
             output.write('and')
-        elif self.kind is self.BINOP and self.spelling == '||':
+        elif self.kind == self.BINOP and self.spelling == '||':
             output.write('or')
-        elif self.kind is self.INT_LITERAL or self.kind is self.FP_LITERAL:
+        elif self.kind == self.INT_LITERAL or self.kind == self.FP_LITERAL:
             if (self.spelling.startswith('0x') or
                     self.spelling.startswith('0X')):
                 output.write(self.spelling.rstrip('uUlL'))
             else:
                 output.write(self.spelling.rstrip('fFuUlL'))
-        elif self.kind is self.CAT:
+        elif self.kind == self.CAT:
             self.spelling[0].translate(output)
             for part in self.spelling[1:]:
                 output.write(' ')
                 part.translate(output)
-        elif self.kind is self.SYMBOL:
+        elif self.kind == self.SYMBOL:
             output.write(CTYPES_SYMBOLS.get(self.spelling, self.spelling))
         else:
             output.write(self.spelling)
