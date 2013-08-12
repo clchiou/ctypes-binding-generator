@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import subprocess
-import tempfile
 from collections import OrderedDict, namedtuple
 from cStringIO import StringIO
 from cbind.cindex import CursorKind
@@ -114,19 +113,15 @@ class MacroGenerator:
     @classmethod
     def _clang_const_int(cls, c_path, args, symbols):
         '''Run clang on constant integers.'''
-        tmp_src_fd, tmp_src_path = tempfile.mkstemp(suffix='.c')
-        try:
-            with os.fdopen(tmp_src_fd, 'w') as tmp_src:
-                c_abs_path = os.path.abspath(c_path)
-                tmp_src.write('#include "%s"\n' % c_abs_path)
-                tmp_src.write('enum {\n')
-                for symbol in symbols:
-                    tmp_src.write('%s_%s = %s,\n' %
-                            (cls.MAGIC, symbol.name, symbol.body))
-                tmp_src.write('};\n')
-            syntax_tree = SyntaxTree.parse(tmp_src_path, args=args)
-        finally:
-            os.remove(tmp_src_path)
+        c_abs_path = os.path.abspath(c_path)
+        src = StringIO()
+        src.write('#include "%s"\n' % c_abs_path)
+        src.write('enum {\n')
+        for symbol in symbols:
+            src.write('%s_%s = %s,\n' % (cls.MAGIC, symbol.name, symbol.body))
+        src.write('};\n')
+        syntax_tree = SyntaxTree.parse('input.c', contents=src.getvalue(),
+                args=args)
         return cls._find_enums(syntax_tree)
 
     @staticmethod
