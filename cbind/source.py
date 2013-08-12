@@ -2,16 +2,8 @@
 
 from collections import defaultdict
 from os.path import basename
-from cbind.cindex import (Index, Cursor, CursorKind, Type, TypeKind,
-        clang_getCursorLinkage, clang_Cursor_getNumArguments)
-
-
-# clang Index.h enum CXLinkageKind
-CXLINKAGE_INVALID = 0
-CXLINKAGE_NOLINKAGE = 1
-CXLINKAGE_INTERNAL = 2
-CXLINKAGE_UNIQUEEXTERNAL = 3
-CXLINKAGE_EXTERNAL = 4
+from cbind.cindex import (Index, Cursor, CursorKind,
+        Type, TypeKind, LinkageKind)
 
 
 class SyntaxTreeForest(list):
@@ -46,6 +38,7 @@ class SyntaxTree:
         enum_type
         enum_value
         get_bitfield_width
+        get_num_arguments
         is_bitfield
         is_definition
         kind
@@ -127,17 +120,11 @@ class SyntaxTree:
 
     def is_external_linkage(self):
         '''Test if linkage is external.'''
-        linkage_kind = clang_getCursorLinkage(self.cursor)
-        return linkage_kind == CXLINKAGE_EXTERNAL
+        return self.cursor.linkage_kind == LinkageKind.EXTERNAL
 
     def is_user_defined_type_decl(self):
         '''Test if this node is declaration of user-defined type.'''
         return self.kind in self.UDT_DECL
-
-    @property
-    def num_arguments(self):
-        '''Get number of arguments.'''
-        return clang_Cursor_getNumArguments(self.cursor)
 
     get_children = _make_subtree_iterator(Cursor.get_children)
     get_arguments = _make_subtree_iterator(Cursor.get_arguments)

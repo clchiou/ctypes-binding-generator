@@ -213,7 +213,7 @@ def _make_function(tree, output):
 
 def _make_function_arguments(tree):
     '''Generate ctypes binding of function's arguments.'''
-    if tree.type.is_function_variadic() or tree.num_arguments <= 0:
+    if tree.type.is_function_variadic() or tree.get_num_arguments() <= 0:
         return None
     args = (_make_type(arg.type) for arg in tree.get_arguments())
     return ', '.join(args)
