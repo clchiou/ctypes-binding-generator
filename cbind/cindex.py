@@ -1,9 +1,12 @@
 '''Import either min_cindex or clang_cindex.'''
 
-try:
+import cbind
+
+
+if cbind.cindex_choice() == cbind.MIN_CINDEX:
     from cbind.min_cindex import (Index, Cursor, CursorKind,
             Type, TypeKind, LinkageKind)
-except ImportError:
+else:
     from cbind.clang_cindex import (Index, Cursor, CursorKind,
             Type, TypeKind, LinkageKind)
 

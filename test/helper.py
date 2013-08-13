@@ -8,6 +8,9 @@ import unittest
 from cStringIO import StringIO
 from itertools import izip
 
+import cbind
+cbind.load_modules()
+
 from cbind import CtypesBindingGenerator, MacroGenerator
 
 

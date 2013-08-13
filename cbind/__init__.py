@@ -1,7 +1,8 @@
 '''Package for automatic generation of ctypes bindings from C sources.'''
 
-from cbind.ctypes_binding import CtypesBindingGenerator
-from cbind.macro import MacroGenerator
+
+CtypesBindingGenerator = Exception  # pylint: disable=C0103
+MacroGenerator = Exception          # pylint: disable=C0103
 
 
 DEFAULT_LOADER_CODES = '''\
@@ -14,6 +15,32 @@ else:
     _lib = cdll.LoadLibrary('{posix_library}')
 del sys\n
 '''
+
+CLANG_CINDEX    = 'clang-cindex'
+MIN_CINDEX      = 'min-cindex'
+
+# Default choose min_cindex
+_CINDEX_IMPL_CHOICE = MIN_CINDEX
+
+
+def config_cindex(choice):
+    '''Set cindex choice.'''
+    global _CINDEX_IMPL_CHOICE  # pylint: disable=W0603
+    _CINDEX_IMPL_CHOICE = choice
+
+
+def cindex_choice():
+    '''Return cindex choice.'''
+    return _CINDEX_IMPL_CHOICE
+
+
+def load_modules():
+    '''Defer module loading until now.'''
+    # pylint: disable=W0602,W0612,W0621
+    global CtypesBindingGenerator
+    global MacroGenerator
+    from cbind.ctypes_binding import CtypesBindingGenerator
+    from cbind.macro import MacroGenerator
 
 
 def parse_args():
@@ -28,6 +55,9 @@ def parse_args():
             help='C source file')
     parser.add_argument('-o', metavar='OUTPUT', default='-',
             help='output file, default to \'-\' (stdout)')
+    parser.add_argument('--cindex', default=MIN_CINDEX,
+            choices=[MIN_CINDEX, CLANG_CINDEX],
+            help='choose cindex implementation')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-l', metavar='LIBRARY',
@@ -85,6 +115,9 @@ def main():
         clang_args = args.ccargs[1:]
     else:
         clang_args = args.ccargs
+
+    config_cindex(args.cindex)
+    load_modules()
 
     cbgen = CtypesBindingGenerator()
     for c_src in args.i:
