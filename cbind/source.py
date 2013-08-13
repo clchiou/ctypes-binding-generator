@@ -55,8 +55,6 @@ class SyntaxTree:
 
     HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL, CursorKind.UNION_DECL))
 
-    _index = Index.create()
-
     @classmethod
     def parse(cls, path, contents=None, args=None, annotation_table=None):
         '''Parse C source file.'''
@@ -64,7 +62,13 @@ class SyntaxTree:
             unsaved_files = [(path, contents)]
         else:
             unsaved_files = None
-        tunit = cls._index.parse(path, args=args, unsaved_files=unsaved_files)
+        # XXX Hold Index object at local level instead of module level
+        # because Python module cleanup does not guarantee that this module
+        # is cleaned up before cbind.cindex (and libclang).  If the cleanup
+        # ordering is reversed, Index.__del__ will be called after libclang
+        # is released.
+        index = Index.create()
+        tunit = index.parse(path, args=args, unsaved_files=unsaved_files)
         if not tunit:
             message = 'Could not parse C source: %s' % path
             raise SyntaxError(message)
