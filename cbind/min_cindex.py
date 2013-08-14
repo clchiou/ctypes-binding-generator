@@ -356,11 +356,10 @@ def add_enum_constants(cls, name_matcher, converter):
     '''Add enum constants to class.'''
     cls_name = cls.__name__
     name_mapping = {}
-    for name in dir(_index):
+    for name, value in vars(_index).iteritems():
         match = name_matcher.match(name)
         if match:
             new_name = converter(match.group(1))
-            value = getattr(_index, name)
             setattr(cls, new_name, cls(value))
             name_mapping[value] = new_name
     def to_str(self):
