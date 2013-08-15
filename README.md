@@ -14,6 +14,7 @@ ctypes-binding-generator includes a small command-line program called
     $ cbind -i /usr/include/stdio.h -o stdio.py -l libc.so.6 \
         -- -I/usr/local/lib/clang/3.4/include
 
+Note that you need /usr/local/lib/clang/3.4/include for stddef.h, etc.
 Then you may test the generated ctypes binding of stdio.h.
 
     $ python -c 'import stdio; stdio.printf("hello world\n")'
@@ -27,71 +28,36 @@ cannot understand, you have to translate them manually.  Let's consider
 Linux input.h header as an example, and write a small program that dumps
 input events, such as mouse movements.
 
-To enable macro translation, just provide --macro-enable flag to cbind.
+To enable macro translation, just provide --enable-macro flag to cbind.
 
-    $ cbind -i /usr/include/linux/input.h -o demo/linux_input.py -v --macro-enable
-    macro.py: Could not parse macro: #define EVIOCGID _IOR('E', 0x02, struct input_id)
-    macro.py: Could not parse macro: #define EVIOCGREP _IOR('E', 0x03, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCSREP _IOW('E', 0x03, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCGKEYCODE _IOR('E', 0x04, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCGKEYCODE_V2 _IOR('E', 0x04, struct input_keymap_entry)
-    macro.py: Could not parse macro: #define EVIOCSKEYCODE _IOW('E', 0x04, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCSKEYCODE_V2 _IOW('E', 0x04, struct input_keymap_entry)
-    macro.py: Could not parse macro: #define EVIOCGABS(abs) _IOR('E', 0x40 + (abs), struct input_absinfo)
-    macro.py: Could not parse macro: #define EVIOCSABS(abs) _IOW('E', 0xc0 + (abs), struct input_absinfo)
-    macro.py: Could not parse macro: #define EVIOCSFF _IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))
-    macro.py: Could not resolve reference to "_IOR" in #define EVIOCGVERSION _IOR('E', 0x01, int)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGNAME(len) _IOC(_IOC_READ, 'E', 0x06, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGPHYS(len) _IOC(_IOC_READ, 'E', 0x07, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGUNIQ(len) _IOC(_IOC_READ, 'E', 0x08, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGPROP(len) _IOC(_IOC_READ, 'E', 0x09, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGMTSLOTS(len) _IOC(_IOC_READ, 'E', 0x0a, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGKEY(len) _IOC(_IOC_READ, 'E', 0x18, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGLED(len) _IOC(_IOC_READ, 'E', 0x19, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGSND(len) _IOC(_IOC_READ, 'E', 0x1a, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGSW(len) _IOC(_IOC_READ, 'E', 0x1b, len)
-    macro.py: Could not resolve reference to "_IOC" in #define EVIOCGBIT(ev, len) _IOC(_IOC_READ, 'E', 0x20 + (ev), len)
-    macro.py: Could not resolve reference to "_IOW" in #define EVIOCRMFF _IOW('E', 0x81, int)
-    macro.py: Could not resolve reference to "_IOR" in #define EVIOCGEFFECTS _IOR('E', 0x84, int)
-    macro.py: Could not resolve reference to "_IOW" in #define EVIOCGRAB _IOW('E', 0x90, int)
-    macro.py: Could not resolve reference to "_IOW" in #define EVIOCSCLOCKID _IOW('E', 0xa0, int)
+    $ cbind -i /usr/include/linux/input.h -o demo/linux_input.py -v --enable-macro \
+        -- -I/usr/local/lib/clang/3.4/include
+    macro.py: Could not parse macro: #define EVIOCGID (((2U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x02)) << 0) | ((((sizeof(struct input_id)))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCGREP (((2U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x03)) << 0) | ((((sizeof(unsigned int[2])))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCSREP (((1U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x03)) << 0) | ((((sizeof(unsigned int[2])))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCGKEYCODE (((2U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x04)) << 0) | ((((sizeof(unsigned int[2])))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCGKEYCODE_V2 (((2U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x04)) << 0) | ((((sizeof(struct input_keymap_entry)))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCSKEYCODE (((1U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x04)) << 0) | ((((sizeof(unsigned int[2])))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCSKEYCODE_V2 (((1U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x04)) << 0) | ((((sizeof(struct input_keymap_entry)))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCGABS(abs) (((2U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x40 + (abs))) << 0) | ((((sizeof(struct input_absinfo)))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCSABS(abs) (((1U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0xc0 + (abs))) << 0) | ((((sizeof(struct input_absinfo)))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCSFF (((1U) << (((0 +8)+8)+14)) | (('E') << (0 +8)) | ((0x80) << 0) | ((sizeof(struct ff_effect)) << ((0 +8)+8)))
 
 Note that we provide -v flag to cbind, which enables verbose output, and
 cbind reports macros that it cannot understand.  However, not all of them
-are incomprehensible to cbind - it just needs some hints.  Let's look at the
-"Could not resolve reference" messages first.  Because cbind only tries to
-translate macros in the header you provide, for macros defined in other headers
-that are referenced, cbind will complain about them.  While cbind *should*
-search recursively for these foreign macro definitions, this feature is not
-implemented for now.  So let's tell cbind the pattern of the names of the
-macros through --macro-include PATTERN flag.  PATTERN is regular expression
-that will match macro names.
+are incomprehensible to cbind - it just needs some hints.  cbind may translate
+constant integer expressions, thanks to Clang, but you have to tell cbind
+which macros are indeed integer expressions with --macro-int.
 
-    $ cbind -i /usr/include/linux/input.h -o demo/linux_input.py -v --macro-enable --macro-include _IO
-    macro.py: Could not parse macro: #define EVIOCGID _IOR('E', 0x02, struct input_id)
-    macro.py: Could not parse macro: #define EVIOCGREP _IOR('E', 0x03, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCSREP _IOW('E', 0x03, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCGKEYCODE _IOR('E', 0x04, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCGKEYCODE_V2 _IOR('E', 0x04, struct input_keymap_entry)
-    macro.py: Could not parse macro: #define EVIOCSKEYCODE _IOW('E', 0x04, unsigned int[2])
-    macro.py: Could not parse macro: #define EVIOCSKEYCODE_V2 _IOW('E', 0x04, struct input_keymap_entry)
-    macro.py: Could not parse macro: #define EVIOCGABS(abs) _IOR('E', 0x40 + (abs), struct input_absinfo)
-    macro.py: Could not parse macro: #define EVIOCSABS(abs) _IOW('E', 0xc0 + (abs), struct input_absinfo)
-    macro.py: Could not parse macro: #define EVIOCSFF _IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))
+    $ cbind -i /usr/include/linux/input.h -o demo/linux_input.py -v --enable-macro --macro-int EVIO \
+        -- -I/usr/local/lib/clang/3.4/include
+    macro.py: Could not parse macro: #define EVIOCGABS(abs) (((2U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0x40 + (abs))) << 0) | ((((sizeof(struct input_absinfo)))) << ((0 +8)+8)))
+    macro.py: Could not parse macro: #define EVIOCSABS(abs) (((1U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0xc0 + (abs))) << 0) | ((((sizeof(struct input_absinfo)))) << ((0 +8)+8)))
 
-Okay, cbind does not complain about unresolved references.  Now what?
-Actually, cbind may translate constant integer expressions, but you have
-to tell cbind where to look through --macro-int PATTERN flag.
+For the remaining two macros you have to translate manually:
 
-    $ cbind -i /usr/include/linux/input.h -o demo/linux_input.py -v --macro-enable --macro-include _IO --macro-int EVIO
-    macro.py: Could not parse macro: #define EVIOCGABS(abs) _IOR('E', 0x40 + (abs), struct input_absinfo)
-    macro.py: Could not parse macro: #define EVIOCSABS(abs) _IOW('E', 0xc0 + (abs), struct input_absinfo)
-
-We reduce the macros that cbind cannot understand to two.  It is good
-enough for now.  Let's manually translate them to Python codes and move on.
-
-    EVIOCGABS = lambda abs: _IOR(ord('E'), 0x40 + abs, input_absinfo)
-    EVIOCSABS = lambda abs: _IOW(ord('E'), 0xc0 + abs, input_absinfo)
+    EVIOCGABS = lambda abs: (2 << 30) | (ord('E') << 8) | (0x40 + abs) | (sizeof(input_absinfo) << 16)
+    EVIOCSABS = lambda abs: (1 << 30) | (ord('E') << 8) | (0xc0 + abs) | (sizeof(input_absinfo) << 16)
 
 Under demo/ directory there is the **evtest** program which uses the
 linux\_input.py binding we generated.  It will require root permission to

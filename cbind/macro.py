@@ -24,6 +24,9 @@ CTYPES_SYMBOLS = {
 }
 
 
+_MAGIC = '__macro_symbol_magic'
+
+
 class MacroException(Exception):
     '''Exception raised by MacroGenerator class.'''
     pass
@@ -32,43 +35,25 @@ class MacroException(Exception):
 class MacroGenerator:
     '''Generate Python code from macro constants.'''
 
-    MAGIC = '__macro_symbol_magic'
-
-    def __init__(self, macro_include=None, macro_exclude=None, macro_int=None):
+    def __init__(self, macro_int=None):
         '''Initialize object.'''
         self.symbol_table = OrderedDict()
         self.parser = Parser()
-        match_nothing = lambda s: False
-        if macro_include:
-            self.macro_include = re.compile(macro_include).match
-        else:
-            self.macro_include = match_nothing
-        if macro_exclude:
-            self.macro_exclude = re.compile(macro_exclude).match
-        else:
-            self.macro_exclude = match_nothing
         if macro_int:
             self.macro_int = re.compile(macro_int).match
         else:
-            self.macro_int = match_nothing
+            self.macro_int = lambda s: False
 
     def parse(self, c_path, args):
         '''Parse the source files.'''
         int_symbols = []
-        candidates = MacroSymbol.enumerate_candidates(c_path)
         for symbol in MacroSymbol.process(c_path, args):
             if not symbol.body:
                 # Ignore empty macros
                 continue
-            if symbol.name not in candidates:
-                if not self.macro_include(symbol.name):
-                    continue
-            else:
-                if self.macro_exclude(symbol.name):
-                    continue
             if self._parse_symbol(symbol):
-                pass
-            elif symbol.args is None and self.macro_int(symbol.name):
+                continue
+            if symbol.args is None and self.macro_int(symbol.name):
                 # We could not parse this symbol, but since user assures us
                 # that it is a constant integer, let us give it another try...
                 self.symbol_table[symbol.name] = None
@@ -95,7 +80,7 @@ class MacroGenerator:
     def _translate_const_int(cls, c_path, args, symbols):
         '''Translate constant integers with libclang.'''
         enums = cls._clang_const_int(c_path, args, symbols)
-        regex_name = re.compile(r'^%s_(\w+)$' % cls.MAGIC)
+        regex_name = re.compile(r'^%s_(\w+)$' % _MAGIC)
         symbol_map = dict((symbol.name, symbol) for symbol in symbols)
         for enum in enums:
             match = regex_name.match(enum.spelling)
@@ -118,7 +103,7 @@ class MacroGenerator:
         src.write('#include "%s"\n' % c_abs_path)
         src.write('enum {\n')
         for symbol in symbols:
-            src.write('%s_%s = %s,\n' % (cls.MAGIC, symbol.name, symbol.body))
+            src.write('%s_%s = %s,\n' % (_MAGIC, symbol.name, symbol.body))
         src.write('};\n')
         syntax_tree = SyntaxTree.parse('input.c', contents=src.getvalue(),
                 args=args)
@@ -199,43 +184,63 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
             \)''', re.VERBOSE)
 
     @classmethod
-    def enumerate_candidates(cls, c_path):
-        '''Get locally-defined macro names.'''
-        candidates = set()
+    def process(cls, c_path, clang_args):
+        '''Run clang preprocessor and return an iterator of MacroSymbol.'''
+        candidates = cls._list_candidates(c_path)
+        # Generate C source and feed it to preprocessor
+        source = StringIO()
+        source.write('#include "%s"\n' % c_path)
+        for symbol in candidates.itervalues():
+            if symbol.args is not None:
+                args_list = '(%s)' % ', '.join(symbol.args)
+            else:
+                args_list = ''
+            source.write('%s_%s %s%s\n' % (_MAGIC, symbol.name,
+                symbol.name, args_list))
+        clang = ['clang', '-E', '-x', 'c', '-']
+        clang.extend(clang_args or ())
+        proc = subprocess.Popen(clang,
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        macros = proc.communicate(source.getvalue())[0]
+        if proc.returncode != 0:
+            raise MacroException('clang preprocessor returns %d' %
+                    proc.returncode)
+        macros = StringIO(macros)
+        # Parse preprocessor output
+        for define_line in macros:
+            if not define_line.startswith(_MAGIC):
+                continue
+            sep = define_line.find(' ')
+            name = define_line[len(_MAGIC)+1:sep]  # sep == -1 is okay here!
+            symbol = candidates[name]
+            if sep != -1:
+                body = define_line[sep:].strip()
+            else:
+                body = None
+            yield cls(name=symbol.name, args=symbol.args, body=body, expr=None)
+
+    @classmethod
+    def _list_candidates(cls, c_path):
+        '''Search candidates.'''
+        candidates = OrderedDict()
         with open(c_path) as c_src:
             for c_src_line in c_src:
-                match = cls.REGEX_DEFINE.match(c_src_line)
-                if match:
-                    candidates.add(match.group(1))
+                match_name = cls.REGEX_DEFINE.match(c_src_line)
+                if not match_name:
+                    continue
+                name = match_name.group(1)
+                args = cls.REGEX_ARGUMENTS.match(c_src_line[match_name.end():])
+                if args:
+                    args = args.group(1)
+                    if args:
+                        args = tuple(arg.strip() for arg in args.split(','))
+                    else:
+                        args = ()
+                else:
+                    args = None
+                candidate = cls(name=name, args=args, body=None, expr=None)
+                candidates[name] = candidate
         return candidates
-
-    @classmethod
-    def process(cls, c_path, args):
-        '''Run GCC preprocessor and return an iterator MacroSymbol.'''
-        gcc = ['gcc', '-E', '-dD', c_path]
-        gcc.extend(args or ())
-        macros = StringIO(subprocess.check_output(gcc))
-        for define_line in macros:
-            match = cls.REGEX_DEFINE.match(define_line)
-            if not match:
-                continue
-            name = match.group(1)
-            args, body = cls._parse_value(define_line[match.end():])
-            yield cls(name=name, args=args, body=body, expr=None)
-
-    @classmethod
-    def _parse_value(cls, value):
-        '''Parse macro value.'''
-        match = cls.REGEX_ARGUMENTS.match(value)
-        if not match:
-            return None, value.strip()
-        args_str = match.group(1)
-        if args_str:
-            args = tuple(arg.strip() for arg in args_str.split(','))
-        else:
-            args = ()
-        body = value[match.end():].strip()
-        return args, body
 
     @classmethod
     def set_expr(cls, symbol, expr):

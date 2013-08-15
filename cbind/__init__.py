@@ -70,14 +70,11 @@ def parse_args():
             Translate C macros into Python codes (experimental). The PATTERN
             argument will match macro name.
             ''')
-    group.add_argument('--macro-enable', action='store_true',
+    group.add_argument('--enable-macro', action='store_true',
             help='enable macro translation')
-    group.add_argument('--macro-include', metavar='PATTERN',
-            help='translate these macros as well')
-    group.add_argument('--macro-exclude', metavar='PATTERN',
-            help='do not translate these macros')
     group.add_argument('--macro-int', metavar='PATTERN',
             help='assure that these macros are integer constants')
+
     parser.add_argument('ccargs', metavar='CCARGS', nargs=argparse.REMAINDER,
             help='arguments passed to clang, separated by an optional \'--\' '
                  'from those passed to %(prog)s')
@@ -122,11 +119,8 @@ def main():
     cbgen = CtypesBindingGenerator()
     for c_src in args.i:
         cbgen.parse(c_src, args=clang_args)
-    if args.macro_enable:
-        mcgen = MacroGenerator(
-                macro_include=args.macro_include,
-                macro_exclude=args.macro_exclude,
-                macro_int=args.macro_int)
+    if args.enable_macro:
+        mcgen = MacroGenerator(macro_int=args.macro_int)
         for c_src in args.i:
             mcgen.parse(c_src, args=clang_args)
 
@@ -139,7 +133,7 @@ def main():
                 'from ctypes import *\n\n' % parser.prog)
         insert_loader(args, output)
         cbgen.generate(output)
-        if args.macro_enable:
+        if args.enable_macro:
             mcgen.generate(output)
 
     return 0

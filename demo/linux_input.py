@@ -2,143 +2,114 @@
 from ctypes import *
 
 class timeval(Structure):
-    _pack_ = 8
-    _fields_ = [('tv_sec', c_long),
-                ('tv_usec', c_long)]
+    pass
+timeval._fields_ = [('tv_sec', c_long),
+                    ('tv_usec', c_long)]
 
 class input_event(Structure):
-    _pack_ = 8
-    _fields_ = [('time', timeval),
-                ('type', c_ushort),
-                ('code', c_ushort),
-                ('value', c_int)]
+    pass
+input_event._fields_ = [('time', timeval),
+                        ('type', c_ushort),
+                        ('code', c_ushort),
+                        ('value', c_int)]
 
 class input_id(Structure):
-    _pack_ = 2
-    _fields_ = [('bustype', c_ushort),
-                ('vendor', c_ushort),
-                ('product', c_ushort),
-                ('version', c_ushort)]
+    pass
+input_id._fields_ = [('bustype', c_ushort),
+                     ('vendor', c_ushort),
+                     ('product', c_ushort),
+                     ('version', c_ushort)]
 
 class input_absinfo(Structure):
-    _pack_ = 4
-    _fields_ = [('value', c_int),
-                ('minimum', c_int),
-                ('maximum', c_int),
-                ('fuzz', c_int),
-                ('flat', c_int),
-                ('resolution', c_int)]
+    pass
+input_absinfo._fields_ = [('value', c_int),
+                          ('minimum', c_int),
+                          ('maximum', c_int),
+                          ('fuzz', c_int),
+                          ('flat', c_int),
+                          ('resolution', c_int)]
 
 class input_keymap_entry(Structure):
-    _pack_ = 4
-    _fields_ = [('flags', c_ubyte),
-                ('len', c_ubyte),
-                ('index', c_ushort),
-                ('keycode', c_uint),
-                ('scancode', (c_ubyte * 32))]
+    pass
+input_keymap_entry._fields_ = [('flags', c_ubyte),
+                               ('len', c_ubyte),
+                               ('index', c_ushort),
+                               ('keycode', c_uint),
+                               ('scancode', (c_ubyte * 32))]
 
 class ff_replay(Structure):
-    _pack_ = 2
-    _fields_ = [('length', c_ushort),
-                ('delay', c_ushort)]
+    pass
+ff_replay._fields_ = [('length', c_ushort),
+                      ('delay', c_ushort)]
 
 class ff_trigger(Structure):
-    _pack_ = 2
-    _fields_ = [('button', c_ushort),
-                ('interval', c_ushort)]
+    pass
+ff_trigger._fields_ = [('button', c_ushort),
+                       ('interval', c_ushort)]
 
 class ff_envelope(Structure):
-    _pack_ = 2
-    _fields_ = [('attack_length', c_ushort),
-                ('attack_level', c_ushort),
-                ('fade_length', c_ushort),
-                ('fade_level', c_ushort)]
+    pass
+ff_envelope._fields_ = [('attack_length', c_ushort),
+                        ('attack_level', c_ushort),
+                        ('fade_length', c_ushort),
+                        ('fade_level', c_ushort)]
 
 class ff_constant_effect(Structure):
-    _pack_ = 2
-    _fields_ = [('level', c_short),
-                ('envelope', ff_envelope)]
+    pass
+ff_constant_effect._fields_ = [('level', c_short),
+                               ('envelope', ff_envelope)]
 
 class ff_ramp_effect(Structure):
-    _pack_ = 2
-    _fields_ = [('start_level', c_short),
-                ('end_level', c_short),
-                ('envelope', ff_envelope)]
+    pass
+ff_ramp_effect._fields_ = [('start_level', c_short),
+                           ('end_level', c_short),
+                           ('envelope', ff_envelope)]
 
 class ff_condition_effect(Structure):
-    _pack_ = 2
-    _fields_ = [('right_saturation', c_ushort),
-                ('left_saturation', c_ushort),
-                ('right_coeff', c_short),
-                ('left_coeff', c_short),
-                ('deadband', c_ushort),
-                ('center', c_short)]
+    pass
+ff_condition_effect._fields_ = [('right_saturation', c_ushort),
+                                ('left_saturation', c_ushort),
+                                ('right_coeff', c_short),
+                                ('left_coeff', c_short),
+                                ('deadband', c_ushort),
+                                ('center', c_short)]
 
 class ff_periodic_effect(Structure):
-    _pack_ = 8
-    _fields_ = [('waveform', c_ushort),
-                ('period', c_ushort),
-                ('magnitude', c_short),
-                ('offset', c_short),
-                ('phase', c_ushort),
-                ('envelope', ff_envelope),
-                ('custom_len', c_uint),
-                ('custom_data', POINTER(c_short))]
+    pass
+ff_periodic_effect._fields_ = [('waveform', c_ushort),
+                               ('period', c_ushort),
+                               ('magnitude', c_short),
+                               ('offset', c_short),
+                               ('phase', c_ushort),
+                               ('envelope', ff_envelope),
+                               ('custom_len', c_uint),
+                               ('custom_data', POINTER(c_short))]
 
 class ff_rumble_effect(Structure):
-    _pack_ = 2
-    _fields_ = [('strong_magnitude', c_ushort),
-                ('weak_magnitude', c_ushort)]
+    pass
+ff_rumble_effect._fields_ = [('strong_magnitude', c_ushort),
+                             ('weak_magnitude', c_ushort)]
 
-class _anonymous_union_0001(Union):
-    _pack_ = 8
-    _fields_ = [('constant', ff_constant_effect),
-                ('ramp', ff_ramp_effect),
-                ('periodic', ff_periodic_effect),
-                ('condition', (ff_condition_effect * 2)),
-                ('rumble', ff_rumble_effect)]
+class _union__usr_include_linux_input_h_1103_2(Union):
+    pass
+_union__usr_include_linux_input_h_1103_2._fields_ = [('constant', ff_constant_effect),
+                                                     ('ramp', ff_ramp_effect),
+                                                     ('periodic', ff_periodic_effect),
+                                                     ('condition', (ff_condition_effect * 2)),
+                                                     ('rumble', ff_rumble_effect)]
 
 class ff_effect(Structure):
-    _anonymous_ = ('u',)
-    _pack_ = 8
-    _fields_ = [('type', c_ushort),
-                ('id', c_short),
-                ('direction', c_ushort),
-                ('trigger', ff_trigger),
-                ('replay', ff_replay),
-                ('u', _anonymous_union_0001)]
+    pass
+ff_effect._fields_ = [('type', c_ushort),
+                      ('id', c_short),
+                      ('direction', c_ushort),
+                      ('trigger', ff_trigger),
+                      ('replay', ff_replay),
+                      ('u', _union__usr_include_linux_input_h_1103_2)]
 
-_IOC_NRBITS = 8
-_IOC_TYPEBITS = 8
-_IOC_SIZEBITS = 14
-_IOC_DIRBITS = 2
-_IOC_NRMASK = ((1 << _IOC_NRBITS) - 1)
-_IOC_TYPEMASK = ((1 << _IOC_TYPEBITS) - 1)
-_IOC_SIZEMASK = ((1 << _IOC_SIZEBITS) - 1)
-_IOC_DIRMASK = ((1 << _IOC_DIRBITS) - 1)
-_IOC_NRSHIFT = 0
-_IOC_TYPESHIFT = (_IOC_NRSHIFT + _IOC_NRBITS)
-_IOC_SIZESHIFT = (_IOC_TYPESHIFT + _IOC_TYPEBITS)
-_IOC_DIRSHIFT = (_IOC_SIZESHIFT + _IOC_SIZEBITS)
-_IOC_NONE = 0
-_IOC_WRITE = 1
-_IOC_READ = 2
-_IOC = lambda dir, type, nr, size: (((dir) << _IOC_DIRSHIFT) | ((type) << _IOC_TYPESHIFT) | ((nr) << _IOC_NRSHIFT) | ((size) << _IOC_SIZESHIFT))
-_IOC_TYPECHECK = lambda t: (sizeof(t))
-_IO = lambda type, nr: _IOC(_IOC_NONE, (type), (nr), 0)
-_IOR = lambda type, nr, size: _IOC(_IOC_READ, (type), (nr), (_IOC_TYPECHECK(size)))
-_IOW = lambda type, nr, size: _IOC(_IOC_WRITE, (type), (nr), (_IOC_TYPECHECK(size)))
-_IOWR = lambda type, nr, size: _IOC(_IOC_READ | _IOC_WRITE, (type), (nr), (_IOC_TYPECHECK(size)))
-_IOR_BAD = lambda type, nr, size: _IOC(_IOC_READ, (type), (nr), sizeof(size))
-_IOW_BAD = lambda type, nr, size: _IOC(_IOC_WRITE, (type), (nr), sizeof(size))
-_IOWR_BAD = lambda type, nr, size: _IOC(_IOC_READ | _IOC_WRITE, (type), (nr), sizeof(size))
-_IOC_DIR = lambda nr: (((nr) >> _IOC_DIRSHIFT) & _IOC_DIRMASK)
-_IOC_TYPE = lambda nr: (((nr) >> _IOC_TYPESHIFT) & _IOC_TYPEMASK)
-_IOC_NR = lambda nr: (((nr) >> _IOC_NRSHIFT) & _IOC_NRMASK)
-_IOC_SIZE = lambda nr: (((nr) >> _IOC_SIZESHIFT) & _IOC_SIZEMASK)
 EV_VERSION = 0x010001
 INPUT_KEYMAP_BY_INDEX = (1 << 0)
-EVIOCGVERSION = _IOR(ord('E'), 0x01, c_int)
+EVIOCGVERSION = (((2) << (((0 + 8) + 8) + 14)) | (((ord('E'))) << (0 + 8)) | (((0x01)) << 0) | ((((sizeof(c_int)))) << ((0 + 8) + 8)))
 EVIOCGID = 2148025602
 EVIOCGREP = 2148025603
 EVIOCSREP = 1074283779
@@ -146,27 +117,27 @@ EVIOCGKEYCODE = 2148025604
 EVIOCGKEYCODE_V2 = 2150122756
 EVIOCSKEYCODE = 1074283780
 EVIOCSKEYCODE_V2 = 1076380932
-EVIOCGNAME = lambda len: _IOC(_IOC_READ, ord('E'), 0x06, len)
-EVIOCGPHYS = lambda len: _IOC(_IOC_READ, ord('E'), 0x07, len)
-EVIOCGUNIQ = lambda len: _IOC(_IOC_READ, ord('E'), 0x08, len)
-EVIOCGPROP = lambda len: _IOC(_IOC_READ, ord('E'), 0x09, len)
-EVIOCGMTSLOTS = lambda len: _IOC(_IOC_READ, ord('E'), 0x0a, len)
-EVIOCGKEY = lambda len: _IOC(_IOC_READ, ord('E'), 0x18, len)
-EVIOCGLED = lambda len: _IOC(_IOC_READ, ord('E'), 0x19, len)
-EVIOCGSND = lambda len: _IOC(_IOC_READ, ord('E'), 0x1a, len)
-EVIOCGSW = lambda len: _IOC(_IOC_READ, ord('E'), 0x1b, len)
-EVIOCGBIT = lambda ev, len: _IOC(_IOC_READ, ord('E'), 0x20 + (ev), len)
+EVIOCGNAME = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x06) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGPHYS = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x07) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGUNIQ = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x08) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGPROP = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x09) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGMTSLOTS = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x0a) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGKEY = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x18) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGLED = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x19) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGSND = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x1a) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGSW = lambda len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x1b) << 0) | ((len) << ((0 + 8) + 8)))
+EVIOCGBIT = lambda ev, len: (((2) << (((0 + 8) + 8) + 14)) | ((ord('E')) << (0 + 8)) | ((0x20 + (ev)) << 0) | ((len) << ((0 + 8) + 8)))
 EVIOCSFF = 1076905344
-EVIOCRMFF = _IOW(ord('E'), 0x81, c_int)
-EVIOCGEFFECTS = _IOR(ord('E'), 0x84, c_int)
-EVIOCGRAB = _IOW(ord('E'), 0x90, c_int)
-EVIOCSCLOCKID = _IOW(ord('E'), 0xa0, c_int)
+EVIOCRMFF = (((1) << (((0 + 8) + 8) + 14)) | (((ord('E'))) << (0 + 8)) | (((0x81)) << 0) | ((((sizeof(c_int)))) << ((0 + 8) + 8)))
+EVIOCGEFFECTS = (((2) << (((0 + 8) + 8) + 14)) | (((ord('E'))) << (0 + 8)) | (((0x84)) << 0) | ((((sizeof(c_int)))) << ((0 + 8) + 8)))
+EVIOCGRAB = (((1) << (((0 + 8) + 8) + 14)) | (((ord('E'))) << (0 + 8)) | (((0x90)) << 0) | ((((sizeof(c_int)))) << ((0 + 8) + 8)))
+EVIOCSCLOCKID = (((1) << (((0 + 8) + 8) + 14)) | (((ord('E'))) << (0 + 8)) | (((0xa0)) << 0) | ((((sizeof(c_int)))) << ((0 + 8) + 8)))
 INPUT_PROP_POINTER = 0x00
 INPUT_PROP_DIRECT = 0x01
 INPUT_PROP_BUTTONPAD = 0x02
 INPUT_PROP_SEMI_MT = 0x03
 INPUT_PROP_MAX = 0x1f
-INPUT_PROP_CNT = (INPUT_PROP_MAX + 1)
+INPUT_PROP_CNT = (0x1f + 1)
 EV_SYN = 0x00
 EV_KEY = 0x01
 EV_REL = 0x02
@@ -180,7 +151,7 @@ EV_FF = 0x15
 EV_PWR = 0x16
 EV_FF_STATUS = 0x17
 EV_MAX = 0x1f
-EV_CNT = (EV_MAX + 1)
+EV_CNT = (0x1f + 1)
 SYN_REPORT = 0
 SYN_CONFIG = 1
 SYN_MT_REPORT = 2
@@ -307,7 +278,7 @@ KEY_PAUSE = 119
 KEY_SCALE = 120
 KEY_KPCOMMA = 121
 KEY_HANGEUL = 122
-KEY_HANGUEL = KEY_HANGEUL
+KEY_HANGUEL = 122
 KEY_HANJA = 123
 KEY_YEN = 124
 KEY_LEFTMETA = 125
@@ -338,7 +309,7 @@ KEY_PROG2 = 149
 KEY_WWW = 150
 KEY_MSDOS = 151
 KEY_COFFEE = 152
-KEY_SCREENLOCK = KEY_COFFEE
+KEY_SCREENLOCK = 152
 KEY_DIRECTION = 153
 KEY_CYCLEWINDOWS = 154
 KEY_MAIL = 155
@@ -689,9 +660,9 @@ BTN_TRIGGER_HAPPY37 = 0x2e4
 BTN_TRIGGER_HAPPY38 = 0x2e5
 BTN_TRIGGER_HAPPY39 = 0x2e6
 BTN_TRIGGER_HAPPY40 = 0x2e7
-KEY_MIN_INTERESTING = KEY_MUTE
+KEY_MIN_INTERESTING = 113
 KEY_MAX = 0x2ff
-KEY_CNT = (KEY_MAX + 1)
+KEY_CNT = (0x2ff + 1)
 REL_X = 0x00
 REL_Y = 0x01
 REL_Z = 0x02
@@ -703,7 +674,7 @@ REL_DIAL = 0x07
 REL_WHEEL = 0x08
 REL_MISC = 0x09
 REL_MAX = 0x0f
-REL_CNT = (REL_MAX + 1)
+REL_CNT = (0x0f + 1)
 ABS_X = 0x00
 ABS_Y = 0x01
 ABS_Z = 0x02
@@ -743,13 +714,15 @@ ABS_MT_BLOB_ID = 0x38
 ABS_MT_TRACKING_ID = 0x39
 ABS_MT_PRESSURE = 0x3a
 ABS_MT_DISTANCE = 0x3b
+ABS_MT_TOOL_X = 0x3c
+ABS_MT_TOOL_Y = 0x3d
 ABS_MAX = 0x3f
-ABS_CNT = (ABS_MAX + 1)
+ABS_CNT = (0x3f + 1)
 SW_LID = 0x00
 SW_TABLET_MODE = 0x01
 SW_HEADPHONE_INSERT = 0x02
 SW_RFKILL_ALL = 0x03
-SW_RADIO = SW_RFKILL_ALL
+SW_RADIO = 0x03
 SW_MICROPHONE_INSERT = 0x04
 SW_DOCK = 0x05
 SW_LINEOUT_INSERT = 0x06
@@ -761,14 +734,15 @@ SW_FRONT_PROXIMITY = 0x0b
 SW_ROTATE_LOCK = 0x0c
 SW_LINEIN_INSERT = 0x0d
 SW_MAX = 0x0f
-SW_CNT = (SW_MAX + 1)
+SW_CNT = (0x0f + 1)
 MSC_SERIAL = 0x00
 MSC_PULSELED = 0x01
 MSC_GESTURE = 0x02
 MSC_RAW = 0x03
 MSC_SCAN = 0x04
+MSC_TIMESTAMP = 0x05
 MSC_MAX = 0x07
-MSC_CNT = (MSC_MAX + 1)
+MSC_CNT = (0x07 + 1)
 LED_NUML = 0x00
 LED_CAPSL = 0x01
 LED_SCROLLL = 0x02
@@ -781,16 +755,16 @@ LED_MISC = 0x08
 LED_MAIL = 0x09
 LED_CHARGING = 0x0a
 LED_MAX = 0x0f
-LED_CNT = (LED_MAX + 1)
+LED_CNT = (0x0f + 1)
 REP_DELAY = 0x00
 REP_PERIOD = 0x01
 REP_MAX = 0x01
-REP_CNT = (REP_MAX + 1)
+REP_CNT = (0x01 + 1)
 SND_CLICK = 0x00
 SND_BELL = 0x01
 SND_TONE = 0x02
 SND_MAX = 0x07
-SND_CNT = (SND_MAX + 1)
+SND_CNT = (0x07 + 1)
 ID_BUS = 0
 ID_VENDOR = 1
 ID_PRODUCT = 2
@@ -828,17 +802,17 @@ FF_FRICTION = 0x54
 FF_DAMPER = 0x55
 FF_INERTIA = 0x56
 FF_RAMP = 0x57
-FF_EFFECT_MIN = FF_RUMBLE
-FF_EFFECT_MAX = FF_RAMP
+FF_EFFECT_MIN = 0x50
+FF_EFFECT_MAX = 0x57
 FF_SQUARE = 0x58
 FF_TRIANGLE = 0x59
 FF_SINE = 0x5a
 FF_SAW_UP = 0x5b
 FF_SAW_DOWN = 0x5c
 FF_CUSTOM = 0x5d
-FF_WAVEFORM_MIN = FF_SQUARE
-FF_WAVEFORM_MAX = FF_CUSTOM
+FF_WAVEFORM_MIN = 0x58
+FF_WAVEFORM_MAX = 0x5d
 FF_GAIN = 0x60
 FF_AUTOCENTER = 0x61
 FF_MAX = 0x7f
-FF_CNT = (FF_MAX + 1)
+FF_CNT = (0x7f + 1)

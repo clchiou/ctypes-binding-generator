@@ -30,7 +30,7 @@ H = sizeof(c_int)
 #define A (B + 1)
         ''', '''
 B = 1
-A = (B + 1)
+A = (1 + 1)
         ''')
 
     def test_macro_int(self):
@@ -45,11 +45,11 @@ struct foo {
 #define D sizeof(struct foo)
         ''', '''
 A = (1 + 1)
-B = A * 3
+B = (1 + 1) * 3
 C = 8
 D = 4
         ''',
-        macro_int='C|D')
+        macro_int='[CD]')
 
     def test_macro_str(self):
         self.run_test('''
