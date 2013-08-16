@@ -19,24 +19,21 @@ def set_method(cls, method_name, callable_object):
     setattr(cls, method_name, types.MethodType(callable_object, None, cls))
 
 
-# TODO(clchiou): cached_property produces strange bugs.  I should fix it
-# someday.  But make it an alias of property for now.
+class cursor_cached_property(object):  # pylint: disable=R0903
+    '''Cached property decorator for Cursor class.'''
 
-#class cached_property(object):  # pylint: disable=R0903
-#    '''Cached property decorator.'''
-#
-#    def __init__(self, getter):
-#        self.getter = getter
-#        self.cache = {}
-#
-#    def __get__(self, object_, _):
-#        if object_ is None:
-#            return self
-#        if self.cache.get(id(object_)) is None:
-#            self.cache[id(object_)] = self.getter(object_)
-#        return self.cache[id(object_)]
+    def __init__(self, getter):
+        self.getter = getter
+        self.cache = {}
 
-cached_property = property
+    def __get__(self, cursor, _):
+        if cursor is None:
+            return self
+        key = _index.clang_hashCursor(cursor)
+        if key not in self.cache:
+            self.cache[key] = self.getter(cursor)
+        return self.cache[key]
+
 
 ### Register errcheck callbacks
 
@@ -217,14 +214,18 @@ set_method(_index.CXString, '__del__', _index.clang_disposeString)
 
 def SourceLocation_data(self):
     '''Create SourceLocation data.'''
-    file_, line, column, offset = c_void_p(), c_uint(), c_uint(), c_uint()
-    _index.clang_getInstantiationLocation(self,
-            byref(file_), byref(line), byref(column), byref(offset))
-    if file_:
-        file_ = File(file_)
-    else:
-        file_ = None
-    return SourceLocationData(file_, line.value, column.value, offset.value)
+    # pylint: disable=W0212
+    if not hasattr(self, '_data'):
+        file_, line, column, offset = c_void_p(), c_uint(), c_uint(), c_uint()
+        _index.clang_getInstantiationLocation(self,
+                byref(file_), byref(line), byref(column), byref(offset))
+        if file_:
+            file_ = File(file_)
+        else:
+            file_ = None
+        self._data = SourceLocationData(file_,
+                line.value, column.value, offset.value)
+    return self._data
 
 
 SourceLocation = _index.CXSourceLocation
@@ -233,7 +234,7 @@ SourceLocation.__eq__ = lambda self, other: \
 SourceLocation.__ne__ = lambda self, other: not self.__eq__(other)
 SourceLocationData = collections.namedtuple('SourceLocationData',
         'file line column offset')
-SourceLocation.data = cached_property(SourceLocation_data)
+SourceLocation.data = property(SourceLocation_data)
 SourceLocation.file = property(lambda self: self.data.file)
 SourceLocation.line = property(lambda self: self.data.line)
 SourceLocation.column = property(lambda self: self.data.column)
@@ -295,8 +296,8 @@ def Cursor_spelling(self):
 Cursor = _index.CXCursor
 Cursor.__eq__ = lambda self, other: _index.clang_equalCursors(self, other)
 Cursor.__ne__ = lambda self, other: not self.__eq__(other)
-Cursor.enum_type = cached_property(_index.clang_getEnumDeclIntegerType)
-Cursor.enum_value = cached_property(Cursor_enum_value)
+Cursor.enum_type = cursor_cached_property(_index.clang_getEnumDeclIntegerType)
+Cursor.enum_value = cursor_cached_property(Cursor_enum_value)
 Cursor.get_arguments = Cursor_get_arguments
 set_method(Cursor, 'get_bitfield_width', _index.clang_getFieldDeclBitWidth)
 Cursor.get_children = Cursor_get_children
@@ -304,12 +305,12 @@ set_method(Cursor, 'get_num_arguments', _index.clang_Cursor_getNumArguments)
 set_method(Cursor, 'is_bitfield', _index.clang_Cursor_isBitField)
 set_method(Cursor, 'is_definition', _index.clang_isCursorDefinition)
 Cursor.linkage_kind = property(lambda self: _index.clang_getCursorLinkage(self))
-Cursor.location = cached_property(_index.clang_getCursorLocation)
-Cursor.result_type = cached_property(
+Cursor.location = cursor_cached_property(_index.clang_getCursorLocation)
+Cursor.result_type = cursor_cached_property(
         lambda self: _index.clang_getResultType(self.type))
-Cursor.spelling = cached_property(Cursor_spelling)
-Cursor.type = cached_property(_index.clang_getCursorType)
-Cursor.underlying_typedef_type = cached_property(
+Cursor.spelling = cursor_cached_property(Cursor_spelling)
+Cursor.type = cursor_cached_property(_index.clang_getCursorType)
+Cursor.underlying_typedef_type = cursor_cached_property(
         _index.clang_getTypedefDeclUnderlyingType)
 
 
