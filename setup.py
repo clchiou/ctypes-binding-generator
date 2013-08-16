@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='ctypes-binding-generator',
-    version='0.2.0',
+    version='0.3.0',
     description='Generate ctypes binding from C source files',
     author='Che-Liang Chiou',
     author_email='clchiou@gmail.com',
