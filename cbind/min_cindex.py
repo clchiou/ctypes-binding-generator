@@ -4,6 +4,7 @@
 
 import collections
 import re
+import types
 from ctypes import CFUNCTYPE, byref, c_char_p, c_uint, c_void_p
 import cbind._clang_index as _index
 
@@ -11,11 +12,11 @@ import cbind._clang_index as _index
 ### Utilities
 
 
-def make_method(funcptr):
-    '''Make a (unbound) method from ctypes._FuncPtr object.'''
-    # XXX This trampoline is necessary because ctypes._FuncPtr does not
-    # implement Python descriptor, providing instance binding...
-    return lambda self, *args: funcptr(self, *args)
+def set_method(cls, method_name, callable_object):
+    '''Turn a callable object into an unbound method.  This is necessary
+       when the callable object does not implement the descriptor protocol.
+    '''
+    setattr(cls, method_name, types.MethodType(callable_object, None, cls))
 
 
 # TODO(clchiou): cached_property produces strange bugs.  I should fix it
@@ -211,7 +212,7 @@ class TranslationUnit(ClangObject):
 ### Patch methods to classes
 
 
-_index.CXString.__del__ = make_method(_index.clang_disposeString)
+set_method(_index.CXString, '__del__', _index.clang_disposeString)
 
 
 def SourceLocation_data(self):
@@ -297,11 +298,11 @@ Cursor.__ne__ = lambda self, other: not self.__eq__(other)
 Cursor.enum_type = cached_property(_index.clang_getEnumDeclIntegerType)
 Cursor.enum_value = cached_property(Cursor_enum_value)
 Cursor.get_arguments = Cursor_get_arguments
-Cursor.get_bitfield_width = make_method(_index.clang_getFieldDeclBitWidth)
+set_method(Cursor, 'get_bitfield_width', _index.clang_getFieldDeclBitWidth)
 Cursor.get_children = Cursor_get_children
-Cursor.get_num_arguments = make_method(_index.clang_Cursor_getNumArguments)
-Cursor.is_bitfield = make_method(_index.clang_Cursor_isBitField)
-Cursor.is_definition = make_method(_index.clang_isCursorDefinition)
+set_method(Cursor, 'get_num_arguments', _index.clang_Cursor_getNumArguments)
+set_method(Cursor, 'is_bitfield', _index.clang_Cursor_isBitField)
+set_method(Cursor, 'is_definition', _index.clang_isCursorDefinition)
 Cursor.linkage_kind = property(lambda self: _index.clang_getCursorLinkage(self))
 Cursor.location = cached_property(_index.clang_getCursorLocation)
 Cursor.result_type = cached_property(
@@ -339,14 +340,14 @@ Type = _index.CXType
 Type. __eq__ = lambda self, other: _index.clang_equalTypes(self, other)
 Type.__ne__ = lambda self, other: not self.__eq__(other)
 Type.argument_types = lambda self: ArgumentsIterator(self)
-Type.get_align = make_method(_index.clang_Type_getAlignOf)
-Type.get_array_element_type = make_method(_index.clang_getArrayElementType)
-Type.get_array_size = make_method(_index.clang_getArraySize)
-Type.get_canonical = make_method(_index.clang_getCanonicalType)
-Type.get_declaration = make_method(_index.clang_getTypeDeclaration)
-Type.get_pointee = make_method(_index.clang_getPointeeType)
-Type.get_result = make_method(_index.clang_getResultType)
-Type.is_function_variadic = make_method(_index.clang_isFunctionTypeVariadic)
+set_method(Type, 'get_align', _index.clang_Type_getAlignOf)
+set_method(Type, 'get_array_element_type', _index.clang_getArrayElementType)
+set_method(Type, 'get_array_size', _index.clang_getArraySize)
+set_method(Type, 'get_canonical', _index.clang_getCanonicalType)
+set_method(Type, 'get_declaration', _index.clang_getTypeDeclaration)
+set_method(Type, 'get_pointee', _index.clang_getPointeeType)
+set_method(Type, 'get_result', _index.clang_getResultType)
+set_method(Type, 'is_function_variadic', _index.clang_isFunctionTypeVariadic)
 
 
 ### Add enum tables
