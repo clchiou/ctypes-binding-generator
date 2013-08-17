@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from os.path import basename
+import cbind.annotations as annotations
 from cbind.cindex import (Index, Cursor, CursorKind,
         Type, TypeKind, LinkageKind)
 
@@ -128,6 +129,11 @@ class SyntaxTree:
             attr = SyntaxTreeType(attr, self)
         return attr
 
+    @property
+    def name(self):
+        '''Return name of this node.'''
+        return self.get_annotation(annotations.NAME, self.spelling)
+
     def is_external_linkage(self):
         '''Test if linkage is external.'''
         return self.cursor.linkage_kind == LinkageKind.EXTERNAL
@@ -166,13 +172,9 @@ class SyntaxTree:
         '''Annotate this node.'''
         self.annotation_table[self][key] = value
 
-    def get_annotation(self, key, default=None):
+    def get_annotation(self, key, default):
         '''Get the annotation.'''
-        annotations = self.annotation_table[self]
-        if default is None:
-            return annotations[key]
-        else:
-            return annotations.get(key, default)
+        return self.annotation_table[self].get(key, default)
 
 
 def _make_type_getter(getter):

@@ -103,13 +103,10 @@ def gen_tree_node(tree, output):
 
 def gen_record(tree, output, declared=False, declaration=False):
     '''Generate ctypes binding of a POD definition.'''
-    name = tree.spelling
-    if not name:
-        name = tree.get_annotation(annotations.NAME)
     if not declared:
-        _make_pod_header(tree, name, output)
+        _make_pod_header(tree, tree.name, output)
     if not declaration:
-        _make_pod_body(tree, name, output)
+        _make_pod_body(tree, tree.name, output)
 
 
 def _make_type(type_):
@@ -117,15 +114,12 @@ def _make_type(type_):
     c_type = None
     if type_.is_user_defined_type():
         tree = type_.get_declaration()
-        if tree.spelling:
-            c_type = tree.spelling
-        elif tree.kind == CursorKind.ENUM_DECL:
+        c_type = tree.name
+        if not c_type and tree.kind == CursorKind.ENUM_DECL:
             c_type = _make_type(tree.enum_type)
-        else:
-            c_type = tree.get_annotation(annotations.NAME)
     elif type_.kind == TypeKind.TYPEDEF:
         tree = type_.get_declaration()
-        c_type = (BUILTIN_TYPEDEFS.get(tree.spelling) or
+        c_type = (BUILTIN_TYPEDEFS.get(tree.name) or
                 _make_type(type_.get_canonical()))
     elif type_.kind == TypeKind.CONSTANTARRAY:
         # TODO(clchiou): Make parentheses context-sensitive
@@ -159,8 +153,7 @@ def _make_pointer_type(pointer_type=None, pointee_type=None):
             canonical.kind == TypeKind.VOID):
         # Handle special case "typedef void foo;"
         c_type = 'c_void_p'
-    elif (pointee_type.kind == TypeKind.TYPEDEF and
-            decl.spelling == 'wchar_t'):
+    elif (pointee_type.kind == TypeKind.TYPEDEF and decl.name == 'wchar_t'):
         c_type = 'c_wchar_p'
     elif canonical.kind == TypeKind.FUNCTIONPROTO:
         c_type = _make_function_pointer(canonical)
@@ -194,21 +187,20 @@ def _make_typedef(tree, output):
     # Handle special case "typedef void foo;"
     if type_.kind == TypeKind.VOID:
         return
-    output.write('%s = %s\n' % (tree.spelling, _make_type(type_)))
+    output.write('%s = %s\n' % (tree.name, _make_type(type_)))
 
 
 def _make_function(tree, output):
     '''Generate ctypes binding of a function declaration.'''
     if not tree.is_external_linkage():
         return
-    name = tree.spelling
-    output.write('{0} = {1}.{0}\n'.format(name, LIBNAME))
+    output.write('{0} = {1}.{0}\n'.format(tree.name, LIBNAME))
     argtypes = _make_function_arguments(tree)
     if argtypes:
-        output.write('%s.argtypes = [%s]\n' % (name, argtypes))
+        output.write('%s.argtypes = [%s]\n' % (tree.name, argtypes))
     if tree.result_type.kind != TypeKind.VOID:
         restype = _make_type(tree.result_type)
-        output.write('%s.restype = %s\n' % (name, restype))
+        output.write('%s.restype = %s\n' % (tree.name, restype))
 
 
 def _make_function_arguments(tree):
@@ -240,7 +232,7 @@ def _make_pod_body(tree, name, output):
     output.write(field_stmt)
     first = True
     for field in fields:
-        blob = ['\'%s\'' % field.spelling, _make_type(field.type)]
+        blob = ['\'%s\'' % field.name, _make_type(field.type)]
         if field.is_bitfield():
             blob.append(str(field.get_bitfield_width()))
         field_stmt = '(%s)' % ', '.join(blob)
@@ -254,17 +246,16 @@ def _make_pod_body(tree, name, output):
 
 def _make_enum(tree, output):
     '''Generate ctypes binding of a enum definition.'''
-    if tree.spelling:
+    if tree.name:
         output.write('class %s(%s):\n%spass\n' %
-                (tree.spelling, _make_type(tree.enum_type), INDENT))
+                (tree.name, _make_type(tree.enum_type), INDENT))
     for enum in tree.get_children():
         if enum.get_annotation(annotations.REQUIRED, False):
-            output.write('%s = %s\n' % (enum.spelling, enum.enum_value))
+            output.write('%s = %s\n' % (enum.name, enum.enum_value))
 
 
 def _make_var(tree, output):
     '''Generate ctypes binding of a variable declaration.'''
-    name = tree.spelling
     c_type = _make_type(tree.type)
     output.write('{0} = {1}.in_dll({2}, \'{0}\')\n'.
-            format(name, c_type, LIBNAME))
+            format(tree.name, c_type, LIBNAME))

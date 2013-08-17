@@ -3,8 +3,11 @@
 import functools
 import re
 from cbind.source import SyntaxTreeForest
-from cbind.passes import (scan_required_nodes, scan_forward_decl,
-        scan_va_list_tag, scan_anonymous_pod)
+from cbind.passes import (scan_required_nodes,
+        scan_and_rename,
+        scan_forward_decl,
+        scan_va_list_tag,
+        scan_anonymous_pod)
 from cbind.codegen import gen_tree_node, gen_record
 import cbind.annotations as annotations
 
@@ -16,13 +19,16 @@ class CtypesBindingGenerator:
         '''Initialize the object.'''
         self.syntax_tree_forest = SyntaxTreeForest()
         self.check_required = check_locally_defined
+        self.rename_rules = None
 
     def config(self, config_data):
         '''Configure the generator.'''
         if 'import' in config_data:
             matcher = re.compile(config_data['import']).search
-            self.check_required = \
-                    lambda tree: tree.spelling and matcher(tree.spelling)
+            self.check_required = lambda tree: tree.name and matcher(tree.name)
+        if 'rename' in config_data:
+            self.rename_rules = tuple((re.compile(pattern), rewrite)
+                    for pattern, rewrite in config_data['rename'])
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
@@ -34,6 +40,7 @@ class CtypesBindingGenerator:
         syntax_tree = self.syntax_tree_forest.parse(path,
                 contents=contents, args=args)
         scan_required_nodes(syntax_tree, check_required)
+        scan_and_rename(syntax_tree, self.rename_rules)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
         scan_anonymous_pod(syntax_tree)

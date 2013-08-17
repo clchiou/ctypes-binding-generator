@@ -19,7 +19,7 @@ def _scan_tree(tree, root):
         return
     type_ = tree.type
     while True:
-        if tree.spelling == '__va_list_tag':
+        if tree.name == '__va_list_tag':
             root.annotate(annotations.USE_VA_LIST_TAG, tree)
             raise StopIteration()  # Return from deeply recursion
         while True:

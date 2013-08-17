@@ -26,17 +26,18 @@ def _typedef_pod(tree):
     if type_.kind not in (TypeKind.UNEXPOSED, TypeKind.RECORD):
         return
     decl = type_.get_declaration()
+    # Check decl.spelling instead of decl.name here because we want
+    # to find anonymous POD, which could already have a given name by
+    # the _real_anonymous_pod() function.
     if decl.spelling:
         return
-    decl.annotate(annotations.NAME, tree.spelling)
+    decl.annotate(annotations.NAME, tree.name)
     tree.annotate(annotations.REQUIRED, False)
 
 
 def _real_anonymous_pod(tree):
     '''Generate the name for the POD.'''
-    if tree.spelling:
-        return
-    if tree.get_annotation(annotations.NAME, False):
+    if tree.name:
         return
     if tree.kind == CursorKind.STRUCT_DECL:
         kind = 'struct'
