@@ -41,6 +41,8 @@ def _parse_args():
             help='C source file')
     parser.add_argument('-o', metavar='OUTPUT', default='-',
             help='output file, default to \'-\' (stdout)')
+    parser.add_argument('--config', type=file,
+            help='configuration file')
     parser.add_argument('--cindex', default=MIN_CINDEX,
             choices=[MIN_CINDEX, CLANG_CINDEX],
             help='choose cindex implementation')
@@ -103,6 +105,13 @@ def main():
     from cbind import CtypesBindingGenerator, MacroGenerator
 
     cbgen = CtypesBindingGenerator()
+    if args.config:
+        try:
+            import yaml
+        except ImportError:
+            parser.error('could not load Python package yaml')
+        cbgen.config(yaml.load(args.config))
+
     for c_src in args.i:
         cbgen.parse(c_src, args=clang_args)
     if args.enable_macro:

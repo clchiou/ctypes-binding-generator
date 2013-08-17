@@ -13,9 +13,12 @@ from cbind import CtypesBindingGenerator, MacroGenerator
 class TestCtypesBindingGenerator(unittest.TestCase):
     '''Boilerplate of unit tests.'''
 
-    def run_test(self, c_code, python_code, args=None):
+    def run_test(self, c_code, python_code, args=None, config=None):
         '''Generate Python code from C code and compare it to the answer.'''
         cbgen = CtypesBindingGenerator()
+        if config is not None:
+            import yaml
+            cbgen.config(yaml.load(config))
         if isinstance(c_code, str):
             c_src = StringIO(c_code)
             cbgen.parse('input.c', contents=c_src, args=args)

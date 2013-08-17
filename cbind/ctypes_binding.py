@@ -14,6 +14,10 @@ class CtypesBindingGenerator:
         '''Initialize the object.'''
         self.syntax_tree_forest = SyntaxTreeForest()
 
+    def config(self, config_data):
+        '''Configure the generator.'''
+        pass
+
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
         syntax_tree = self.syntax_tree_forest.parse(path,
