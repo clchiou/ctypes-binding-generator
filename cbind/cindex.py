@@ -1,9 +1,9 @@
 '''Import either min_cindex or clang_cindex.'''
 
-import cbind
+import pycbind
 
 
-if cbind.cindex_choice() == cbind.MIN_CINDEX:
+if pycbind.choose_cindex_impl() == pycbind.MIN_CINDEX:
     from cbind.min_cindex import (Index, Cursor, CursorKind,
             Type, TypeKind, LinkageKind)
 else:
