@@ -4,12 +4,21 @@ from cbind.passes.util import traverse_postorder, strip_type
 import cbind.annotations as annotations
 
 
-def scan_required_nodes(syntax_tree, path):
+def scan_required_nodes(syntax_tree, check_required):
     '''Breadth-first scan for required symbols.'''
+
+    def _scan_required(tree):
+        '''Mark nodes as required.'''
+        if not check_required(tree):
+            return
+        tree.annotate(annotations.REQUIRED, True)
+        _scan_type_definition(tree.type, todo, visited)
+        if tree.is_field_decl():
+            todo.append(tree.semantic_parent)
+
     visited = set()
     todo = []
-    traverse_postorder(syntax_tree,
-            lambda tree: _check_locally_defined(tree, path, todo, visited))
+    traverse_postorder(syntax_tree, _scan_required)
     call_scan_type_definition = lambda tree: _scan_type_definition(tree.type,
             todo, visited)
     while todo:
@@ -19,14 +28,6 @@ def scan_required_nodes(syntax_tree, path):
         for tree in trees:
             tree.annotate(annotations.REQUIRED, True)
             traverse_postorder(tree, call_scan_type_definition)
-
-
-def _check_locally_defined(tree, path, todo, visited):
-    '''Mark locally defined nodes.'''
-    if not tree.location.file or tree.location.file.name != path:
-        return
-    tree.annotate(annotations.REQUIRED, True)
-    _scan_type_definition(tree.type, todo, visited)
 
 
 def _scan_type_definition(type_, todo, visited):

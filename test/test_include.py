@@ -118,8 +118,6 @@ enum my_enum x;
         ''', '''
 class my_enum(c_uint):
     pass
-X = 0
-Y = 1
 
 x = my_enum.in_dll(_lib, 'x')
         ''')

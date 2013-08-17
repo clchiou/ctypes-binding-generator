@@ -44,6 +44,7 @@ class SyntaxTree:
         kind
         location
         result_type
+        semantic_parent
         spelling
         type
         underlying_typedef_type
@@ -52,6 +53,9 @@ class SyntaxTree:
     UDT_DECL = frozenset((CursorKind.STRUCT_DECL,
         CursorKind.UNION_DECL,
         CursorKind.ENUM_DECL))
+
+    UDT_FIELD_DECL = frozenset((CursorKind.ENUM_CONSTANT_DECL,
+        CursorKind.FIELD_DECL))
 
     HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL, CursorKind.UNION_DECL))
 
@@ -118,7 +122,9 @@ class SyntaxTree:
             message = '\'%s\' object has no attribute \'%s\'' % (cls, name)
             raise AttributeError(message)
         attr = getattr(self.cursor, name)
-        if isinstance(attr, Type):
+        if isinstance(attr, Cursor):
+            attr = SyntaxTree(attr, None, self.annotation_table)
+        elif isinstance(attr, Type):
             attr = SyntaxTreeType(attr, self)
         return attr
 
@@ -129,6 +135,10 @@ class SyntaxTree:
     def is_user_defined_type_decl(self):
         '''Test if this node is declaration of user-defined type.'''
         return self.kind in self.UDT_DECL
+
+    def is_field_decl(self):
+        '''Test if this is a field declaration.'''
+        return self.kind in self.UDT_FIELD_DECL
 
     get_children = _make_subtree_iterator(Cursor.get_children)
     get_arguments = _make_subtree_iterator(Cursor.get_arguments)

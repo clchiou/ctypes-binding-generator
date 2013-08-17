@@ -1,5 +1,7 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
+import functools
+import re
 from cbind.source import SyntaxTreeForest
 from cbind.passes import (scan_required_nodes, scan_forward_decl,
         scan_va_list_tag, scan_anonymous_pod)
@@ -13,16 +15,25 @@ class CtypesBindingGenerator:
     def __init__(self):
         '''Initialize the object.'''
         self.syntax_tree_forest = SyntaxTreeForest()
+        self.check_required = check_locally_defined
 
     def config(self, config_data):
         '''Configure the generator.'''
-        pass
+        if 'import' in config_data:
+            matcher = re.compile(config_data['import']).search
+            self.check_required = \
+                    lambda tree: tree.spelling and matcher(tree.spelling)
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
+        if self.check_required is check_locally_defined:
+            check_required = functools.partial(check_locally_defined, path=path)
+        else:
+            check_required = self.check_required
+
         syntax_tree = self.syntax_tree_forest.parse(path,
                 contents=contents, args=args)
-        scan_required_nodes(syntax_tree, path)
+        scan_required_nodes(syntax_tree, check_required)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
         scan_anonymous_pod(syntax_tree)
@@ -57,3 +68,8 @@ class CtypesBindingGenerator:
         declared = tree.get_annotation(annotations.DECLARED, False)
         gen_record(tree, output, declared=declared, declaration=True)
         tree.annotate(annotations.DECLARED, True)
+
+
+def check_locally_defined(tree, path):
+    '''Check if a node is locally defined.'''
+    return tree.location.file and tree.location.file.name == path

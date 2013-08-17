@@ -258,7 +258,8 @@ def _make_enum(tree, output):
         output.write('class %s(%s):\n%spass\n' %
                 (tree.spelling, _make_type(tree.enum_type), INDENT))
     for enum in tree.get_children():
-        output.write('%s = %s\n' % (enum.spelling, enum.enum_value))
+        if enum.get_annotation(annotations.REQUIRED, False):
+            output.write('%s = %s\n' % (enum.spelling, enum.enum_value))
 
 
 def _make_var(tree, output):

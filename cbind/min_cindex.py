@@ -80,6 +80,7 @@ _index.clang_getTypeDeclaration.errcheck = check_cursor
 _index.clang_getArgType.errcheck = ref_translation_unit
 _index.clang_getArrayElementType.errcheck = ref_translation_unit
 _index.clang_getCanonicalType.errcheck = ref_translation_unit
+_index.clang_getCursorSemanticParent.errcheck = ref_translation_unit
 _index.clang_getCursorType.errcheck = ref_translation_unit
 _index.clang_getEnumDeclIntegerType.errcheck = ref_translation_unit
 _index.clang_getPointeeType.errcheck = ref_translation_unit
@@ -308,6 +309,8 @@ Cursor.linkage_kind = property(lambda self: _index.clang_getCursorLinkage(self))
 Cursor.location = cursor_cached_property(_index.clang_getCursorLocation)
 Cursor.result_type = cursor_cached_property(
         lambda self: _index.clang_getResultType(self.type))
+Cursor.semantic_parent = \
+        cursor_cached_property(_index.clang_getCursorSemanticParent)
 Cursor.spelling = cursor_cached_property(Cursor_spelling)
 Cursor.type = cursor_cached_property(_index.clang_getCursorType)
 Cursor.underlying_typedef_type = cursor_cached_property(
