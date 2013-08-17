@@ -45,9 +45,17 @@ enum {
     long_long_name_X = 1,
     long_long_name_XY = 2,
 };
+
+void long_long_name_XYZ(void);
+
+int long_long_name_XYZW;
         ''', '''
 X = 1
 XY = 2
+
+XYZ = _lib.long_long_name_XYZ
+
+XYZW = c_int.in_dll(_lib, 'long_long_name_XYZW')
         ''', config=r'''
 rename:
     - [long_long_name_(X), \1]

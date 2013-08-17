@@ -194,7 +194,7 @@ def _make_function(tree, output):
     '''Generate ctypes binding of a function declaration.'''
     if not tree.is_external_linkage():
         return
-    output.write('{0} = {1}.{0}\n'.format(tree.name, LIBNAME))
+    output.write('{0} = {1}.{2}\n'.format(tree.name, LIBNAME, tree.spelling))
     argtypes = _make_function_arguments(tree)
     if argtypes:
         output.write('%s.argtypes = [%s]\n' % (tree.name, argtypes))
@@ -257,5 +257,5 @@ def _make_enum(tree, output):
 def _make_var(tree, output):
     '''Generate ctypes binding of a variable declaration.'''
     c_type = _make_type(tree.type)
-    output.write('{0} = {1}.in_dll({2}, \'{0}\')\n'.
-            format(tree.name, c_type, LIBNAME))
+    output.write('{0} = {1}.in_dll({2}, \'{3}\')\n'.
+            format(tree.name, c_type, LIBNAME, tree.spelling))
