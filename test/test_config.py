@@ -23,7 +23,7 @@ enum Enum {
     YX = 4,
 };
 
-struct foo {
+struct struct_1 {
     int X;
 };
         ''', '''
@@ -31,11 +31,76 @@ class Enum(c_uint):
     pass
 X = 1
 
-class foo(Structure):
+class struct_1(Structure):
     pass
-foo._fields_ = [('X', c_int)]
+struct_1._fields_ = [('X', c_int)]
         ''', config='''
-import: ^X$   # Cherry-pick output
+import: ^X$
+        ''')
+
+        self.run_test('''
+struct struct_1 {
+    int int_field;
+};
+
+struct struct_2 {
+    int int_field;
+};
+
+void func_1(struct struct_1 *);
+struct struct_2 *func_2(void);
+        ''', '''
+class struct_1(Structure):
+    pass
+struct_1._fields_ = [('int_field', c_int)]
+
+class struct_2(Structure):
+    pass
+struct_2._fields_ = [('int_field', c_int)]
+
+func_1 = _lib.func_1
+func_1.argtypes = [POINTER(struct_1)]
+
+func_2 = _lib.func_2
+func_2.restype = POINTER(struct_2)
+        ''', config='''
+import: ^func_([12])$
+        ''')
+
+        self.run_test('''
+struct struct_1 {
+    int int_field;
+};
+
+struct struct_2 {
+    struct struct_1 struct_field;
+};
+        ''', '''
+class struct_1(Structure):
+    pass
+struct_1._fields_ = [('int_field', c_int)]
+
+class struct_2(Structure):
+    pass
+struct_2._fields_ = [('struct_field', struct_1)]
+        ''', config='''
+import: ^struct_2$
+        ''')
+
+        self.run_test('''
+struct struct_1 {
+    int int_field;
+};
+
+typedef struct struct_1 alias_type;
+        ''', '''
+class struct_1(Structure):
+    pass
+struct_1._fields_ = [('int_field', c_int)]
+
+alias_type = struct_1
+        ''', config='''
+import: ^alias_type$
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')

@@ -1,5 +1,6 @@
 '''Scan syntax tree for required nodes.'''
 
+from cbind.cindex import CursorKind, TypeKind
 from cbind.passes.util import traverse_postorder, strip_type
 import cbind.annotations as annotations
 
@@ -14,7 +15,14 @@ def scan_required_nodes(syntax_tree, check_required):
         tree.annotate(annotations.REQUIRED, True)
         _scan_type_definition(tree.type, todo, visited)
         if tree.is_field_decl():
-            todo.append(tree.semantic_parent)
+            _scan_type_definition(tree.semantic_parent.type, todo, visited)
+        elif tree.kind == CursorKind.FUNCTION_DECL:
+            if (not tree.type.is_function_variadic() and
+                    tree.get_num_arguments() > 0):
+                for arg in tree.get_arguments():
+                    _scan_type_definition(arg.type, todo, visited)
+            if tree.result_type.kind != TypeKind.VOID:
+                _scan_type_definition(tree.result_type, todo, visited)
 
     visited = set()
     todo = []
