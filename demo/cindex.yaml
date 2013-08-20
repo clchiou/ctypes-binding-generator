@@ -1,0 +1,71 @@
+import:
+        - ^clang_createIndex$
+        - ^clang_Cursor_getArgument$
+        - ^clang_Cursor_getNumArguments$
+        - ^clang_Cursor_isBitField$
+        - ^clang_disposeDiagnostic$
+        - ^clang_disposeIndex$
+        - ^clang_disposeString$
+        - ^clang_disposeTranslationUnit$
+        - ^clang_equalCursors$
+        - ^clang_equalLocations$
+        - ^clang_equalTypes$
+        - ^clang_getArgType$
+        - ^clang_getArrayElementType$
+        - ^clang_getArraySize$
+        - ^clang_getCanonicalType$
+        - ^clang_getCString$
+        - ^clang_getCursorLinkage$
+        - ^clang_getCursorLocation$
+        - ^clang_getCursorSemanticParent$
+        - ^clang_getCursorSpelling$
+        - ^clang_getCursorType$
+        - ^clang_getDiagnostic$
+        - ^clang_getDiagnosticLocation$
+        - ^clang_getDiagnosticSeverity$
+        - ^clang_getDiagnosticSpelling$
+        - ^clang_getEnumConstantDeclUnsignedValue$
+        - ^clang_getEnumConstantDeclValue$
+        - ^clang_getEnumDeclIntegerType$
+        - ^clang_getFieldDeclBitWidth$
+        - ^clang_getFileName$
+        - ^clang_getInstantiationLocation$
+        - ^clang_getNullCursor$
+        - ^clang_getNumArgTypes$
+        - ^clang_getNumDiagnostics$
+        - ^clang_getPointeeType$
+        - ^clang_getResultType$
+        - ^clang_getTranslationUnitCursor$
+        - ^clang_getTypeDeclaration$
+        - ^clang_getTypedefDeclUnderlyingType$
+        - ^clang_hashCursor$
+        - ^clang_isCursorDefinition$
+        - ^clang_isDeclaration$
+        - ^clang_isFunctionTypeVariadic$
+        - ^clang_parseTranslationUnit$
+        - ^clang_Type_getAlignOf$
+        - ^clang_visitChildren$
+        - ^CXChildVisitResult$
+        - ^CXCursor$
+        - ^CXCursorKind$
+        - ^CXCursor_\w+$
+        - ^CXLinkageKind$
+        - ^CXLinkage_\w+$
+        - ^CXSourceLocation$
+        - ^CXString$
+        - ^CXType$
+        - ^CXTypeKind$
+        - ^CXType_\w+$
+        - ^CXUnsavedFile$
+
+rename:
+        - [CXChildVisitResult,  ChildVisitResult]
+        - [CXCursor,            Cursor]
+        - [CXCursorKind,        CursorKind]
+        - [CXLinkage,           Linkage]
+        - [CXLinkageKind,       LinkageKind]
+        - [CXString,            String]
+        - [CXSourceLocation,    SourceLocation]
+        - [CXType,              Type]
+        - [CXTypeKind,          TypeKind]
+        - [CXUnsavedFile,       UnsavedFile]

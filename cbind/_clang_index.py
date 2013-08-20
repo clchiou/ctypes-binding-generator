@@ -12,47 +12,26 @@ else:
     _lib = cdll.LoadLibrary('libclang.so')
 del sys
 
-class CXString(Structure):
+class String(Structure):
     pass
-CXString._fields_ = [('data', c_void_p),
-                     ('private_flags', c_uint)]
+String._fields_ = [('data', c_void_p),
+                   ('private_flags', c_uint)]
 
 clang_getCString = _lib.clang_getCString
-clang_getCString.argtypes = [CXString]
+clang_getCString.argtypes = [String]
 clang_getCString.restype = c_char_p
 
 clang_disposeString = _lib.clang_disposeString
-clang_disposeString.argtypes = [CXString]
-
-CXIndex = c_void_p
+clang_disposeString.argtypes = [String]
 
 class CXTranslationUnitImpl(Structure):
     pass
 
-CXTranslationUnit = POINTER(CXTranslationUnitImpl)
-
-CXClientData = c_void_p
-
-class CXUnsavedFile(Structure):
+class UnsavedFile(Structure):
     pass
-CXUnsavedFile._fields_ = [('Filename', c_char_p),
-                          ('Contents', c_char_p),
-                          ('Length', c_ulong)]
-
-class CXAvailabilityKind(c_uint):
-    pass
-CXAvailability_Available = 0
-CXAvailability_Deprecated = 1
-CXAvailability_NotAvailable = 2
-CXAvailability_NotAccessible = 3
-
-class CXVersion(Structure):
-    pass
-CXVersion._fields_ = [('Major', c_int),
-                      ('Minor', c_int),
-                      ('Subminor', c_int)]
-
-CXVersion = CXVersion
+UnsavedFile._fields_ = [('Filename', c_char_p),
+                        ('Contents', c_char_p),
+                        ('Length', c_ulong)]
 
 clang_createIndex = _lib.clang_createIndex
 clang_createIndex.argtypes = [c_int, c_int]
@@ -61,149 +40,24 @@ clang_createIndex.restype = c_void_p
 clang_disposeIndex = _lib.clang_disposeIndex
 clang_disposeIndex.argtypes = [c_void_p]
 
-CXGlobalOpt_None = 0
-CXGlobalOpt_ThreadBackgroundPriorityForIndexing = 1
-CXGlobalOpt_ThreadBackgroundPriorityForEditing = 2
-CXGlobalOpt_ThreadBackgroundPriorityForAll = 3
-
-clang_CXIndex_setGlobalOptions = _lib.clang_CXIndex_setGlobalOptions
-clang_CXIndex_setGlobalOptions.argtypes = [c_void_p, c_uint]
-
-clang_CXIndex_getGlobalOptions = _lib.clang_CXIndex_getGlobalOptions
-clang_CXIndex_getGlobalOptions.argtypes = [c_void_p]
-clang_CXIndex_getGlobalOptions.restype = c_uint
-
-CXFile = c_void_p
-
 clang_getFileName = _lib.clang_getFileName
 clang_getFileName.argtypes = [c_void_p]
-clang_getFileName.restype = CXString
+clang_getFileName.restype = String
 
-clang_getFileTime = _lib.clang_getFileTime
-clang_getFileTime.argtypes = [c_void_p]
-clang_getFileTime.restype = c_long
-
-class CXFileUniqueID(Structure):
+class SourceLocation(Structure):
     pass
-CXFileUniqueID._fields_ = [('data', (c_ulonglong * 3))]
-
-clang_getFileUniqueID = _lib.clang_getFileUniqueID
-clang_getFileUniqueID.argtypes = [c_void_p, POINTER(CXFileUniqueID)]
-clang_getFileUniqueID.restype = c_int
-
-clang_isFileMultipleIncludeGuarded = _lib.clang_isFileMultipleIncludeGuarded
-clang_isFileMultipleIncludeGuarded.argtypes = [POINTER(CXTranslationUnitImpl), c_void_p]
-clang_isFileMultipleIncludeGuarded.restype = c_uint
-
-clang_getFile = _lib.clang_getFile
-clang_getFile.argtypes = [POINTER(CXTranslationUnitImpl), c_char_p]
-clang_getFile.restype = c_void_p
-
-class CXSourceLocation(Structure):
-    pass
-CXSourceLocation._fields_ = [('ptr_data', (c_void_p * 2)),
-                             ('int_data', c_uint)]
-
-class CXSourceRange(Structure):
-    pass
-CXSourceRange._fields_ = [('ptr_data', (c_void_p * 2)),
-                          ('begin_int_data', c_uint),
-                          ('end_int_data', c_uint)]
-
-clang_getNullLocation = _lib.clang_getNullLocation
-clang_getNullLocation.restype = CXSourceLocation
+SourceLocation._fields_ = [('ptr_data', (c_void_p * 2)),
+                           ('int_data', c_uint)]
 
 clang_equalLocations = _lib.clang_equalLocations
-clang_equalLocations.argtypes = [CXSourceLocation, CXSourceLocation]
+clang_equalLocations.argtypes = [SourceLocation, SourceLocation]
 clang_equalLocations.restype = c_uint
 
-clang_getLocation = _lib.clang_getLocation
-clang_getLocation.argtypes = [POINTER(CXTranslationUnitImpl), c_void_p, c_uint, c_uint]
-clang_getLocation.restype = CXSourceLocation
-
-clang_getLocationForOffset = _lib.clang_getLocationForOffset
-clang_getLocationForOffset.argtypes = [POINTER(CXTranslationUnitImpl), c_void_p, c_uint]
-clang_getLocationForOffset.restype = CXSourceLocation
-
-clang_Location_isInSystemHeader = _lib.clang_Location_isInSystemHeader
-clang_Location_isInSystemHeader.argtypes = [CXSourceLocation]
-clang_Location_isInSystemHeader.restype = c_int
-
-clang_getNullRange = _lib.clang_getNullRange
-clang_getNullRange.restype = CXSourceRange
-
-clang_getRange = _lib.clang_getRange
-clang_getRange.argtypes = [CXSourceLocation, CXSourceLocation]
-clang_getRange.restype = CXSourceRange
-
-clang_equalRanges = _lib.clang_equalRanges
-clang_equalRanges.argtypes = [CXSourceRange, CXSourceRange]
-clang_equalRanges.restype = c_uint
-
-clang_Range_isNull = _lib.clang_Range_isNull
-clang_Range_isNull.argtypes = [CXSourceRange]
-clang_Range_isNull.restype = c_int
-
-clang_getExpansionLocation = _lib.clang_getExpansionLocation
-clang_getExpansionLocation.argtypes = [CXSourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
-
-clang_getPresumedLocation = _lib.clang_getPresumedLocation
-clang_getPresumedLocation.argtypes = [CXSourceLocation, POINTER(CXString), POINTER(c_uint), POINTER(c_uint)]
-
 clang_getInstantiationLocation = _lib.clang_getInstantiationLocation
-clang_getInstantiationLocation.argtypes = [CXSourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
-
-clang_getSpellingLocation = _lib.clang_getSpellingLocation
-clang_getSpellingLocation.argtypes = [CXSourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
-
-clang_getFileLocation = _lib.clang_getFileLocation
-clang_getFileLocation.argtypes = [CXSourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
-
-clang_getRangeStart = _lib.clang_getRangeStart
-clang_getRangeStart.argtypes = [CXSourceRange]
-clang_getRangeStart.restype = CXSourceLocation
-
-clang_getRangeEnd = _lib.clang_getRangeEnd
-clang_getRangeEnd.argtypes = [CXSourceRange]
-clang_getRangeEnd.restype = CXSourceLocation
+clang_getInstantiationLocation.argtypes = [SourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
 
 class CXDiagnosticSeverity(c_uint):
     pass
-CXDiagnostic_Ignored = 0
-CXDiagnostic_Note = 1
-CXDiagnostic_Warning = 2
-CXDiagnostic_Error = 3
-CXDiagnostic_Fatal = 4
-
-CXDiagnostic = c_void_p
-
-CXDiagnosticSet = c_void_p
-
-clang_getNumDiagnosticsInSet = _lib.clang_getNumDiagnosticsInSet
-clang_getNumDiagnosticsInSet.argtypes = [c_void_p]
-clang_getNumDiagnosticsInSet.restype = c_uint
-
-clang_getDiagnosticInSet = _lib.clang_getDiagnosticInSet
-clang_getDiagnosticInSet.argtypes = [c_void_p, c_uint]
-clang_getDiagnosticInSet.restype = c_void_p
-
-class CXLoadDiag_Error(c_uint):
-    pass
-CXLoadDiag_None = 0
-CXLoadDiag_Unknown = 1
-CXLoadDiag_CannotLoad = 2
-CXLoadDiag_InvalidFile = 3
-
-clang_loadDiagnostics = _lib.clang_loadDiagnostics
-clang_loadDiagnostics.argtypes = [c_char_p, POINTER(CXLoadDiag_Error), POINTER(CXString)]
-clang_loadDiagnostics.restype = c_void_p
-
-clang_disposeDiagnosticSet = _lib.clang_disposeDiagnosticSet
-clang_disposeDiagnosticSet.argtypes = [c_void_p]
-
-clang_getChildDiagnostics = _lib.clang_getChildDiagnostics
-clang_getChildDiagnostics.argtypes = [c_void_p]
-clang_getChildDiagnostics.restype = c_void_p
 
 clang_getNumDiagnostics = _lib.clang_getNumDiagnostics
 clang_getNumDiagnostics.argtypes = [POINTER(CXTranslationUnitImpl)]
@@ -213,28 +67,8 @@ clang_getDiagnostic = _lib.clang_getDiagnostic
 clang_getDiagnostic.argtypes = [POINTER(CXTranslationUnitImpl), c_uint]
 clang_getDiagnostic.restype = c_void_p
 
-clang_getDiagnosticSetFromTU = _lib.clang_getDiagnosticSetFromTU
-clang_getDiagnosticSetFromTU.argtypes = [POINTER(CXTranslationUnitImpl)]
-clang_getDiagnosticSetFromTU.restype = c_void_p
-
 clang_disposeDiagnostic = _lib.clang_disposeDiagnostic
 clang_disposeDiagnostic.argtypes = [c_void_p]
-
-class CXDiagnosticDisplayOptions(c_uint):
-    pass
-CXDiagnostic_DisplaySourceLocation = 1
-CXDiagnostic_DisplayColumn = 2
-CXDiagnostic_DisplaySourceRanges = 4
-CXDiagnostic_DisplayOption = 8
-CXDiagnostic_DisplayCategoryId = 16
-CXDiagnostic_DisplayCategoryName = 32
-
-clang_formatDiagnostic = _lib.clang_formatDiagnostic
-clang_formatDiagnostic.argtypes = [c_void_p, c_uint]
-clang_formatDiagnostic.restype = CXString
-
-clang_defaultDiagnosticDisplayOptions = _lib.clang_defaultDiagnosticDisplayOptions
-clang_defaultDiagnosticDisplayOptions.restype = c_uint
 
 clang_getDiagnosticSeverity = _lib.clang_getDiagnosticSeverity
 clang_getDiagnosticSeverity.argtypes = [c_void_p]
@@ -242,1609 +76,382 @@ clang_getDiagnosticSeverity.restype = CXDiagnosticSeverity
 
 clang_getDiagnosticLocation = _lib.clang_getDiagnosticLocation
 clang_getDiagnosticLocation.argtypes = [c_void_p]
-clang_getDiagnosticLocation.restype = CXSourceLocation
+clang_getDiagnosticLocation.restype = SourceLocation
 
 clang_getDiagnosticSpelling = _lib.clang_getDiagnosticSpelling
 clang_getDiagnosticSpelling.argtypes = [c_void_p]
-clang_getDiagnosticSpelling.restype = CXString
-
-clang_getDiagnosticOption = _lib.clang_getDiagnosticOption
-clang_getDiagnosticOption.argtypes = [c_void_p, POINTER(CXString)]
-clang_getDiagnosticOption.restype = CXString
-
-clang_getDiagnosticCategory = _lib.clang_getDiagnosticCategory
-clang_getDiagnosticCategory.argtypes = [c_void_p]
-clang_getDiagnosticCategory.restype = c_uint
-
-clang_getDiagnosticCategoryName = _lib.clang_getDiagnosticCategoryName
-clang_getDiagnosticCategoryName.argtypes = [c_uint]
-clang_getDiagnosticCategoryName.restype = CXString
-
-clang_getDiagnosticCategoryText = _lib.clang_getDiagnosticCategoryText
-clang_getDiagnosticCategoryText.argtypes = [c_void_p]
-clang_getDiagnosticCategoryText.restype = CXString
-
-clang_getDiagnosticNumRanges = _lib.clang_getDiagnosticNumRanges
-clang_getDiagnosticNumRanges.argtypes = [c_void_p]
-clang_getDiagnosticNumRanges.restype = c_uint
-
-clang_getDiagnosticRange = _lib.clang_getDiagnosticRange
-clang_getDiagnosticRange.argtypes = [c_void_p, c_uint]
-clang_getDiagnosticRange.restype = CXSourceRange
-
-clang_getDiagnosticNumFixIts = _lib.clang_getDiagnosticNumFixIts
-clang_getDiagnosticNumFixIts.argtypes = [c_void_p]
-clang_getDiagnosticNumFixIts.restype = c_uint
-
-clang_getDiagnosticFixIt = _lib.clang_getDiagnosticFixIt
-clang_getDiagnosticFixIt.argtypes = [c_void_p, c_uint, POINTER(CXSourceRange)]
-clang_getDiagnosticFixIt.restype = CXString
-
-clang_getTranslationUnitSpelling = _lib.clang_getTranslationUnitSpelling
-clang_getTranslationUnitSpelling.argtypes = [POINTER(CXTranslationUnitImpl)]
-clang_getTranslationUnitSpelling.restype = CXString
-
-clang_createTranslationUnitFromSourceFile = _lib.clang_createTranslationUnitFromSourceFile
-clang_createTranslationUnitFromSourceFile.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p), c_uint, POINTER(CXUnsavedFile)]
-clang_createTranslationUnitFromSourceFile.restype = POINTER(CXTranslationUnitImpl)
-
-clang_createTranslationUnit = _lib.clang_createTranslationUnit
-clang_createTranslationUnit.argtypes = [c_void_p, c_char_p]
-clang_createTranslationUnit.restype = POINTER(CXTranslationUnitImpl)
-
-class CXTranslationUnit_Flags(c_uint):
-    pass
-CXTranslationUnit_None = 0
-CXTranslationUnit_DetailedPreprocessingRecord = 1
-CXTranslationUnit_Incomplete = 2
-CXTranslationUnit_PrecompiledPreamble = 4
-CXTranslationUnit_CacheCompletionResults = 8
-CXTranslationUnit_ForSerialization = 16
-CXTranslationUnit_CXXChainedPCH = 32
-CXTranslationUnit_SkipFunctionBodies = 64
-CXTranslationUnit_IncludeBriefCommentsInCodeCompletion = 128
-
-clang_defaultEditingTranslationUnitOptions = _lib.clang_defaultEditingTranslationUnitOptions
-clang_defaultEditingTranslationUnitOptions.restype = c_uint
+clang_getDiagnosticSpelling.restype = String
 
 clang_parseTranslationUnit = _lib.clang_parseTranslationUnit
-clang_parseTranslationUnit.argtypes = [c_void_p, c_char_p, POINTER(c_char_p), c_int, POINTER(CXUnsavedFile), c_uint, c_uint]
+clang_parseTranslationUnit.argtypes = [c_void_p, c_char_p, POINTER(c_char_p), c_int, POINTER(UnsavedFile), c_uint, c_uint]
 clang_parseTranslationUnit.restype = POINTER(CXTranslationUnitImpl)
-
-class CXSaveTranslationUnit_Flags(c_uint):
-    pass
-CXSaveTranslationUnit_None = 0
-
-clang_defaultSaveOptions = _lib.clang_defaultSaveOptions
-clang_defaultSaveOptions.argtypes = [POINTER(CXTranslationUnitImpl)]
-clang_defaultSaveOptions.restype = c_uint
-
-class CXSaveError(c_uint):
-    pass
-CXSaveError_None = 0
-CXSaveError_Unknown = 1
-CXSaveError_TranslationErrors = 2
-CXSaveError_InvalidTU = 3
-
-clang_saveTranslationUnit = _lib.clang_saveTranslationUnit
-clang_saveTranslationUnit.argtypes = [POINTER(CXTranslationUnitImpl), c_char_p, c_uint]
-clang_saveTranslationUnit.restype = c_int
 
 clang_disposeTranslationUnit = _lib.clang_disposeTranslationUnit
 clang_disposeTranslationUnit.argtypes = [POINTER(CXTranslationUnitImpl)]
 
-class CXReparse_Flags(c_uint):
+class CursorKind(c_uint):
     pass
-CXReparse_None = 0
+Cursor_UnexposedDecl = 1
+Cursor_StructDecl = 2
+Cursor_UnionDecl = 3
+Cursor_ClassDecl = 4
+Cursor_EnumDecl = 5
+Cursor_FieldDecl = 6
+Cursor_EnumConstantDecl = 7
+Cursor_FunctionDecl = 8
+Cursor_VarDecl = 9
+Cursor_ParmDecl = 10
+Cursor_ObjCInterfaceDecl = 11
+Cursor_ObjCCategoryDecl = 12
+Cursor_ObjCProtocolDecl = 13
+Cursor_ObjCPropertyDecl = 14
+Cursor_ObjCIvarDecl = 15
+Cursor_ObjCInstanceMethodDecl = 16
+Cursor_ObjCClassMethodDecl = 17
+Cursor_ObjCImplementationDecl = 18
+Cursor_ObjCCategoryImplDecl = 19
+Cursor_TypedefDecl = 20
+Cursor_CXXMethod = 21
+Cursor_Namespace = 22
+Cursor_LinkageSpec = 23
+Cursor_Constructor = 24
+Cursor_Destructor = 25
+Cursor_ConversionFunction = 26
+Cursor_TemplateTypeParameter = 27
+Cursor_NonTypeTemplateParameter = 28
+Cursor_TemplateTemplateParameter = 29
+Cursor_FunctionTemplate = 30
+Cursor_ClassTemplate = 31
+Cursor_ClassTemplatePartialSpecialization = 32
+Cursor_NamespaceAlias = 33
+Cursor_UsingDirective = 34
+Cursor_UsingDeclaration = 35
+Cursor_TypeAliasDecl = 36
+Cursor_ObjCSynthesizeDecl = 37
+Cursor_ObjCDynamicDecl = 38
+Cursor_CXXAccessSpecifier = 39
+Cursor_FirstDecl = 1
+Cursor_LastDecl = 39
+Cursor_FirstRef = 40
+Cursor_ObjCSuperClassRef = 40
+Cursor_ObjCProtocolRef = 41
+Cursor_ObjCClassRef = 42
+Cursor_TypeRef = 43
+Cursor_CXXBaseSpecifier = 44
+Cursor_TemplateRef = 45
+Cursor_NamespaceRef = 46
+Cursor_MemberRef = 47
+Cursor_LabelRef = 48
+Cursor_OverloadedDeclRef = 49
+Cursor_VariableRef = 50
+Cursor_LastRef = 50
+Cursor_FirstInvalid = 70
+Cursor_InvalidFile = 70
+Cursor_NoDeclFound = 71
+Cursor_NotImplemented = 72
+Cursor_InvalidCode = 73
+Cursor_LastInvalid = 73
+Cursor_FirstExpr = 100
+Cursor_UnexposedExpr = 100
+Cursor_DeclRefExpr = 101
+Cursor_MemberRefExpr = 102
+Cursor_CallExpr = 103
+Cursor_ObjCMessageExpr = 104
+Cursor_BlockExpr = 105
+Cursor_IntegerLiteral = 106
+Cursor_FloatingLiteral = 107
+Cursor_ImaginaryLiteral = 108
+Cursor_StringLiteral = 109
+Cursor_CharacterLiteral = 110
+Cursor_ParenExpr = 111
+Cursor_UnaryOperator = 112
+Cursor_ArraySubscriptExpr = 113
+Cursor_BinaryOperator = 114
+Cursor_CompoundAssignOperator = 115
+Cursor_ConditionalOperator = 116
+Cursor_CStyleCastExpr = 117
+Cursor_CompoundLiteralExpr = 118
+Cursor_InitListExpr = 119
+Cursor_AddrLabelExpr = 120
+Cursor_StmtExpr = 121
+Cursor_GenericSelectionExpr = 122
+Cursor_GNUNullExpr = 123
+Cursor_CXXStaticCastExpr = 124
+Cursor_CXXDynamicCastExpr = 125
+Cursor_CXXReinterpretCastExpr = 126
+Cursor_CXXConstCastExpr = 127
+Cursor_CXXFunctionalCastExpr = 128
+Cursor_CXXTypeidExpr = 129
+Cursor_CXXBoolLiteralExpr = 130
+Cursor_CXXNullPtrLiteralExpr = 131
+Cursor_CXXThisExpr = 132
+Cursor_CXXThrowExpr = 133
+Cursor_CXXNewExpr = 134
+Cursor_CXXDeleteExpr = 135
+Cursor_UnaryExpr = 136
+Cursor_ObjCStringLiteral = 137
+Cursor_ObjCEncodeExpr = 138
+Cursor_ObjCSelectorExpr = 139
+Cursor_ObjCProtocolExpr = 140
+Cursor_ObjCBridgedCastExpr = 141
+Cursor_PackExpansionExpr = 142
+Cursor_SizeOfPackExpr = 143
+Cursor_LambdaExpr = 144
+Cursor_ObjCBoolLiteralExpr = 145
+Cursor_ObjCSelfExpr = 146
+Cursor_LastExpr = 146
+Cursor_FirstStmt = 200
+Cursor_UnexposedStmt = 200
+Cursor_LabelStmt = 201
+Cursor_CompoundStmt = 202
+Cursor_CaseStmt = 203
+Cursor_DefaultStmt = 204
+Cursor_IfStmt = 205
+Cursor_SwitchStmt = 206
+Cursor_WhileStmt = 207
+Cursor_DoStmt = 208
+Cursor_ForStmt = 209
+Cursor_GotoStmt = 210
+Cursor_IndirectGotoStmt = 211
+Cursor_ContinueStmt = 212
+Cursor_BreakStmt = 213
+Cursor_ReturnStmt = 214
+Cursor_GCCAsmStmt = 215
+Cursor_AsmStmt = 215
+Cursor_ObjCAtTryStmt = 216
+Cursor_ObjCAtCatchStmt = 217
+Cursor_ObjCAtFinallyStmt = 218
+Cursor_ObjCAtThrowStmt = 219
+Cursor_ObjCAtSynchronizedStmt = 220
+Cursor_ObjCAutoreleasePoolStmt = 221
+Cursor_ObjCForCollectionStmt = 222
+Cursor_CXXCatchStmt = 223
+Cursor_CXXTryStmt = 224
+Cursor_CXXForRangeStmt = 225
+Cursor_SEHTryStmt = 226
+Cursor_SEHExceptStmt = 227
+Cursor_SEHFinallyStmt = 228
+Cursor_MSAsmStmt = 229
+Cursor_NullStmt = 230
+Cursor_DeclStmt = 231
+Cursor_OMPParallelDirective = 232
+Cursor_LastStmt = 232
+Cursor_TranslationUnit = 300
+Cursor_FirstAttr = 400
+Cursor_UnexposedAttr = 400
+Cursor_IBActionAttr = 401
+Cursor_IBOutletAttr = 402
+Cursor_IBOutletCollectionAttr = 403
+Cursor_CXXFinalAttr = 404
+Cursor_CXXOverrideAttr = 405
+Cursor_AnnotateAttr = 406
+Cursor_AsmLabelAttr = 407
+Cursor_LastAttr = 407
+Cursor_PreprocessingDirective = 500
+Cursor_MacroDefinition = 501
+Cursor_MacroExpansion = 502
+Cursor_MacroInstantiation = 502
+Cursor_InclusionDirective = 503
+Cursor_FirstPreprocessing = 500
+Cursor_LastPreprocessing = 503
+Cursor_ModuleImportDecl = 600
+Cursor_FirstExtraDecl = 600
+Cursor_LastExtraDecl = 600
 
-clang_defaultReparseOptions = _lib.clang_defaultReparseOptions
-clang_defaultReparseOptions.argtypes = [POINTER(CXTranslationUnitImpl)]
-clang_defaultReparseOptions.restype = c_uint
-
-clang_reparseTranslationUnit = _lib.clang_reparseTranslationUnit
-clang_reparseTranslationUnit.argtypes = [POINTER(CXTranslationUnitImpl), c_uint, POINTER(CXUnsavedFile), c_uint]
-clang_reparseTranslationUnit.restype = c_int
-
-class CXTUResourceUsageKind(c_uint):
+class Cursor(Structure):
     pass
-CXTUResourceUsage_AST = 1
-CXTUResourceUsage_Identifiers = 2
-CXTUResourceUsage_Selectors = 3
-CXTUResourceUsage_GlobalCompletionResults = 4
-CXTUResourceUsage_SourceManagerContentCache = 5
-CXTUResourceUsage_AST_SideTables = 6
-CXTUResourceUsage_SourceManager_Membuffer_Malloc = 7
-CXTUResourceUsage_SourceManager_Membuffer_MMap = 8
-CXTUResourceUsage_ExternalASTSource_Membuffer_Malloc = 9
-CXTUResourceUsage_ExternalASTSource_Membuffer_MMap = 10
-CXTUResourceUsage_Preprocessor = 11
-CXTUResourceUsage_PreprocessingRecord = 12
-CXTUResourceUsage_SourceManager_DataStructures = 13
-CXTUResourceUsage_Preprocessor_HeaderSearch = 14
-CXTUResourceUsage_MEMORY_IN_BYTES_BEGIN = 1
-CXTUResourceUsage_MEMORY_IN_BYTES_END = 14
-CXTUResourceUsage_First = 1
-CXTUResourceUsage_Last = 14
-
-clang_getTUResourceUsageName = _lib.clang_getTUResourceUsageName
-clang_getTUResourceUsageName.argtypes = [CXTUResourceUsageKind]
-clang_getTUResourceUsageName.restype = c_char_p
-
-class CXTUResourceUsageEntry(Structure):
-    pass
-CXTUResourceUsageEntry._fields_ = [('kind', CXTUResourceUsageKind),
-                                   ('amount', c_ulong)]
-
-CXTUResourceUsageEntry = CXTUResourceUsageEntry
-
-class CXTUResourceUsage(Structure):
-    pass
-CXTUResourceUsage._fields_ = [('data', c_void_p),
-                              ('numEntries', c_uint),
-                              ('entries', POINTER(CXTUResourceUsageEntry))]
-
-CXTUResourceUsage = CXTUResourceUsage
-
-clang_getCXTUResourceUsage = _lib.clang_getCXTUResourceUsage
-clang_getCXTUResourceUsage.argtypes = [POINTER(CXTranslationUnitImpl)]
-clang_getCXTUResourceUsage.restype = CXTUResourceUsage
-
-clang_disposeCXTUResourceUsage = _lib.clang_disposeCXTUResourceUsage
-clang_disposeCXTUResourceUsage.argtypes = [CXTUResourceUsage]
-
-class CXCursorKind(c_uint):
-    pass
-CXCursor_UnexposedDecl = 1
-CXCursor_StructDecl = 2
-CXCursor_UnionDecl = 3
-CXCursor_ClassDecl = 4
-CXCursor_EnumDecl = 5
-CXCursor_FieldDecl = 6
-CXCursor_EnumConstantDecl = 7
-CXCursor_FunctionDecl = 8
-CXCursor_VarDecl = 9
-CXCursor_ParmDecl = 10
-CXCursor_ObjCInterfaceDecl = 11
-CXCursor_ObjCCategoryDecl = 12
-CXCursor_ObjCProtocolDecl = 13
-CXCursor_ObjCPropertyDecl = 14
-CXCursor_ObjCIvarDecl = 15
-CXCursor_ObjCInstanceMethodDecl = 16
-CXCursor_ObjCClassMethodDecl = 17
-CXCursor_ObjCImplementationDecl = 18
-CXCursor_ObjCCategoryImplDecl = 19
-CXCursor_TypedefDecl = 20
-CXCursor_CXXMethod = 21
-CXCursor_Namespace = 22
-CXCursor_LinkageSpec = 23
-CXCursor_Constructor = 24
-CXCursor_Destructor = 25
-CXCursor_ConversionFunction = 26
-CXCursor_TemplateTypeParameter = 27
-CXCursor_NonTypeTemplateParameter = 28
-CXCursor_TemplateTemplateParameter = 29
-CXCursor_FunctionTemplate = 30
-CXCursor_ClassTemplate = 31
-CXCursor_ClassTemplatePartialSpecialization = 32
-CXCursor_NamespaceAlias = 33
-CXCursor_UsingDirective = 34
-CXCursor_UsingDeclaration = 35
-CXCursor_TypeAliasDecl = 36
-CXCursor_ObjCSynthesizeDecl = 37
-CXCursor_ObjCDynamicDecl = 38
-CXCursor_CXXAccessSpecifier = 39
-CXCursor_FirstDecl = 1
-CXCursor_LastDecl = 39
-CXCursor_FirstRef = 40
-CXCursor_ObjCSuperClassRef = 40
-CXCursor_ObjCProtocolRef = 41
-CXCursor_ObjCClassRef = 42
-CXCursor_TypeRef = 43
-CXCursor_CXXBaseSpecifier = 44
-CXCursor_TemplateRef = 45
-CXCursor_NamespaceRef = 46
-CXCursor_MemberRef = 47
-CXCursor_LabelRef = 48
-CXCursor_OverloadedDeclRef = 49
-CXCursor_VariableRef = 50
-CXCursor_LastRef = 50
-CXCursor_FirstInvalid = 70
-CXCursor_InvalidFile = 70
-CXCursor_NoDeclFound = 71
-CXCursor_NotImplemented = 72
-CXCursor_InvalidCode = 73
-CXCursor_LastInvalid = 73
-CXCursor_FirstExpr = 100
-CXCursor_UnexposedExpr = 100
-CXCursor_DeclRefExpr = 101
-CXCursor_MemberRefExpr = 102
-CXCursor_CallExpr = 103
-CXCursor_ObjCMessageExpr = 104
-CXCursor_BlockExpr = 105
-CXCursor_IntegerLiteral = 106
-CXCursor_FloatingLiteral = 107
-CXCursor_ImaginaryLiteral = 108
-CXCursor_StringLiteral = 109
-CXCursor_CharacterLiteral = 110
-CXCursor_ParenExpr = 111
-CXCursor_UnaryOperator = 112
-CXCursor_ArraySubscriptExpr = 113
-CXCursor_BinaryOperator = 114
-CXCursor_CompoundAssignOperator = 115
-CXCursor_ConditionalOperator = 116
-CXCursor_CStyleCastExpr = 117
-CXCursor_CompoundLiteralExpr = 118
-CXCursor_InitListExpr = 119
-CXCursor_AddrLabelExpr = 120
-CXCursor_StmtExpr = 121
-CXCursor_GenericSelectionExpr = 122
-CXCursor_GNUNullExpr = 123
-CXCursor_CXXStaticCastExpr = 124
-CXCursor_CXXDynamicCastExpr = 125
-CXCursor_CXXReinterpretCastExpr = 126
-CXCursor_CXXConstCastExpr = 127
-CXCursor_CXXFunctionalCastExpr = 128
-CXCursor_CXXTypeidExpr = 129
-CXCursor_CXXBoolLiteralExpr = 130
-CXCursor_CXXNullPtrLiteralExpr = 131
-CXCursor_CXXThisExpr = 132
-CXCursor_CXXThrowExpr = 133
-CXCursor_CXXNewExpr = 134
-CXCursor_CXXDeleteExpr = 135
-CXCursor_UnaryExpr = 136
-CXCursor_ObjCStringLiteral = 137
-CXCursor_ObjCEncodeExpr = 138
-CXCursor_ObjCSelectorExpr = 139
-CXCursor_ObjCProtocolExpr = 140
-CXCursor_ObjCBridgedCastExpr = 141
-CXCursor_PackExpansionExpr = 142
-CXCursor_SizeOfPackExpr = 143
-CXCursor_LambdaExpr = 144
-CXCursor_ObjCBoolLiteralExpr = 145
-CXCursor_ObjCSelfExpr = 146
-CXCursor_LastExpr = 146
-CXCursor_FirstStmt = 200
-CXCursor_UnexposedStmt = 200
-CXCursor_LabelStmt = 201
-CXCursor_CompoundStmt = 202
-CXCursor_CaseStmt = 203
-CXCursor_DefaultStmt = 204
-CXCursor_IfStmt = 205
-CXCursor_SwitchStmt = 206
-CXCursor_WhileStmt = 207
-CXCursor_DoStmt = 208
-CXCursor_ForStmt = 209
-CXCursor_GotoStmt = 210
-CXCursor_IndirectGotoStmt = 211
-CXCursor_ContinueStmt = 212
-CXCursor_BreakStmt = 213
-CXCursor_ReturnStmt = 214
-CXCursor_GCCAsmStmt = 215
-CXCursor_AsmStmt = 215
-CXCursor_ObjCAtTryStmt = 216
-CXCursor_ObjCAtCatchStmt = 217
-CXCursor_ObjCAtFinallyStmt = 218
-CXCursor_ObjCAtThrowStmt = 219
-CXCursor_ObjCAtSynchronizedStmt = 220
-CXCursor_ObjCAutoreleasePoolStmt = 221
-CXCursor_ObjCForCollectionStmt = 222
-CXCursor_CXXCatchStmt = 223
-CXCursor_CXXTryStmt = 224
-CXCursor_CXXForRangeStmt = 225
-CXCursor_SEHTryStmt = 226
-CXCursor_SEHExceptStmt = 227
-CXCursor_SEHFinallyStmt = 228
-CXCursor_MSAsmStmt = 229
-CXCursor_NullStmt = 230
-CXCursor_DeclStmt = 231
-CXCursor_OMPParallelDirective = 232
-CXCursor_LastStmt = 232
-CXCursor_TranslationUnit = 300
-CXCursor_FirstAttr = 400
-CXCursor_UnexposedAttr = 400
-CXCursor_IBActionAttr = 401
-CXCursor_IBOutletAttr = 402
-CXCursor_IBOutletCollectionAttr = 403
-CXCursor_CXXFinalAttr = 404
-CXCursor_CXXOverrideAttr = 405
-CXCursor_AnnotateAttr = 406
-CXCursor_AsmLabelAttr = 407
-CXCursor_LastAttr = 407
-CXCursor_PreprocessingDirective = 500
-CXCursor_MacroDefinition = 501
-CXCursor_MacroExpansion = 502
-CXCursor_MacroInstantiation = 502
-CXCursor_InclusionDirective = 503
-CXCursor_FirstPreprocessing = 500
-CXCursor_LastPreprocessing = 503
-CXCursor_ModuleImportDecl = 600
-CXCursor_FirstExtraDecl = 600
-CXCursor_LastExtraDecl = 600
-
-class CXCursor(Structure):
-    pass
-CXCursor._fields_ = [('kind', CXCursorKind),
-                     ('xdata', c_int),
-                     ('data', (c_void_p * 3))]
-
-class CXComment(Structure):
-    pass
-CXComment._fields_ = [('ASTNode', c_void_p),
-                      ('TranslationUnit', POINTER(CXTranslationUnitImpl))]
+Cursor._fields_ = [('kind', CursorKind),
+                   ('xdata', c_int),
+                   ('data', (c_void_p * 3))]
 
 clang_getNullCursor = _lib.clang_getNullCursor
-clang_getNullCursor.restype = CXCursor
+clang_getNullCursor.restype = Cursor
 
 clang_getTranslationUnitCursor = _lib.clang_getTranslationUnitCursor
 clang_getTranslationUnitCursor.argtypes = [POINTER(CXTranslationUnitImpl)]
-clang_getTranslationUnitCursor.restype = CXCursor
+clang_getTranslationUnitCursor.restype = Cursor
 
 clang_equalCursors = _lib.clang_equalCursors
-clang_equalCursors.argtypes = [CXCursor, CXCursor]
+clang_equalCursors.argtypes = [Cursor, Cursor]
 clang_equalCursors.restype = c_uint
 
-clang_Cursor_isNull = _lib.clang_Cursor_isNull
-clang_Cursor_isNull.argtypes = [CXCursor]
-clang_Cursor_isNull.restype = c_int
-
 clang_hashCursor = _lib.clang_hashCursor
-clang_hashCursor.argtypes = [CXCursor]
+clang_hashCursor.argtypes = [Cursor]
 clang_hashCursor.restype = c_uint
 
-clang_getCursorKind = _lib.clang_getCursorKind
-clang_getCursorKind.argtypes = [CXCursor]
-clang_getCursorKind.restype = CXCursorKind
-
 clang_isDeclaration = _lib.clang_isDeclaration
-clang_isDeclaration.argtypes = [CXCursorKind]
+clang_isDeclaration.argtypes = [CursorKind]
 clang_isDeclaration.restype = c_uint
 
-clang_isReference = _lib.clang_isReference
-clang_isReference.argtypes = [CXCursorKind]
-clang_isReference.restype = c_uint
-
-clang_isExpression = _lib.clang_isExpression
-clang_isExpression.argtypes = [CXCursorKind]
-clang_isExpression.restype = c_uint
-
-clang_isStatement = _lib.clang_isStatement
-clang_isStatement.argtypes = [CXCursorKind]
-clang_isStatement.restype = c_uint
-
-clang_isAttribute = _lib.clang_isAttribute
-clang_isAttribute.argtypes = [CXCursorKind]
-clang_isAttribute.restype = c_uint
-
-clang_isInvalid = _lib.clang_isInvalid
-clang_isInvalid.argtypes = [CXCursorKind]
-clang_isInvalid.restype = c_uint
-
-clang_isTranslationUnit = _lib.clang_isTranslationUnit
-clang_isTranslationUnit.argtypes = [CXCursorKind]
-clang_isTranslationUnit.restype = c_uint
-
-clang_isPreprocessing = _lib.clang_isPreprocessing
-clang_isPreprocessing.argtypes = [CXCursorKind]
-clang_isPreprocessing.restype = c_uint
-
-clang_isUnexposed = _lib.clang_isUnexposed
-clang_isUnexposed.argtypes = [CXCursorKind]
-clang_isUnexposed.restype = c_uint
-
-class CXLinkageKind(c_uint):
+class LinkageKind(c_uint):
     pass
-CXLinkage_Invalid = 0
-CXLinkage_NoLinkage = 1
-CXLinkage_Internal = 2
-CXLinkage_UniqueExternal = 3
-CXLinkage_External = 4
+Linkage_Invalid = 0
+Linkage_NoLinkage = 1
+Linkage_Internal = 2
+Linkage_UniqueExternal = 3
+Linkage_External = 4
 
 clang_getCursorLinkage = _lib.clang_getCursorLinkage
-clang_getCursorLinkage.argtypes = [CXCursor]
-clang_getCursorLinkage.restype = CXLinkageKind
-
-clang_getCursorAvailability = _lib.clang_getCursorAvailability
-clang_getCursorAvailability.argtypes = [CXCursor]
-clang_getCursorAvailability.restype = CXAvailabilityKind
-
-class CXPlatformAvailability(Structure):
-    pass
-CXPlatformAvailability._fields_ = [('Platform', CXString),
-                                   ('Introduced', CXVersion),
-                                   ('Deprecated', CXVersion),
-                                   ('Obsoleted', CXVersion),
-                                   ('Unavailable', c_int),
-                                   ('Message', CXString)]
-
-CXPlatformAvailability = CXPlatformAvailability
-
-clang_getCursorPlatformAvailability = _lib.clang_getCursorPlatformAvailability
-clang_getCursorPlatformAvailability.argtypes = [CXCursor, POINTER(c_int), POINTER(CXString), POINTER(c_int), POINTER(CXString), POINTER(CXPlatformAvailability), c_int]
-clang_getCursorPlatformAvailability.restype = c_int
-
-clang_disposeCXPlatformAvailability = _lib.clang_disposeCXPlatformAvailability
-clang_disposeCXPlatformAvailability.argtypes = [POINTER(CXPlatformAvailability)]
-
-class CXLanguageKind(c_uint):
-    pass
-CXLanguage_Invalid = 0
-CXLanguage_C = 1
-CXLanguage_ObjC = 2
-CXLanguage_CPlusPlus = 3
-
-clang_getCursorLanguage = _lib.clang_getCursorLanguage
-clang_getCursorLanguage.argtypes = [CXCursor]
-clang_getCursorLanguage.restype = CXLanguageKind
-
-clang_Cursor_getTranslationUnit = _lib.clang_Cursor_getTranslationUnit
-clang_Cursor_getTranslationUnit.argtypes = [CXCursor]
-clang_Cursor_getTranslationUnit.restype = POINTER(CXTranslationUnitImpl)
-
-class CXCursorSetImpl(Structure):
-    pass
-
-CXCursorSet = POINTER(CXCursorSetImpl)
-
-clang_createCXCursorSet = _lib.clang_createCXCursorSet
-clang_createCXCursorSet.restype = POINTER(CXCursorSetImpl)
-
-clang_disposeCXCursorSet = _lib.clang_disposeCXCursorSet
-clang_disposeCXCursorSet.argtypes = [POINTER(CXCursorSetImpl)]
-
-clang_CXCursorSet_contains = _lib.clang_CXCursorSet_contains
-clang_CXCursorSet_contains.argtypes = [POINTER(CXCursorSetImpl), CXCursor]
-clang_CXCursorSet_contains.restype = c_uint
-
-clang_CXCursorSet_insert = _lib.clang_CXCursorSet_insert
-clang_CXCursorSet_insert.argtypes = [POINTER(CXCursorSetImpl), CXCursor]
-clang_CXCursorSet_insert.restype = c_uint
+clang_getCursorLinkage.argtypes = [Cursor]
+clang_getCursorLinkage.restype = LinkageKind
 
 clang_getCursorSemanticParent = _lib.clang_getCursorSemanticParent
-clang_getCursorSemanticParent.argtypes = [CXCursor]
-clang_getCursorSemanticParent.restype = CXCursor
-
-clang_getCursorLexicalParent = _lib.clang_getCursorLexicalParent
-clang_getCursorLexicalParent.argtypes = [CXCursor]
-clang_getCursorLexicalParent.restype = CXCursor
-
-clang_getOverriddenCursors = _lib.clang_getOverriddenCursors
-clang_getOverriddenCursors.argtypes = [CXCursor, POINTER(POINTER(CXCursor)), POINTER(c_uint)]
-
-clang_disposeOverriddenCursors = _lib.clang_disposeOverriddenCursors
-clang_disposeOverriddenCursors.argtypes = [POINTER(CXCursor)]
-
-clang_getIncludedFile = _lib.clang_getIncludedFile
-clang_getIncludedFile.argtypes = [CXCursor]
-clang_getIncludedFile.restype = c_void_p
-
-clang_getCursor = _lib.clang_getCursor
-clang_getCursor.argtypes = [POINTER(CXTranslationUnitImpl), CXSourceLocation]
-clang_getCursor.restype = CXCursor
+clang_getCursorSemanticParent.argtypes = [Cursor]
+clang_getCursorSemanticParent.restype = Cursor
 
 clang_getCursorLocation = _lib.clang_getCursorLocation
-clang_getCursorLocation.argtypes = [CXCursor]
-clang_getCursorLocation.restype = CXSourceLocation
+clang_getCursorLocation.argtypes = [Cursor]
+clang_getCursorLocation.restype = SourceLocation
 
-clang_getCursorExtent = _lib.clang_getCursorExtent
-clang_getCursorExtent.argtypes = [CXCursor]
-clang_getCursorExtent.restype = CXSourceRange
-
-class CXTypeKind(c_uint):
+class TypeKind(c_uint):
     pass
-CXType_Invalid = 0
-CXType_Unexposed = 1
-CXType_Void = 2
-CXType_Bool = 3
-CXType_Char_U = 4
-CXType_UChar = 5
-CXType_Char16 = 6
-CXType_Char32 = 7
-CXType_UShort = 8
-CXType_UInt = 9
-CXType_ULong = 10
-CXType_ULongLong = 11
-CXType_UInt128 = 12
-CXType_Char_S = 13
-CXType_SChar = 14
-CXType_WChar = 15
-CXType_Short = 16
-CXType_Int = 17
-CXType_Long = 18
-CXType_LongLong = 19
-CXType_Int128 = 20
-CXType_Float = 21
-CXType_Double = 22
-CXType_LongDouble = 23
-CXType_NullPtr = 24
-CXType_Overload = 25
-CXType_Dependent = 26
-CXType_ObjCId = 27
-CXType_ObjCClass = 28
-CXType_ObjCSel = 29
-CXType_FirstBuiltin = 2
-CXType_LastBuiltin = 29
-CXType_Complex = 100
-CXType_Pointer = 101
-CXType_BlockPointer = 102
-CXType_LValueReference = 103
-CXType_RValueReference = 104
-CXType_Record = 105
-CXType_Enum = 106
-CXType_Typedef = 107
-CXType_ObjCInterface = 108
-CXType_ObjCObjectPointer = 109
-CXType_FunctionNoProto = 110
-CXType_FunctionProto = 111
-CXType_ConstantArray = 112
-CXType_Vector = 113
-CXType_IncompleteArray = 114
-CXType_VariableArray = 115
-CXType_DependentSizedArray = 116
+Type_Invalid = 0
+Type_Unexposed = 1
+Type_Void = 2
+Type_Bool = 3
+Type_Char_U = 4
+Type_UChar = 5
+Type_Char16 = 6
+Type_Char32 = 7
+Type_UShort = 8
+Type_UInt = 9
+Type_ULong = 10
+Type_ULongLong = 11
+Type_UInt128 = 12
+Type_Char_S = 13
+Type_SChar = 14
+Type_WChar = 15
+Type_Short = 16
+Type_Int = 17
+Type_Long = 18
+Type_LongLong = 19
+Type_Int128 = 20
+Type_Float = 21
+Type_Double = 22
+Type_LongDouble = 23
+Type_NullPtr = 24
+Type_Overload = 25
+Type_Dependent = 26
+Type_ObjCId = 27
+Type_ObjCClass = 28
+Type_ObjCSel = 29
+Type_FirstBuiltin = 2
+Type_LastBuiltin = 29
+Type_Complex = 100
+Type_Pointer = 101
+Type_BlockPointer = 102
+Type_LValueReference = 103
+Type_RValueReference = 104
+Type_Record = 105
+Type_Enum = 106
+Type_Typedef = 107
+Type_ObjCInterface = 108
+Type_ObjCObjectPointer = 109
+Type_FunctionNoProto = 110
+Type_FunctionProto = 111
+Type_ConstantArray = 112
+Type_Vector = 113
+Type_IncompleteArray = 114
+Type_VariableArray = 115
+Type_DependentSizedArray = 116
 
-class CXCallingConv(c_uint):
+class Type(Structure):
     pass
-CXCallingConv_Default = 0
-CXCallingConv_C = 1
-CXCallingConv_X86StdCall = 2
-CXCallingConv_X86FastCall = 3
-CXCallingConv_X86ThisCall = 4
-CXCallingConv_X86Pascal = 5
-CXCallingConv_AAPCS = 6
-CXCallingConv_AAPCS_VFP = 7
-CXCallingConv_PnaclCall = 8
-CXCallingConv_IntelOclBicc = 9
-CXCallingConv_Invalid = 100
-CXCallingConv_Unexposed = 200
-
-class CXType(Structure):
-    pass
-CXType._fields_ = [('kind', CXTypeKind),
-                   ('data', (c_void_p * 2))]
+Type._fields_ = [('kind', TypeKind),
+                 ('data', (c_void_p * 2))]
 
 clang_getCursorType = _lib.clang_getCursorType
-clang_getCursorType.argtypes = [CXCursor]
-clang_getCursorType.restype = CXType
-
-clang_getTypeSpelling = _lib.clang_getTypeSpelling
-clang_getTypeSpelling.argtypes = [CXType]
-clang_getTypeSpelling.restype = CXString
+clang_getCursorType.argtypes = [Cursor]
+clang_getCursorType.restype = Type
 
 clang_getTypedefDeclUnderlyingType = _lib.clang_getTypedefDeclUnderlyingType
-clang_getTypedefDeclUnderlyingType.argtypes = [CXCursor]
-clang_getTypedefDeclUnderlyingType.restype = CXType
+clang_getTypedefDeclUnderlyingType.argtypes = [Cursor]
+clang_getTypedefDeclUnderlyingType.restype = Type
 
 clang_getEnumDeclIntegerType = _lib.clang_getEnumDeclIntegerType
-clang_getEnumDeclIntegerType.argtypes = [CXCursor]
-clang_getEnumDeclIntegerType.restype = CXType
+clang_getEnumDeclIntegerType.argtypes = [Cursor]
+clang_getEnumDeclIntegerType.restype = Type
 
 clang_getEnumConstantDeclValue = _lib.clang_getEnumConstantDeclValue
-clang_getEnumConstantDeclValue.argtypes = [CXCursor]
+clang_getEnumConstantDeclValue.argtypes = [Cursor]
 clang_getEnumConstantDeclValue.restype = c_longlong
 
 clang_getEnumConstantDeclUnsignedValue = _lib.clang_getEnumConstantDeclUnsignedValue
-clang_getEnumConstantDeclUnsignedValue.argtypes = [CXCursor]
+clang_getEnumConstantDeclUnsignedValue.argtypes = [Cursor]
 clang_getEnumConstantDeclUnsignedValue.restype = c_ulonglong
 
 clang_getFieldDeclBitWidth = _lib.clang_getFieldDeclBitWidth
-clang_getFieldDeclBitWidth.argtypes = [CXCursor]
+clang_getFieldDeclBitWidth.argtypes = [Cursor]
 clang_getFieldDeclBitWidth.restype = c_int
 
 clang_Cursor_getNumArguments = _lib.clang_Cursor_getNumArguments
-clang_Cursor_getNumArguments.argtypes = [CXCursor]
+clang_Cursor_getNumArguments.argtypes = [Cursor]
 clang_Cursor_getNumArguments.restype = c_int
 
 clang_Cursor_getArgument = _lib.clang_Cursor_getArgument
-clang_Cursor_getArgument.argtypes = [CXCursor, c_uint]
-clang_Cursor_getArgument.restype = CXCursor
+clang_Cursor_getArgument.argtypes = [Cursor, c_uint]
+clang_Cursor_getArgument.restype = Cursor
 
 clang_equalTypes = _lib.clang_equalTypes
-clang_equalTypes.argtypes = [CXType, CXType]
+clang_equalTypes.argtypes = [Type, Type]
 clang_equalTypes.restype = c_uint
 
 clang_getCanonicalType = _lib.clang_getCanonicalType
-clang_getCanonicalType.argtypes = [CXType]
-clang_getCanonicalType.restype = CXType
-
-clang_isConstQualifiedType = _lib.clang_isConstQualifiedType
-clang_isConstQualifiedType.argtypes = [CXType]
-clang_isConstQualifiedType.restype = c_uint
-
-clang_isVolatileQualifiedType = _lib.clang_isVolatileQualifiedType
-clang_isVolatileQualifiedType.argtypes = [CXType]
-clang_isVolatileQualifiedType.restype = c_uint
-
-clang_isRestrictQualifiedType = _lib.clang_isRestrictQualifiedType
-clang_isRestrictQualifiedType.argtypes = [CXType]
-clang_isRestrictQualifiedType.restype = c_uint
+clang_getCanonicalType.argtypes = [Type]
+clang_getCanonicalType.restype = Type
 
 clang_getPointeeType = _lib.clang_getPointeeType
-clang_getPointeeType.argtypes = [CXType]
-clang_getPointeeType.restype = CXType
+clang_getPointeeType.argtypes = [Type]
+clang_getPointeeType.restype = Type
 
 clang_getTypeDeclaration = _lib.clang_getTypeDeclaration
-clang_getTypeDeclaration.argtypes = [CXType]
-clang_getTypeDeclaration.restype = CXCursor
-
-clang_getDeclObjCTypeEncoding = _lib.clang_getDeclObjCTypeEncoding
-clang_getDeclObjCTypeEncoding.argtypes = [CXCursor]
-clang_getDeclObjCTypeEncoding.restype = CXString
-
-clang_getTypeKindSpelling = _lib.clang_getTypeKindSpelling
-clang_getTypeKindSpelling.argtypes = [CXTypeKind]
-clang_getTypeKindSpelling.restype = CXString
-
-clang_getFunctionTypeCallingConv = _lib.clang_getFunctionTypeCallingConv
-clang_getFunctionTypeCallingConv.argtypes = [CXType]
-clang_getFunctionTypeCallingConv.restype = CXCallingConv
+clang_getTypeDeclaration.argtypes = [Type]
+clang_getTypeDeclaration.restype = Cursor
 
 clang_getResultType = _lib.clang_getResultType
-clang_getResultType.argtypes = [CXType]
-clang_getResultType.restype = CXType
+clang_getResultType.argtypes = [Type]
+clang_getResultType.restype = Type
 
 clang_getNumArgTypes = _lib.clang_getNumArgTypes
-clang_getNumArgTypes.argtypes = [CXType]
+clang_getNumArgTypes.argtypes = [Type]
 clang_getNumArgTypes.restype = c_int
 
 clang_getArgType = _lib.clang_getArgType
-clang_getArgType.argtypes = [CXType, c_uint]
-clang_getArgType.restype = CXType
+clang_getArgType.argtypes = [Type, c_uint]
+clang_getArgType.restype = Type
 
 clang_isFunctionTypeVariadic = _lib.clang_isFunctionTypeVariadic
-clang_isFunctionTypeVariadic.argtypes = [CXType]
+clang_isFunctionTypeVariadic.argtypes = [Type]
 clang_isFunctionTypeVariadic.restype = c_uint
 
-clang_getCursorResultType = _lib.clang_getCursorResultType
-clang_getCursorResultType.argtypes = [CXCursor]
-clang_getCursorResultType.restype = CXType
-
-clang_isPODType = _lib.clang_isPODType
-clang_isPODType.argtypes = [CXType]
-clang_isPODType.restype = c_uint
-
-clang_getElementType = _lib.clang_getElementType
-clang_getElementType.argtypes = [CXType]
-clang_getElementType.restype = CXType
-
-clang_getNumElements = _lib.clang_getNumElements
-clang_getNumElements.argtypes = [CXType]
-clang_getNumElements.restype = c_longlong
-
 clang_getArrayElementType = _lib.clang_getArrayElementType
-clang_getArrayElementType.argtypes = [CXType]
-clang_getArrayElementType.restype = CXType
+clang_getArrayElementType.argtypes = [Type]
+clang_getArrayElementType.restype = Type
 
 clang_getArraySize = _lib.clang_getArraySize
-clang_getArraySize.argtypes = [CXType]
+clang_getArraySize.argtypes = [Type]
 clang_getArraySize.restype = c_longlong
 
-class CXTypeLayoutError(c_int):
-    pass
-CXTypeLayoutError_Invalid = -1
-CXTypeLayoutError_Incomplete = -2
-CXTypeLayoutError_Dependent = -3
-CXTypeLayoutError_NotConstantSize = -4
-CXTypeLayoutError_InvalidFieldName = -5
-
 clang_Type_getAlignOf = _lib.clang_Type_getAlignOf
-clang_Type_getAlignOf.argtypes = [CXType]
+clang_Type_getAlignOf.argtypes = [Type]
 clang_Type_getAlignOf.restype = c_longlong
 
-clang_Type_getSizeOf = _lib.clang_Type_getSizeOf
-clang_Type_getSizeOf.argtypes = [CXType]
-clang_Type_getSizeOf.restype = c_longlong
-
-clang_Type_getOffsetOf = _lib.clang_Type_getOffsetOf
-clang_Type_getOffsetOf.argtypes = [CXType, c_char_p]
-clang_Type_getOffsetOf.restype = c_longlong
-
 clang_Cursor_isBitField = _lib.clang_Cursor_isBitField
-clang_Cursor_isBitField.argtypes = [CXCursor]
+clang_Cursor_isBitField.argtypes = [Cursor]
 clang_Cursor_isBitField.restype = c_uint
 
-clang_isVirtualBase = _lib.clang_isVirtualBase
-clang_isVirtualBase.argtypes = [CXCursor]
-clang_isVirtualBase.restype = c_uint
-
-class CX_CXXAccessSpecifier(c_uint):
+class ChildVisitResult(c_uint):
     pass
-CX_CXXInvalidAccessSpecifier = 0
-CX_CXXPublic = 1
-CX_CXXProtected = 2
-CX_CXXPrivate = 3
-
-clang_getCXXAccessSpecifier = _lib.clang_getCXXAccessSpecifier
-clang_getCXXAccessSpecifier.argtypes = [CXCursor]
-clang_getCXXAccessSpecifier.restype = CX_CXXAccessSpecifier
-
-clang_getNumOverloadedDecls = _lib.clang_getNumOverloadedDecls
-clang_getNumOverloadedDecls.argtypes = [CXCursor]
-clang_getNumOverloadedDecls.restype = c_uint
-
-clang_getOverloadedDecl = _lib.clang_getOverloadedDecl
-clang_getOverloadedDecl.argtypes = [CXCursor, c_uint]
-clang_getOverloadedDecl.restype = CXCursor
-
-clang_getIBOutletCollectionType = _lib.clang_getIBOutletCollectionType
-clang_getIBOutletCollectionType.argtypes = [CXCursor]
-clang_getIBOutletCollectionType.restype = CXType
-
-class CXChildVisitResult(c_uint):
-    pass
-CXChildVisit_Break = 0
-CXChildVisit_Continue = 1
-CXChildVisit_Recurse = 2
-
-CXCursorVisitor = CFUNCTYPE(CXChildVisitResult, CXCursor, CXCursor, c_void_p)
 
 clang_visitChildren = _lib.clang_visitChildren
-clang_visitChildren.argtypes = [CXCursor, CFUNCTYPE(CXChildVisitResult, CXCursor, CXCursor, c_void_p), c_void_p]
+clang_visitChildren.argtypes = [Cursor, CFUNCTYPE(ChildVisitResult, Cursor, Cursor, c_void_p), c_void_p]
 clang_visitChildren.restype = c_uint
 
-clang_getCursorUSR = _lib.clang_getCursorUSR
-clang_getCursorUSR.argtypes = [CXCursor]
-clang_getCursorUSR.restype = CXString
-
-clang_constructUSR_ObjCClass = _lib.clang_constructUSR_ObjCClass
-clang_constructUSR_ObjCClass.argtypes = [c_char_p]
-clang_constructUSR_ObjCClass.restype = CXString
-
-clang_constructUSR_ObjCCategory = _lib.clang_constructUSR_ObjCCategory
-clang_constructUSR_ObjCCategory.argtypes = [c_char_p, c_char_p]
-clang_constructUSR_ObjCCategory.restype = CXString
-
-clang_constructUSR_ObjCProtocol = _lib.clang_constructUSR_ObjCProtocol
-clang_constructUSR_ObjCProtocol.argtypes = [c_char_p]
-clang_constructUSR_ObjCProtocol.restype = CXString
-
-clang_constructUSR_ObjCIvar = _lib.clang_constructUSR_ObjCIvar
-clang_constructUSR_ObjCIvar.argtypes = [c_char_p, CXString]
-clang_constructUSR_ObjCIvar.restype = CXString
-
-clang_constructUSR_ObjCMethod = _lib.clang_constructUSR_ObjCMethod
-clang_constructUSR_ObjCMethod.argtypes = [c_char_p, c_uint, CXString]
-clang_constructUSR_ObjCMethod.restype = CXString
-
-clang_constructUSR_ObjCProperty = _lib.clang_constructUSR_ObjCProperty
-clang_constructUSR_ObjCProperty.argtypes = [c_char_p, CXString]
-clang_constructUSR_ObjCProperty.restype = CXString
-
 clang_getCursorSpelling = _lib.clang_getCursorSpelling
-clang_getCursorSpelling.argtypes = [CXCursor]
-clang_getCursorSpelling.restype = CXString
-
-clang_Cursor_getSpellingNameRange = _lib.clang_Cursor_getSpellingNameRange
-clang_Cursor_getSpellingNameRange.argtypes = [CXCursor, c_uint, c_uint]
-clang_Cursor_getSpellingNameRange.restype = CXSourceRange
-
-clang_getCursorDisplayName = _lib.clang_getCursorDisplayName
-clang_getCursorDisplayName.argtypes = [CXCursor]
-clang_getCursorDisplayName.restype = CXString
-
-clang_getCursorReferenced = _lib.clang_getCursorReferenced
-clang_getCursorReferenced.argtypes = [CXCursor]
-clang_getCursorReferenced.restype = CXCursor
-
-clang_getCursorDefinition = _lib.clang_getCursorDefinition
-clang_getCursorDefinition.argtypes = [CXCursor]
-clang_getCursorDefinition.restype = CXCursor
+clang_getCursorSpelling.argtypes = [Cursor]
+clang_getCursorSpelling.restype = String
 
 clang_isCursorDefinition = _lib.clang_isCursorDefinition
-clang_isCursorDefinition.argtypes = [CXCursor]
+clang_isCursorDefinition.argtypes = [Cursor]
 clang_isCursorDefinition.restype = c_uint
-
-clang_getCanonicalCursor = _lib.clang_getCanonicalCursor
-clang_getCanonicalCursor.argtypes = [CXCursor]
-clang_getCanonicalCursor.restype = CXCursor
-
-clang_Cursor_getObjCSelectorIndex = _lib.clang_Cursor_getObjCSelectorIndex
-clang_Cursor_getObjCSelectorIndex.argtypes = [CXCursor]
-clang_Cursor_getObjCSelectorIndex.restype = c_int
-
-clang_Cursor_isDynamicCall = _lib.clang_Cursor_isDynamicCall
-clang_Cursor_isDynamicCall.argtypes = [CXCursor]
-clang_Cursor_isDynamicCall.restype = c_int
-
-clang_Cursor_getReceiverType = _lib.clang_Cursor_getReceiverType
-clang_Cursor_getReceiverType.argtypes = [CXCursor]
-clang_Cursor_getReceiverType.restype = CXType
-
-CXObjCPropertyAttr_noattr = 0
-CXObjCPropertyAttr_readonly = 1
-CXObjCPropertyAttr_getter = 2
-CXObjCPropertyAttr_assign = 4
-CXObjCPropertyAttr_readwrite = 8
-CXObjCPropertyAttr_retain = 16
-CXObjCPropertyAttr_copy = 32
-CXObjCPropertyAttr_nonatomic = 64
-CXObjCPropertyAttr_setter = 128
-CXObjCPropertyAttr_atomic = 256
-CXObjCPropertyAttr_weak = 512
-CXObjCPropertyAttr_strong = 1024
-CXObjCPropertyAttr_unsafe_unretained = 2048
-
-clang_Cursor_getObjCPropertyAttributes = _lib.clang_Cursor_getObjCPropertyAttributes
-clang_Cursor_getObjCPropertyAttributes.argtypes = [CXCursor, c_uint]
-clang_Cursor_getObjCPropertyAttributes.restype = c_uint
-
-CXObjCDeclQualifier_None = 0
-CXObjCDeclQualifier_In = 1
-CXObjCDeclQualifier_Inout = 2
-CXObjCDeclQualifier_Out = 4
-CXObjCDeclQualifier_Bycopy = 8
-CXObjCDeclQualifier_Byref = 16
-CXObjCDeclQualifier_Oneway = 32
-
-clang_Cursor_getObjCDeclQualifiers = _lib.clang_Cursor_getObjCDeclQualifiers
-clang_Cursor_getObjCDeclQualifiers.argtypes = [CXCursor]
-clang_Cursor_getObjCDeclQualifiers.restype = c_uint
-
-clang_Cursor_isObjCOptional = _lib.clang_Cursor_isObjCOptional
-clang_Cursor_isObjCOptional.argtypes = [CXCursor]
-clang_Cursor_isObjCOptional.restype = c_uint
-
-clang_Cursor_isVariadic = _lib.clang_Cursor_isVariadic
-clang_Cursor_isVariadic.argtypes = [CXCursor]
-clang_Cursor_isVariadic.restype = c_uint
-
-clang_Cursor_getCommentRange = _lib.clang_Cursor_getCommentRange
-clang_Cursor_getCommentRange.argtypes = [CXCursor]
-clang_Cursor_getCommentRange.restype = CXSourceRange
-
-clang_Cursor_getRawCommentText = _lib.clang_Cursor_getRawCommentText
-clang_Cursor_getRawCommentText.argtypes = [CXCursor]
-clang_Cursor_getRawCommentText.restype = CXString
-
-clang_Cursor_getBriefCommentText = _lib.clang_Cursor_getBriefCommentText
-clang_Cursor_getBriefCommentText.argtypes = [CXCursor]
-clang_Cursor_getBriefCommentText.restype = CXString
-
-clang_Cursor_getParsedComment = _lib.clang_Cursor_getParsedComment
-clang_Cursor_getParsedComment.argtypes = [CXCursor]
-clang_Cursor_getParsedComment.restype = CXComment
-
-CXModule = c_void_p
-
-clang_Cursor_getModule = _lib.clang_Cursor_getModule
-clang_Cursor_getModule.argtypes = [CXCursor]
-clang_Cursor_getModule.restype = c_void_p
-
-clang_Module_getASTFile = _lib.clang_Module_getASTFile
-clang_Module_getASTFile.argtypes = [c_void_p]
-clang_Module_getASTFile.restype = c_void_p
-
-clang_Module_getParent = _lib.clang_Module_getParent
-clang_Module_getParent.argtypes = [c_void_p]
-clang_Module_getParent.restype = c_void_p
-
-clang_Module_getName = _lib.clang_Module_getName
-clang_Module_getName.argtypes = [c_void_p]
-clang_Module_getName.restype = CXString
-
-clang_Module_getFullName = _lib.clang_Module_getFullName
-clang_Module_getFullName.argtypes = [c_void_p]
-clang_Module_getFullName.restype = CXString
-
-clang_Module_getNumTopLevelHeaders = _lib.clang_Module_getNumTopLevelHeaders
-clang_Module_getNumTopLevelHeaders.argtypes = [POINTER(CXTranslationUnitImpl), c_void_p]
-clang_Module_getNumTopLevelHeaders.restype = c_uint
-
-clang_Module_getTopLevelHeader = _lib.clang_Module_getTopLevelHeader
-clang_Module_getTopLevelHeader.argtypes = [POINTER(CXTranslationUnitImpl), c_void_p, c_uint]
-clang_Module_getTopLevelHeader.restype = c_void_p
-
-class CXCommentKind(c_uint):
-    pass
-CXComment_Null = 0
-CXComment_Text = 1
-CXComment_InlineCommand = 2
-CXComment_HTMLStartTag = 3
-CXComment_HTMLEndTag = 4
-CXComment_Paragraph = 5
-CXComment_BlockCommand = 6
-CXComment_ParamCommand = 7
-CXComment_TParamCommand = 8
-CXComment_VerbatimBlockCommand = 9
-CXComment_VerbatimBlockLine = 10
-CXComment_VerbatimLine = 11
-CXComment_FullComment = 12
-
-class CXCommentInlineCommandRenderKind(c_uint):
-    pass
-CXCommentInlineCommandRenderKind_Normal = 0
-CXCommentInlineCommandRenderKind_Bold = 1
-CXCommentInlineCommandRenderKind_Monospaced = 2
-CXCommentInlineCommandRenderKind_Emphasized = 3
-
-class CXCommentParamPassDirection(c_uint):
-    pass
-CXCommentParamPassDirection_In = 0
-CXCommentParamPassDirection_Out = 1
-CXCommentParamPassDirection_InOut = 2
-
-clang_Comment_getKind = _lib.clang_Comment_getKind
-clang_Comment_getKind.argtypes = [CXComment]
-clang_Comment_getKind.restype = CXCommentKind
-
-clang_Comment_getNumChildren = _lib.clang_Comment_getNumChildren
-clang_Comment_getNumChildren.argtypes = [CXComment]
-clang_Comment_getNumChildren.restype = c_uint
-
-clang_Comment_getChild = _lib.clang_Comment_getChild
-clang_Comment_getChild.argtypes = [CXComment, c_uint]
-clang_Comment_getChild.restype = CXComment
-
-clang_Comment_isWhitespace = _lib.clang_Comment_isWhitespace
-clang_Comment_isWhitespace.argtypes = [CXComment]
-clang_Comment_isWhitespace.restype = c_uint
-
-clang_InlineContentComment_hasTrailingNewline = _lib.clang_InlineContentComment_hasTrailingNewline
-clang_InlineContentComment_hasTrailingNewline.argtypes = [CXComment]
-clang_InlineContentComment_hasTrailingNewline.restype = c_uint
-
-clang_TextComment_getText = _lib.clang_TextComment_getText
-clang_TextComment_getText.argtypes = [CXComment]
-clang_TextComment_getText.restype = CXString
-
-clang_InlineCommandComment_getCommandName = _lib.clang_InlineCommandComment_getCommandName
-clang_InlineCommandComment_getCommandName.argtypes = [CXComment]
-clang_InlineCommandComment_getCommandName.restype = CXString
-
-clang_InlineCommandComment_getRenderKind = _lib.clang_InlineCommandComment_getRenderKind
-clang_InlineCommandComment_getRenderKind.argtypes = [CXComment]
-clang_InlineCommandComment_getRenderKind.restype = CXCommentInlineCommandRenderKind
-
-clang_InlineCommandComment_getNumArgs = _lib.clang_InlineCommandComment_getNumArgs
-clang_InlineCommandComment_getNumArgs.argtypes = [CXComment]
-clang_InlineCommandComment_getNumArgs.restype = c_uint
-
-clang_InlineCommandComment_getArgText = _lib.clang_InlineCommandComment_getArgText
-clang_InlineCommandComment_getArgText.argtypes = [CXComment, c_uint]
-clang_InlineCommandComment_getArgText.restype = CXString
-
-clang_HTMLTagComment_getTagName = _lib.clang_HTMLTagComment_getTagName
-clang_HTMLTagComment_getTagName.argtypes = [CXComment]
-clang_HTMLTagComment_getTagName.restype = CXString
-
-clang_HTMLStartTagComment_isSelfClosing = _lib.clang_HTMLStartTagComment_isSelfClosing
-clang_HTMLStartTagComment_isSelfClosing.argtypes = [CXComment]
-clang_HTMLStartTagComment_isSelfClosing.restype = c_uint
-
-clang_HTMLStartTag_getNumAttrs = _lib.clang_HTMLStartTag_getNumAttrs
-clang_HTMLStartTag_getNumAttrs.argtypes = [CXComment]
-clang_HTMLStartTag_getNumAttrs.restype = c_uint
-
-clang_HTMLStartTag_getAttrName = _lib.clang_HTMLStartTag_getAttrName
-clang_HTMLStartTag_getAttrName.argtypes = [CXComment, c_uint]
-clang_HTMLStartTag_getAttrName.restype = CXString
-
-clang_HTMLStartTag_getAttrValue = _lib.clang_HTMLStartTag_getAttrValue
-clang_HTMLStartTag_getAttrValue.argtypes = [CXComment, c_uint]
-clang_HTMLStartTag_getAttrValue.restype = CXString
-
-clang_BlockCommandComment_getCommandName = _lib.clang_BlockCommandComment_getCommandName
-clang_BlockCommandComment_getCommandName.argtypes = [CXComment]
-clang_BlockCommandComment_getCommandName.restype = CXString
-
-clang_BlockCommandComment_getNumArgs = _lib.clang_BlockCommandComment_getNumArgs
-clang_BlockCommandComment_getNumArgs.argtypes = [CXComment]
-clang_BlockCommandComment_getNumArgs.restype = c_uint
-
-clang_BlockCommandComment_getArgText = _lib.clang_BlockCommandComment_getArgText
-clang_BlockCommandComment_getArgText.argtypes = [CXComment, c_uint]
-clang_BlockCommandComment_getArgText.restype = CXString
-
-clang_BlockCommandComment_getParagraph = _lib.clang_BlockCommandComment_getParagraph
-clang_BlockCommandComment_getParagraph.argtypes = [CXComment]
-clang_BlockCommandComment_getParagraph.restype = CXComment
-
-clang_ParamCommandComment_getParamName = _lib.clang_ParamCommandComment_getParamName
-clang_ParamCommandComment_getParamName.argtypes = [CXComment]
-clang_ParamCommandComment_getParamName.restype = CXString
-
-clang_ParamCommandComment_isParamIndexValid = _lib.clang_ParamCommandComment_isParamIndexValid
-clang_ParamCommandComment_isParamIndexValid.argtypes = [CXComment]
-clang_ParamCommandComment_isParamIndexValid.restype = c_uint
-
-clang_ParamCommandComment_getParamIndex = _lib.clang_ParamCommandComment_getParamIndex
-clang_ParamCommandComment_getParamIndex.argtypes = [CXComment]
-clang_ParamCommandComment_getParamIndex.restype = c_uint
-
-clang_ParamCommandComment_isDirectionExplicit = _lib.clang_ParamCommandComment_isDirectionExplicit
-clang_ParamCommandComment_isDirectionExplicit.argtypes = [CXComment]
-clang_ParamCommandComment_isDirectionExplicit.restype = c_uint
-
-clang_ParamCommandComment_getDirection = _lib.clang_ParamCommandComment_getDirection
-clang_ParamCommandComment_getDirection.argtypes = [CXComment]
-clang_ParamCommandComment_getDirection.restype = CXCommentParamPassDirection
-
-clang_TParamCommandComment_getParamName = _lib.clang_TParamCommandComment_getParamName
-clang_TParamCommandComment_getParamName.argtypes = [CXComment]
-clang_TParamCommandComment_getParamName.restype = CXString
-
-clang_TParamCommandComment_isParamPositionValid = _lib.clang_TParamCommandComment_isParamPositionValid
-clang_TParamCommandComment_isParamPositionValid.argtypes = [CXComment]
-clang_TParamCommandComment_isParamPositionValid.restype = c_uint
-
-clang_TParamCommandComment_getDepth = _lib.clang_TParamCommandComment_getDepth
-clang_TParamCommandComment_getDepth.argtypes = [CXComment]
-clang_TParamCommandComment_getDepth.restype = c_uint
-
-clang_TParamCommandComment_getIndex = _lib.clang_TParamCommandComment_getIndex
-clang_TParamCommandComment_getIndex.argtypes = [CXComment, c_uint]
-clang_TParamCommandComment_getIndex.restype = c_uint
-
-clang_VerbatimBlockLineComment_getText = _lib.clang_VerbatimBlockLineComment_getText
-clang_VerbatimBlockLineComment_getText.argtypes = [CXComment]
-clang_VerbatimBlockLineComment_getText.restype = CXString
-
-clang_VerbatimLineComment_getText = _lib.clang_VerbatimLineComment_getText
-clang_VerbatimLineComment_getText.argtypes = [CXComment]
-clang_VerbatimLineComment_getText.restype = CXString
-
-clang_HTMLTagComment_getAsString = _lib.clang_HTMLTagComment_getAsString
-clang_HTMLTagComment_getAsString.argtypes = [CXComment]
-clang_HTMLTagComment_getAsString.restype = CXString
-
-clang_FullComment_getAsHTML = _lib.clang_FullComment_getAsHTML
-clang_FullComment_getAsHTML.argtypes = [CXComment]
-clang_FullComment_getAsHTML.restype = CXString
-
-clang_FullComment_getAsXML = _lib.clang_FullComment_getAsXML
-clang_FullComment_getAsXML.argtypes = [CXComment]
-clang_FullComment_getAsXML.restype = CXString
-
-clang_CXXMethod_isPureVirtual = _lib.clang_CXXMethod_isPureVirtual
-clang_CXXMethod_isPureVirtual.argtypes = [CXCursor]
-clang_CXXMethod_isPureVirtual.restype = c_uint
-
-clang_CXXMethod_isStatic = _lib.clang_CXXMethod_isStatic
-clang_CXXMethod_isStatic.argtypes = [CXCursor]
-clang_CXXMethod_isStatic.restype = c_uint
-
-clang_CXXMethod_isVirtual = _lib.clang_CXXMethod_isVirtual
-clang_CXXMethod_isVirtual.argtypes = [CXCursor]
-clang_CXXMethod_isVirtual.restype = c_uint
-
-clang_getTemplateCursorKind = _lib.clang_getTemplateCursorKind
-clang_getTemplateCursorKind.argtypes = [CXCursor]
-clang_getTemplateCursorKind.restype = CXCursorKind
-
-clang_getSpecializedCursorTemplate = _lib.clang_getSpecializedCursorTemplate
-clang_getSpecializedCursorTemplate.argtypes = [CXCursor]
-clang_getSpecializedCursorTemplate.restype = CXCursor
-
-clang_getCursorReferenceNameRange = _lib.clang_getCursorReferenceNameRange
-clang_getCursorReferenceNameRange.argtypes = [CXCursor, c_uint, c_uint]
-clang_getCursorReferenceNameRange.restype = CXSourceRange
-
-class CXNameRefFlags(c_uint):
-    pass
-CXNameRange_WantQualifier = 1
-CXNameRange_WantTemplateArgs = 2
-CXNameRange_WantSinglePiece = 4
-
-class CXTokenKind(c_uint):
-    pass
-CXToken_Punctuation = 0
-CXToken_Keyword = 1
-CXToken_Identifier = 2
-CXToken_Literal = 3
-CXToken_Comment = 4
-
-CXTokenKind = CXTokenKind
-
-class CXToken(Structure):
-    pass
-CXToken._fields_ = [('int_data', (c_uint * 4)),
-                    ('ptr_data', c_void_p)]
-
-clang_getTokenKind = _lib.clang_getTokenKind
-clang_getTokenKind.argtypes = [CXToken]
-clang_getTokenKind.restype = CXTokenKind
-
-clang_getTokenSpelling = _lib.clang_getTokenSpelling
-clang_getTokenSpelling.argtypes = [POINTER(CXTranslationUnitImpl), CXToken]
-clang_getTokenSpelling.restype = CXString
-
-clang_getTokenLocation = _lib.clang_getTokenLocation
-clang_getTokenLocation.argtypes = [POINTER(CXTranslationUnitImpl), CXToken]
-clang_getTokenLocation.restype = CXSourceLocation
-
-clang_getTokenExtent = _lib.clang_getTokenExtent
-clang_getTokenExtent.argtypes = [POINTER(CXTranslationUnitImpl), CXToken]
-clang_getTokenExtent.restype = CXSourceRange
-
-clang_tokenize = _lib.clang_tokenize
-clang_tokenize.argtypes = [POINTER(CXTranslationUnitImpl), CXSourceRange, POINTER(POINTER(CXToken)), POINTER(c_uint)]
-
-clang_annotateTokens = _lib.clang_annotateTokens
-clang_annotateTokens.argtypes = [POINTER(CXTranslationUnitImpl), POINTER(CXToken), c_uint, POINTER(CXCursor)]
-
-clang_disposeTokens = _lib.clang_disposeTokens
-clang_disposeTokens.argtypes = [POINTER(CXTranslationUnitImpl), POINTER(CXToken), c_uint]
-
-clang_getCursorKindSpelling = _lib.clang_getCursorKindSpelling
-clang_getCursorKindSpelling.argtypes = [CXCursorKind]
-clang_getCursorKindSpelling.restype = CXString
-
-clang_getDefinitionSpellingAndExtent = _lib.clang_getDefinitionSpellingAndExtent
-clang_getDefinitionSpellingAndExtent.argtypes = [CXCursor, POINTER(c_char_p), POINTER(c_char_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
-
-clang_enableStackTraces = _lib.clang_enableStackTraces
-
-clang_executeOnThread = _lib.clang_executeOnThread
-clang_executeOnThread.argtypes = [CFUNCTYPE(None, c_void_p), c_void_p, c_uint]
-
-CXCompletionString = c_void_p
-
-class CXCompletionResult(Structure):
-    pass
-CXCompletionResult._fields_ = [('CursorKind', CXCursorKind),
-                               ('CompletionString', c_void_p)]
-
-class CXCompletionChunkKind(c_uint):
-    pass
-CXCompletionChunk_Optional = 0
-CXCompletionChunk_TypedText = 1
-CXCompletionChunk_Text = 2
-CXCompletionChunk_Placeholder = 3
-CXCompletionChunk_Informative = 4
-CXCompletionChunk_CurrentParameter = 5
-CXCompletionChunk_LeftParen = 6
-CXCompletionChunk_RightParen = 7
-CXCompletionChunk_LeftBracket = 8
-CXCompletionChunk_RightBracket = 9
-CXCompletionChunk_LeftBrace = 10
-CXCompletionChunk_RightBrace = 11
-CXCompletionChunk_LeftAngle = 12
-CXCompletionChunk_RightAngle = 13
-CXCompletionChunk_Comma = 14
-CXCompletionChunk_ResultType = 15
-CXCompletionChunk_Colon = 16
-CXCompletionChunk_SemiColon = 17
-CXCompletionChunk_Equal = 18
-CXCompletionChunk_HorizontalSpace = 19
-CXCompletionChunk_VerticalSpace = 20
-
-clang_getCompletionChunkKind = _lib.clang_getCompletionChunkKind
-clang_getCompletionChunkKind.argtypes = [c_void_p, c_uint]
-clang_getCompletionChunkKind.restype = CXCompletionChunkKind
-
-clang_getCompletionChunkText = _lib.clang_getCompletionChunkText
-clang_getCompletionChunkText.argtypes = [c_void_p, c_uint]
-clang_getCompletionChunkText.restype = CXString
-
-clang_getCompletionChunkCompletionString = _lib.clang_getCompletionChunkCompletionString
-clang_getCompletionChunkCompletionString.argtypes = [c_void_p, c_uint]
-clang_getCompletionChunkCompletionString.restype = c_void_p
-
-clang_getNumCompletionChunks = _lib.clang_getNumCompletionChunks
-clang_getNumCompletionChunks.argtypes = [c_void_p]
-clang_getNumCompletionChunks.restype = c_uint
-
-clang_getCompletionPriority = _lib.clang_getCompletionPriority
-clang_getCompletionPriority.argtypes = [c_void_p]
-clang_getCompletionPriority.restype = c_uint
-
-clang_getCompletionAvailability = _lib.clang_getCompletionAvailability
-clang_getCompletionAvailability.argtypes = [c_void_p]
-clang_getCompletionAvailability.restype = CXAvailabilityKind
-
-clang_getCompletionNumAnnotations = _lib.clang_getCompletionNumAnnotations
-clang_getCompletionNumAnnotations.argtypes = [c_void_p]
-clang_getCompletionNumAnnotations.restype = c_uint
-
-clang_getCompletionAnnotation = _lib.clang_getCompletionAnnotation
-clang_getCompletionAnnotation.argtypes = [c_void_p, c_uint]
-clang_getCompletionAnnotation.restype = CXString
-
-clang_getCompletionParent = _lib.clang_getCompletionParent
-clang_getCompletionParent.argtypes = [c_void_p, POINTER(CXCursorKind)]
-clang_getCompletionParent.restype = CXString
-
-clang_getCompletionBriefComment = _lib.clang_getCompletionBriefComment
-clang_getCompletionBriefComment.argtypes = [c_void_p]
-clang_getCompletionBriefComment.restype = CXString
-
-clang_getCursorCompletionString = _lib.clang_getCursorCompletionString
-clang_getCursorCompletionString.argtypes = [CXCursor]
-clang_getCursorCompletionString.restype = c_void_p
-
-class CXCodeCompleteResults(Structure):
-    pass
-CXCodeCompleteResults._fields_ = [('Results', POINTER(CXCompletionResult)),
-                                  ('NumResults', c_uint)]
-
-class CXCodeComplete_Flags(c_uint):
-    pass
-CXCodeComplete_IncludeMacros = 1
-CXCodeComplete_IncludeCodePatterns = 2
-CXCodeComplete_IncludeBriefComments = 4
-
-class CXCompletionContext(c_uint):
-    pass
-CXCompletionContext_Unexposed = 0
-CXCompletionContext_AnyType = 1
-CXCompletionContext_AnyValue = 2
-CXCompletionContext_ObjCObjectValue = 4
-CXCompletionContext_ObjCSelectorValue = 8
-CXCompletionContext_CXXClassTypeValue = 16
-CXCompletionContext_DotMemberAccess = 32
-CXCompletionContext_ArrowMemberAccess = 64
-CXCompletionContext_ObjCPropertyAccess = 128
-CXCompletionContext_EnumTag = 256
-CXCompletionContext_UnionTag = 512
-CXCompletionContext_StructTag = 1024
-CXCompletionContext_ClassTag = 2048
-CXCompletionContext_Namespace = 4096
-CXCompletionContext_NestedNameSpecifier = 8192
-CXCompletionContext_ObjCInterface = 16384
-CXCompletionContext_ObjCProtocol = 32768
-CXCompletionContext_ObjCCategory = 65536
-CXCompletionContext_ObjCInstanceMessage = 131072
-CXCompletionContext_ObjCClassMessage = 262144
-CXCompletionContext_ObjCSelectorName = 524288
-CXCompletionContext_MacroName = 1048576
-CXCompletionContext_NaturalLanguage = 2097152
-CXCompletionContext_Unknown = 4194303
-
-clang_defaultCodeCompleteOptions = _lib.clang_defaultCodeCompleteOptions
-clang_defaultCodeCompleteOptions.restype = c_uint
-
-clang_codeCompleteAt = _lib.clang_codeCompleteAt
-clang_codeCompleteAt.argtypes = [POINTER(CXTranslationUnitImpl), c_char_p, c_uint, c_uint, POINTER(CXUnsavedFile), c_uint, c_uint]
-clang_codeCompleteAt.restype = POINTER(CXCodeCompleteResults)
-
-clang_sortCodeCompletionResults = _lib.clang_sortCodeCompletionResults
-clang_sortCodeCompletionResults.argtypes = [POINTER(CXCompletionResult), c_uint]
-
-clang_disposeCodeCompleteResults = _lib.clang_disposeCodeCompleteResults
-clang_disposeCodeCompleteResults.argtypes = [POINTER(CXCodeCompleteResults)]
-
-clang_codeCompleteGetNumDiagnostics = _lib.clang_codeCompleteGetNumDiagnostics
-clang_codeCompleteGetNumDiagnostics.argtypes = [POINTER(CXCodeCompleteResults)]
-clang_codeCompleteGetNumDiagnostics.restype = c_uint
-
-clang_codeCompleteGetDiagnostic = _lib.clang_codeCompleteGetDiagnostic
-clang_codeCompleteGetDiagnostic.argtypes = [POINTER(CXCodeCompleteResults), c_uint]
-clang_codeCompleteGetDiagnostic.restype = c_void_p
-
-clang_codeCompleteGetContexts = _lib.clang_codeCompleteGetContexts
-clang_codeCompleteGetContexts.argtypes = [POINTER(CXCodeCompleteResults)]
-clang_codeCompleteGetContexts.restype = c_ulonglong
-
-clang_codeCompleteGetContainerKind = _lib.clang_codeCompleteGetContainerKind
-clang_codeCompleteGetContainerKind.argtypes = [POINTER(CXCodeCompleteResults), POINTER(c_uint)]
-clang_codeCompleteGetContainerKind.restype = CXCursorKind
-
-clang_codeCompleteGetContainerUSR = _lib.clang_codeCompleteGetContainerUSR
-clang_codeCompleteGetContainerUSR.argtypes = [POINTER(CXCodeCompleteResults)]
-clang_codeCompleteGetContainerUSR.restype = CXString
-
-clang_codeCompleteGetObjCSelector = _lib.clang_codeCompleteGetObjCSelector
-clang_codeCompleteGetObjCSelector.argtypes = [POINTER(CXCodeCompleteResults)]
-clang_codeCompleteGetObjCSelector.restype = CXString
-
-clang_getClangVersion = _lib.clang_getClangVersion
-clang_getClangVersion.restype = CXString
-
-clang_toggleCrashRecovery = _lib.clang_toggleCrashRecovery
-clang_toggleCrashRecovery.argtypes = [c_uint]
-
-CXInclusionVisitor = CFUNCTYPE(None, c_void_p, POINTER(CXSourceLocation), c_uint, c_void_p)
-
-clang_getInclusions = _lib.clang_getInclusions
-clang_getInclusions.argtypes = [POINTER(CXTranslationUnitImpl), CFUNCTYPE(None, c_void_p, POINTER(CXSourceLocation), c_uint, c_void_p), c_void_p]
-
-CXRemapping = c_void_p
-
-clang_getRemappings = _lib.clang_getRemappings
-clang_getRemappings.argtypes = [c_char_p]
-clang_getRemappings.restype = c_void_p
-
-clang_getRemappingsFromFileList = _lib.clang_getRemappingsFromFileList
-clang_getRemappingsFromFileList.argtypes = [POINTER(c_char_p), c_uint]
-clang_getRemappingsFromFileList.restype = c_void_p
-
-clang_remap_getNumFiles = _lib.clang_remap_getNumFiles
-clang_remap_getNumFiles.argtypes = [c_void_p]
-clang_remap_getNumFiles.restype = c_uint
-
-clang_remap_getFilenames = _lib.clang_remap_getFilenames
-clang_remap_getFilenames.argtypes = [c_void_p, c_uint, POINTER(CXString), POINTER(CXString)]
-
-clang_remap_dispose = _lib.clang_remap_dispose
-clang_remap_dispose.argtypes = [c_void_p]
-
-class CXVisitorResult(c_uint):
-    pass
-CXVisit_Break = 0
-CXVisit_Continue = 1
-
-class CXCursorAndRangeVisitor(Structure):
-    pass
-CXCursorAndRangeVisitor._fields_ = [('context', c_void_p),
-                                    ('visit', CFUNCTYPE(CXVisitorResult, c_void_p, CXCursor, CXSourceRange))]
-
-CXResult_Success = 0
-CXResult_Invalid = 1
-CXResult_VisitBreak = 2
-
-clang_findReferencesInFile = _lib.clang_findReferencesInFile
-clang_findReferencesInFile.argtypes = [CXCursor, c_void_p, CXCursorAndRangeVisitor]
-clang_findReferencesInFile.restype = c_uint
-
-clang_findIncludesInFile = _lib.clang_findIncludesInFile
-clang_findIncludesInFile.argtypes = [POINTER(CXTranslationUnitImpl), c_void_p, CXCursorAndRangeVisitor]
-clang_findIncludesInFile.restype = c_uint
-
-CXIdxClientFile = c_void_p
-
-CXIdxClientEntity = c_void_p
-
-CXIdxClientContainer = c_void_p
-
-CXIdxClientASTFile = c_void_p
-
-class CXIdxLoc(Structure):
-    pass
-CXIdxLoc._fields_ = [('ptr_data', (c_void_p * 2)),
-                     ('int_data', c_uint)]
-
-class CXIdxIncludedFileInfo(Structure):
-    pass
-CXIdxIncludedFileInfo._fields_ = [('hashLoc', CXIdxLoc),
-                                  ('filename', c_char_p),
-                                  ('file', c_void_p),
-                                  ('isImport', c_int),
-                                  ('isAngled', c_int),
-                                  ('isModuleImport', c_int)]
-
-class CXIdxImportedASTFileInfo(Structure):
-    pass
-CXIdxImportedASTFileInfo._fields_ = [('file', c_void_p),
-                                     ('module', c_void_p),
-                                     ('loc', CXIdxLoc),
-                                     ('isImplicit', c_int)]
-
-CXIdxEntity_Unexposed = 0
-CXIdxEntity_Typedef = 1
-CXIdxEntity_Function = 2
-CXIdxEntity_Variable = 3
-CXIdxEntity_Field = 4
-CXIdxEntity_EnumConstant = 5
-CXIdxEntity_ObjCClass = 6
-CXIdxEntity_ObjCProtocol = 7
-CXIdxEntity_ObjCCategory = 8
-CXIdxEntity_ObjCInstanceMethod = 9
-CXIdxEntity_ObjCClassMethod = 10
-CXIdxEntity_ObjCProperty = 11
-CXIdxEntity_ObjCIvar = 12
-CXIdxEntity_Enum = 13
-CXIdxEntity_Struct = 14
-CXIdxEntity_Union = 15
-CXIdxEntity_CXXClass = 16
-CXIdxEntity_CXXNamespace = 17
-CXIdxEntity_CXXNamespaceAlias = 18
-CXIdxEntity_CXXStaticVariable = 19
-CXIdxEntity_CXXStaticMethod = 20
-CXIdxEntity_CXXInstanceMethod = 21
-CXIdxEntity_CXXConstructor = 22
-CXIdxEntity_CXXDestructor = 23
-CXIdxEntity_CXXConversionFunction = 24
-CXIdxEntity_CXXTypeAlias = 25
-CXIdxEntity_CXXInterface = 26
-
-CXIdxEntityLang_None = 0
-CXIdxEntityLang_C = 1
-CXIdxEntityLang_ObjC = 2
-CXIdxEntityLang_CXX = 3
-
-CXIdxEntity_NonTemplate = 0
-CXIdxEntity_Template = 1
-CXIdxEntity_TemplatePartialSpecialization = 2
-CXIdxEntity_TemplateSpecialization = 3
-
-CXIdxAttr_Unexposed = 0
-CXIdxAttr_IBAction = 1
-CXIdxAttr_IBOutlet = 2
-CXIdxAttr_IBOutletCollection = 3
-
-class CXIdxAttrInfo(Structure):
-    pass
-CXIdxAttrInfo._fields_ = [('kind', c_uint),
-                          ('cursor', CXCursor),
-                          ('loc', CXIdxLoc)]
-
-class CXIdxEntityInfo(Structure):
-    pass
-CXIdxEntityInfo._fields_ = [('kind', c_uint),
-                            ('templateKind', c_uint),
-                            ('lang', c_uint),
-                            ('name', c_char_p),
-                            ('USR', c_char_p),
-                            ('cursor', CXCursor),
-                            ('attributes', POINTER(POINTER(CXIdxAttrInfo))),
-                            ('numAttributes', c_uint)]
-
-class CXIdxContainerInfo(Structure):
-    pass
-CXIdxContainerInfo._fields_ = [('cursor', CXCursor)]
-
-class CXIdxIBOutletCollectionAttrInfo(Structure):
-    pass
-CXIdxIBOutletCollectionAttrInfo._fields_ = [('attrInfo', POINTER(CXIdxAttrInfo)),
-                                            ('objcClass', POINTER(CXIdxEntityInfo)),
-                                            ('classCursor', CXCursor),
-                                            ('classLoc', CXIdxLoc)]
-
-CXIdxDeclFlag_Skipped = 1
-
-class CXIdxDeclInfo(Structure):
-    pass
-CXIdxDeclInfo._fields_ = [('entityInfo', POINTER(CXIdxEntityInfo)),
-                          ('cursor', CXCursor),
-                          ('loc', CXIdxLoc),
-                          ('semanticContainer', POINTER(CXIdxContainerInfo)),
-                          ('lexicalContainer', POINTER(CXIdxContainerInfo)),
-                          ('isRedeclaration', c_int),
-                          ('isDefinition', c_int),
-                          ('isContainer', c_int),
-                          ('declAsContainer', POINTER(CXIdxContainerInfo)),
-                          ('isImplicit', c_int),
-                          ('attributes', POINTER(POINTER(CXIdxAttrInfo))),
-                          ('numAttributes', c_uint),
-                          ('flags', c_uint)]
-
-CXIdxObjCContainer_ForwardRef = 0
-CXIdxObjCContainer_Interface = 1
-CXIdxObjCContainer_Implementation = 2
-
-class CXIdxObjCContainerDeclInfo(Structure):
-    pass
-CXIdxObjCContainerDeclInfo._fields_ = [('declInfo', POINTER(CXIdxDeclInfo)),
-                                       ('kind', c_uint)]
-
-class CXIdxBaseClassInfo(Structure):
-    pass
-CXIdxBaseClassInfo._fields_ = [('base', POINTER(CXIdxEntityInfo)),
-                               ('cursor', CXCursor),
-                               ('loc', CXIdxLoc)]
-
-class CXIdxObjCProtocolRefInfo(Structure):
-    pass
-CXIdxObjCProtocolRefInfo._fields_ = [('protocol', POINTER(CXIdxEntityInfo)),
-                                     ('cursor', CXCursor),
-                                     ('loc', CXIdxLoc)]
-
-class CXIdxObjCProtocolRefListInfo(Structure):
-    pass
-CXIdxObjCProtocolRefListInfo._fields_ = [('protocols', POINTER(POINTER(CXIdxObjCProtocolRefInfo))),
-                                         ('numProtocols', c_uint)]
-
-class CXIdxObjCInterfaceDeclInfo(Structure):
-    pass
-CXIdxObjCInterfaceDeclInfo._fields_ = [('containerInfo', POINTER(CXIdxObjCContainerDeclInfo)),
-                                       ('superInfo', POINTER(CXIdxBaseClassInfo)),
-                                       ('protocols', POINTER(CXIdxObjCProtocolRefListInfo))]
-
-class CXIdxObjCCategoryDeclInfo(Structure):
-    pass
-CXIdxObjCCategoryDeclInfo._fields_ = [('containerInfo', POINTER(CXIdxObjCContainerDeclInfo)),
-                                      ('objcClass', POINTER(CXIdxEntityInfo)),
-                                      ('classCursor', CXCursor),
-                                      ('classLoc', CXIdxLoc),
-                                      ('protocols', POINTER(CXIdxObjCProtocolRefListInfo))]
-
-class CXIdxObjCPropertyDeclInfo(Structure):
-    pass
-CXIdxObjCPropertyDeclInfo._fields_ = [('declInfo', POINTER(CXIdxDeclInfo)),
-                                      ('getter', POINTER(CXIdxEntityInfo)),
-                                      ('setter', POINTER(CXIdxEntityInfo))]
-
-class CXIdxCXXClassDeclInfo(Structure):
-    pass
-CXIdxCXXClassDeclInfo._fields_ = [('declInfo', POINTER(CXIdxDeclInfo)),
-                                  ('bases', POINTER(POINTER(CXIdxBaseClassInfo))),
-                                  ('numBases', c_uint)]
-
-CXIdxEntityRef_Direct = 1
-CXIdxEntityRef_Implicit = 2
-
-class CXIdxEntityRefInfo(Structure):
-    pass
-CXIdxEntityRefInfo._fields_ = [('kind', c_uint),
-                               ('cursor', CXCursor),
-                               ('loc', CXIdxLoc),
-                               ('referencedEntity', POINTER(CXIdxEntityInfo)),
-                               ('parentEntity', POINTER(CXIdxEntityInfo)),
-                               ('container', POINTER(CXIdxContainerInfo))]
-
-class IndexerCallbacks(Structure):
-    pass
-IndexerCallbacks._fields_ = [('abortQuery', CFUNCTYPE(c_int, c_void_p, c_void_p)),
-                             ('diagnostic', CFUNCTYPE(None, c_void_p, c_void_p, c_void_p)),
-                             ('enteredMainFile', CFUNCTYPE(c_void_p, c_void_p, c_void_p, c_void_p)),
-                             ('ppIncludedFile', CFUNCTYPE(c_void_p, c_void_p, POINTER(CXIdxIncludedFileInfo))),
-                             ('importedASTFile', CFUNCTYPE(c_void_p, c_void_p, POINTER(CXIdxImportedASTFileInfo))),
-                             ('startedTranslationUnit', CFUNCTYPE(c_void_p, c_void_p, c_void_p)),
-                             ('indexDeclaration', CFUNCTYPE(None, c_void_p, POINTER(CXIdxDeclInfo))),
-                             ('indexEntityReference', CFUNCTYPE(None, c_void_p, POINTER(CXIdxEntityRefInfo)))]
-
-clang_index_isEntityObjCContainerKind = _lib.clang_index_isEntityObjCContainerKind
-clang_index_isEntityObjCContainerKind.argtypes = [c_uint]
-clang_index_isEntityObjCContainerKind.restype = c_int
-
-clang_index_getObjCContainerDeclInfo = _lib.clang_index_getObjCContainerDeclInfo
-clang_index_getObjCContainerDeclInfo.argtypes = [POINTER(CXIdxDeclInfo)]
-clang_index_getObjCContainerDeclInfo.restype = POINTER(CXIdxObjCContainerDeclInfo)
-
-clang_index_getObjCInterfaceDeclInfo = _lib.clang_index_getObjCInterfaceDeclInfo
-clang_index_getObjCInterfaceDeclInfo.argtypes = [POINTER(CXIdxDeclInfo)]
-clang_index_getObjCInterfaceDeclInfo.restype = POINTER(CXIdxObjCInterfaceDeclInfo)
-
-clang_index_getObjCCategoryDeclInfo = _lib.clang_index_getObjCCategoryDeclInfo
-clang_index_getObjCCategoryDeclInfo.argtypes = [POINTER(CXIdxDeclInfo)]
-clang_index_getObjCCategoryDeclInfo.restype = POINTER(CXIdxObjCCategoryDeclInfo)
-
-clang_index_getObjCProtocolRefListInfo = _lib.clang_index_getObjCProtocolRefListInfo
-clang_index_getObjCProtocolRefListInfo.argtypes = [POINTER(CXIdxDeclInfo)]
-clang_index_getObjCProtocolRefListInfo.restype = POINTER(CXIdxObjCProtocolRefListInfo)
-
-clang_index_getObjCPropertyDeclInfo = _lib.clang_index_getObjCPropertyDeclInfo
-clang_index_getObjCPropertyDeclInfo.argtypes = [POINTER(CXIdxDeclInfo)]
-clang_index_getObjCPropertyDeclInfo.restype = POINTER(CXIdxObjCPropertyDeclInfo)
-
-clang_index_getIBOutletCollectionAttrInfo = _lib.clang_index_getIBOutletCollectionAttrInfo
-clang_index_getIBOutletCollectionAttrInfo.argtypes = [POINTER(CXIdxAttrInfo)]
-clang_index_getIBOutletCollectionAttrInfo.restype = POINTER(CXIdxIBOutletCollectionAttrInfo)
-
-clang_index_getCXXClassDeclInfo = _lib.clang_index_getCXXClassDeclInfo
-clang_index_getCXXClassDeclInfo.argtypes = [POINTER(CXIdxDeclInfo)]
-clang_index_getCXXClassDeclInfo.restype = POINTER(CXIdxCXXClassDeclInfo)
-
-clang_index_getClientContainer = _lib.clang_index_getClientContainer
-clang_index_getClientContainer.argtypes = [POINTER(CXIdxContainerInfo)]
-clang_index_getClientContainer.restype = c_void_p
-
-clang_index_setClientContainer = _lib.clang_index_setClientContainer
-clang_index_setClientContainer.argtypes = [POINTER(CXIdxContainerInfo), c_void_p]
-
-clang_index_getClientEntity = _lib.clang_index_getClientEntity
-clang_index_getClientEntity.argtypes = [POINTER(CXIdxEntityInfo)]
-clang_index_getClientEntity.restype = c_void_p
-
-clang_index_setClientEntity = _lib.clang_index_setClientEntity
-clang_index_setClientEntity.argtypes = [POINTER(CXIdxEntityInfo), c_void_p]
-
-CXIndexAction = c_void_p
-
-clang_IndexAction_create = _lib.clang_IndexAction_create
-clang_IndexAction_create.argtypes = [c_void_p]
-clang_IndexAction_create.restype = c_void_p
-
-clang_IndexAction_dispose = _lib.clang_IndexAction_dispose
-clang_IndexAction_dispose.argtypes = [c_void_p]
-
-CXIndexOpt_None = 0
-CXIndexOpt_SuppressRedundantRefs = 1
-CXIndexOpt_IndexFunctionLocalSymbols = 2
-CXIndexOpt_IndexImplicitTemplateInstantiations = 4
-CXIndexOpt_SuppressWarnings = 8
-CXIndexOpt_SkipParsedBodiesInSession = 16
-
-clang_indexSourceFile = _lib.clang_indexSourceFile
-clang_indexSourceFile.argtypes = [c_void_p, c_void_p, POINTER(IndexerCallbacks), c_uint, c_uint, c_char_p, POINTER(c_char_p), c_int, POINTER(CXUnsavedFile), c_uint, POINTER(POINTER(CXTranslationUnitImpl)), c_uint]
-clang_indexSourceFile.restype = c_int
-
-clang_indexTranslationUnit = _lib.clang_indexTranslationUnit
-clang_indexTranslationUnit.argtypes = [c_void_p, c_void_p, POINTER(IndexerCallbacks), c_uint, c_uint, POINTER(CXTranslationUnitImpl)]
-clang_indexTranslationUnit.restype = c_int
-
-clang_indexLoc_getFileLocation = _lib.clang_indexLoc_getFileLocation
-clang_indexLoc_getFileLocation.argtypes = [CXIdxLoc, POINTER(c_void_p), POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
-
-clang_indexLoc_getCXSourceLocation = _lib.clang_indexLoc_getCXSourceLocation
-clang_indexLoc_getCXSourceLocation.argtypes = [CXIdxLoc]
-clang_indexLoc_getCXSourceLocation.restype = CXSourceLocation
 

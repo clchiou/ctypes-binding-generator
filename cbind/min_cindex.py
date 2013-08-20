@@ -182,7 +182,7 @@ class TranslationUnit(ClangObject):
         else:
             args_array = None
         if unsaved_files:
-            unsaved_array = (_index.CXUnsavedFile * len(unsaved_files))()
+            unsaved_array = (_index.UnsavedFile * len(unsaved_files))()
             for i, (name, contents) in enumerate(unsaved_files):
                 if hasattr(contents, 'read'):
                     contents = contents.read()
@@ -210,7 +210,7 @@ class TranslationUnit(ClangObject):
 ### Patch methods to classes
 
 
-set_method(_index.CXString, '__del__', _index.clang_disposeString)
+set_method(_index.String, '__del__', _index.clang_disposeString)
 
 
 def SourceLocation_data(self):
@@ -229,7 +229,7 @@ def SourceLocation_data(self):
     return self._data
 
 
-SourceLocation = _index.CXSourceLocation
+SourceLocation = _index.SourceLocation
 SourceLocation.__eq__ = lambda self, other: \
         _index.clang_equalLocations(self, other)
 SourceLocation.__ne__ = lambda self, other: not self.__eq__(other)
@@ -260,8 +260,8 @@ def Cursor_get_children(self):
         child._translation_unit = self._translation_unit
         children.append(child)
         return 1  # continue
-    callback_proto = CFUNCTYPE(_index.CXChildVisitResult,
-            _index.CXCursor, _index.CXCursor, c_void_p)
+    callback_proto = CFUNCTYPE(_index.ChildVisitResult,
+            _index.Cursor, _index.Cursor, c_void_p)
     visit_callback = callback_proto(visit)
     _index.clang_visitChildren(self, visit_callback, None)
     return children
@@ -294,7 +294,7 @@ def Cursor_spelling(self):
     return _index.clang_getCursorSpelling(self)
 
 
-Cursor = _index.CXCursor
+Cursor = _index.Cursor
 Cursor.__eq__ = lambda self, other: _index.clang_equalCursors(self, other)
 Cursor.__ne__ = lambda self, other: not self.__eq__(other)
 Cursor.enum_type = cursor_cached_property(_index.clang_getEnumDeclIntegerType)
@@ -340,7 +340,7 @@ class ArgumentsIterator(collections.Sequence):  # pylint: disable=R0924
         return result
 
 
-Type = _index.CXType
+Type = _index.Type
 Type. __eq__ = lambda self, other: _index.clang_equalTypes(self, other)
 Type.__ne__ = lambda self, other: not self.__eq__(other)
 Type.argument_types = lambda self: ArgumentsIterator(self)
@@ -378,24 +378,24 @@ def camel_case_to_underscore(name):
     return re.sub(r'([a-z])([A-Z])', r'\1_\2', name).upper()
 
 
-CursorKind = _index.CXCursorKind
+CursorKind = _index.CursorKind
 CursorKind.__hash__ = lambda self: int(self.value)
 CursorKind.__eq__ = lambda self, other: self.value == other.value
 CursorKind.__ne__ = lambda self, other: not self.__eq__(other)
-add_enum_constants(CursorKind, re.compile(r'CXCursor_([\w_]+)'),
+add_enum_constants(CursorKind, re.compile(r'Cursor_([\w_]+)'),
         camel_case_to_underscore)
 
 
-TypeKind = _index.CXTypeKind
+TypeKind = _index.TypeKind
 TypeKind.__hash__ = lambda self: int(self.value)
 TypeKind.__eq__ = lambda self, other: self.value == other.value
 TypeKind.__ne__ = lambda self, other: not self.__eq__(other)
-add_enum_constants(TypeKind, re.compile(r'CXType_([\w_]+)'), str.upper)
+add_enum_constants(TypeKind, re.compile(r'Type_([\w_]+)'), str.upper)
 
 
-LinkageKind = _index.CXLinkageKind
+LinkageKind = _index.LinkageKind
 LinkageKind.__hash__ = lambda self: int(self.value)
 LinkageKind.__eq__ = lambda self, other: self.value == other.value
 LinkageKind.__ne__ = lambda self, other: not self.__eq__(other)
-add_enum_constants(LinkageKind, re.compile(r'CXLinkage_([\w_]+)'),
+add_enum_constants(LinkageKind, re.compile(r'Linkage_([\w_]+)'),
         camel_case_to_underscore)
