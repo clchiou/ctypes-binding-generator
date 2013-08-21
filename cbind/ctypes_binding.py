@@ -1,7 +1,6 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
 import functools
-import re
 from cbind.codegen import gen_tree_node, gen_record
 from cbind.config import SyntaxTreeMatcher
 from cbind.passes import (scan_required_nodes,
@@ -20,7 +19,7 @@ class CtypesBindingGenerator:
         '''Initialize the object.'''
         self.syntax_tree_forest = SyntaxTreeForest()
         self.check_required = check_locally_defined
-        self.rename_rules = None
+        self.rename = None
 
     def config(self, config_data):
         '''Configure the generator.'''
@@ -28,8 +27,7 @@ class CtypesBindingGenerator:
             matcher = SyntaxTreeMatcher.make(config_data['import'])
             self.check_required = matcher.match
         if 'rename' in config_data:
-            self.rename_rules = tuple((re.compile(pattern), rewrite)
-                    for pattern, rewrite in config_data['rename'])
+            self.rename = SyntaxTreeMatcher.make(config_data['rename']).rename
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
@@ -41,7 +39,8 @@ class CtypesBindingGenerator:
         syntax_tree = self.syntax_tree_forest.parse(path,
                 contents=contents, args=args)
         scan_required_nodes(syntax_tree, check_required)
-        scan_and_rename(syntax_tree, self.rename_rules)
+        if self.rename:
+            scan_and_rename(syntax_tree, self.rename)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
         scan_anonymous_pod(syntax_tree)

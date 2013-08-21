@@ -40,4 +40,5 @@ import:
     - name: ^CX(Cursor|Linkage|Type)(Kind|_\w+)?$
 
 rename:
-    - [CX(\w+),  \1]
+    - name: CX(\w+)
+      rewrite: \1

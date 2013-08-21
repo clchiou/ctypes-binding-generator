@@ -127,7 +127,8 @@ XYZ = _lib.long_long_name_XYZ
 XYZW = c_int.in_dll(_lib, 'long_long_name_XYZW')
         ''', config=r'''
 rename:
-    - [long_long_name_(X), \1]
+    - name: long_long_name_(X)
+      rewrite: \1
         ''')
 
 
