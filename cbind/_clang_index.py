@@ -24,7 +24,7 @@ clang_getCString.restype = c_char_p
 clang_disposeString = _lib.clang_disposeString
 clang_disposeString.argtypes = [String]
 
-class CXTranslationUnitImpl(Structure):
+class TranslationUnitImpl(Structure):
     pass
 
 class UnsavedFile(Structure):
@@ -56,15 +56,15 @@ clang_equalLocations.restype = c_uint
 clang_getInstantiationLocation = _lib.clang_getInstantiationLocation
 clang_getInstantiationLocation.argtypes = [SourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
 
-class CXDiagnosticSeverity(c_uint):
+class DiagnosticSeverity(c_uint):
     pass
 
 clang_getNumDiagnostics = _lib.clang_getNumDiagnostics
-clang_getNumDiagnostics.argtypes = [POINTER(CXTranslationUnitImpl)]
+clang_getNumDiagnostics.argtypes = [POINTER(TranslationUnitImpl)]
 clang_getNumDiagnostics.restype = c_uint
 
 clang_getDiagnostic = _lib.clang_getDiagnostic
-clang_getDiagnostic.argtypes = [POINTER(CXTranslationUnitImpl), c_uint]
+clang_getDiagnostic.argtypes = [POINTER(TranslationUnitImpl), c_uint]
 clang_getDiagnostic.restype = c_void_p
 
 clang_disposeDiagnostic = _lib.clang_disposeDiagnostic
@@ -72,7 +72,7 @@ clang_disposeDiagnostic.argtypes = [c_void_p]
 
 clang_getDiagnosticSeverity = _lib.clang_getDiagnosticSeverity
 clang_getDiagnosticSeverity.argtypes = [c_void_p]
-clang_getDiagnosticSeverity.restype = CXDiagnosticSeverity
+clang_getDiagnosticSeverity.restype = DiagnosticSeverity
 
 clang_getDiagnosticLocation = _lib.clang_getDiagnosticLocation
 clang_getDiagnosticLocation.argtypes = [c_void_p]
@@ -84,10 +84,10 @@ clang_getDiagnosticSpelling.restype = String
 
 clang_parseTranslationUnit = _lib.clang_parseTranslationUnit
 clang_parseTranslationUnit.argtypes = [c_void_p, c_char_p, POINTER(c_char_p), c_int, POINTER(UnsavedFile), c_uint, c_uint]
-clang_parseTranslationUnit.restype = POINTER(CXTranslationUnitImpl)
+clang_parseTranslationUnit.restype = POINTER(TranslationUnitImpl)
 
 clang_disposeTranslationUnit = _lib.clang_disposeTranslationUnit
-clang_disposeTranslationUnit.argtypes = [POINTER(CXTranslationUnitImpl)]
+clang_disposeTranslationUnit.argtypes = [POINTER(TranslationUnitImpl)]
 
 class CursorKind(c_uint):
     pass
@@ -268,7 +268,7 @@ clang_getNullCursor = _lib.clang_getNullCursor
 clang_getNullCursor.restype = Cursor
 
 clang_getTranslationUnitCursor = _lib.clang_getTranslationUnitCursor
-clang_getTranslationUnitCursor.argtypes = [POINTER(CXTranslationUnitImpl)]
+clang_getTranslationUnitCursor.argtypes = [POINTER(TranslationUnitImpl)]
 clang_getTranslationUnitCursor.restype = Cursor
 
 clang_equalCursors = _lib.clang_equalCursors

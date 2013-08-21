@@ -35,7 +35,8 @@ class struct_1(Structure):
     pass
 struct_1._fields_ = [('X', c_int)]
         ''', config='''
-import: ^X$
+import:
+    - name: ^X$
         ''')
 
         self.run_test('''
@@ -64,7 +65,8 @@ func_1.argtypes = [POINTER(struct_1)]
 func_2 = _lib.func_2
 func_2.restype = POINTER(struct_2)
         ''', config='''
-import: ^func_([12])$
+import:
+    - name: ^func_([12])$
         ''')
 
         self.run_test('''
@@ -84,7 +86,8 @@ class struct_2(Structure):
     pass
 struct_2._fields_ = [('struct_field', struct_1)]
         ''', config='''
-import: ^struct_2$
+import:
+    - name: ^struct_2$
         ''')
 
         self.run_test('''
@@ -100,7 +103,8 @@ struct_1._fields_ = [('int_field', c_int)]
 
 alias_type = struct_1
         ''', config='''
-import: ^alias_type$
+import:
+    - name: ^alias_type$
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')

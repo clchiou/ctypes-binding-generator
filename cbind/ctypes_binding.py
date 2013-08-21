@@ -2,8 +2,8 @@
 
 import functools
 import re
-import types
 from cbind.codegen import gen_tree_node, gen_record
+from cbind.config import SyntaxTreeMatcher
 from cbind.passes import (scan_required_nodes,
         scan_and_rename,
         scan_forward_decl,
@@ -25,12 +25,8 @@ class CtypesBindingGenerator:
     def config(self, config_data):
         '''Configure the generator.'''
         if 'import' in config_data:
-            if type(config_data['import']) in types.StringTypes:
-                pattern = config_data['import']
-            else:
-                pattern = '|'.join(config_data['import'])
-            matcher = re.compile(pattern).search
-            self.check_required = lambda tree: tree.name and matcher(tree.name)
+            matcher = SyntaxTreeMatcher.make(config_data['import'])
+            self.check_required = matcher.match
         if 'rename' in config_data:
             self.rename_rules = tuple((re.compile(pattern), rewrite)
                     for pattern, rewrite in config_data['rename'])
