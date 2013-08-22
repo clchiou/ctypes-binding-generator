@@ -131,6 +131,15 @@ rename:
       rewrite: \1
         ''')
 
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_preamble(self):
+        self.run_test('''
+        ''', '''
+import types as __python_types
+        ''', config='''
+preamble: import types as __python_types
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

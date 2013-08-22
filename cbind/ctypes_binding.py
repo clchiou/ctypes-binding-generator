@@ -18,11 +18,14 @@ class CtypesBindingGenerator:
     def __init__(self):
         '''Initialize the object.'''
         self.syntax_tree_forest = SyntaxTreeForest()
+        self.preamble = None
         self.check_required = check_locally_defined
         self.rename = None
 
     def config(self, config_data):
         '''Configure the generator.'''
+        if 'preamble' in config_data:
+            self.preamble = config_data['preamble']
         if 'import' in config_data:
             matcher = SyntaxTreeMatcher.make(config_data['import'])
             self.check_required = matcher.match
@@ -52,6 +55,9 @@ class CtypesBindingGenerator:
 
     def generate(self, output):
         '''Generate ctypes binding.'''
+        if self.preamble:
+            output.write(self.preamble)
+            output.write('\n')
         for syntax_tree in self.syntax_tree_forest:
             va_list_tag = syntax_tree.get_annotation(
                     annotations.USE_VA_LIST_TAG, False)
