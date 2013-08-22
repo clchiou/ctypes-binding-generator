@@ -162,6 +162,28 @@ errcheck:
       errcheck: errcheck_func
         ''')
 
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_method(self):
+        self.run_test('''
+struct foo {
+};
+
+void bar(struct foo*);
+        ''', '''
+import types as _python_types
+
+class foo(Structure):
+    pass
+
+bar = _lib.bar
+bar.argtypes = [POINTER(foo)]
+foo.method_bar = _python_types.MethodType(bar, None, foo)
+        ''', config='''
+method:
+    - argtypes: [POINTER\(foo\)]
+      method: foo.method_bar
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

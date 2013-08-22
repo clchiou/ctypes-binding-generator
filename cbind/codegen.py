@@ -195,7 +195,7 @@ def _make_function(tree, output):
     if not tree.is_external_linkage():
         return
     output.write('{0} = {1}.{2}\n'.format(tree.name, LIBNAME, tree.spelling))
-    argtypes = _make_function_arguments(tree)
+    argtypes = ', '.join(make_function_argtypes(tree))
     if argtypes:
         output.write('%s.argtypes = [%s]\n' % (tree.name, argtypes))
     if tree.result_type.kind != TypeKind.VOID:
@@ -204,14 +204,18 @@ def _make_function(tree, output):
     errcheck = tree.get_annotation(annotations.ERRCHECK, False)
     if errcheck:
         output.write('%s.errcheck = %s\n' % (tree.name, errcheck))
+    method = tree.get_annotation(annotations.METHOD, False)
+    if method:
+        cls = method[:method.rindex('.')]
+        output.write('%s = _python_types.MethodType(%s, None, %s)\n' %
+                (method, tree.name, cls))
 
 
-def _make_function_arguments(tree):
+def make_function_argtypes(tree):
     '''Generate ctypes binding of function's arguments.'''
     if tree.type.is_function_variadic() or tree.get_num_arguments() <= 0:
-        return None
-    args = (_make_type(arg.type) for arg in tree.get_arguments())
-    return ', '.join(args)
+        return ()
+    return tuple(_make_type(arg.type) for arg in tree.get_arguments())
 
 
 def make_function_restype(tree):

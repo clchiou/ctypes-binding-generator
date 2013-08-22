@@ -23,6 +23,7 @@ class CtypesBindingGenerator:
         self.check_required = check_locally_defined
         self.rename = None
         self.errcheck = None
+        self.method = None
 
     def config(self, config_data):
         '''Configure the generator.'''
@@ -37,6 +38,9 @@ class CtypesBindingGenerator:
         if 'errcheck' in config_data:
             errcheck = SyntaxTreeMatcher.make(config_data['errcheck'])
             self.errcheck = errcheck.do_errcheck
+        if 'method' in config_data:
+            method = SyntaxTreeMatcher.make(config_data['method'])
+            self.method = method.do_method
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
@@ -57,6 +61,8 @@ class CtypesBindingGenerator:
         # Since now tree is "complete", we may attach information to it.
         if self.errcheck:
             custom_pass(syntax_tree, self.errcheck)
+        if self.method:
+            custom_pass(syntax_tree, self.method)
 
     def get_translation_units(self):
         '''Get translation units.'''
@@ -68,6 +74,8 @@ class CtypesBindingGenerator:
         if self.preamble:
             output.write(self.preamble)
             output.write('\n')
+        if self.method:
+            output.write('import types as _python_types\n')
         for syntax_tree in self.syntax_tree_forest:
             va_list_tag = syntax_tree.get_annotation(
                     annotations.USE_VA_LIST_TAG, False)
