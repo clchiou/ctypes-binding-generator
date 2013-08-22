@@ -35,59 +35,6 @@ class cursor_cached_property(object):  # pylint: disable=R0903
         return self.cache[key]
 
 
-### Register errcheck callbacks
-
-
-def call_clang_getCString(result, *_):
-    '''Call clang_getCString().'''
-    return _index.clang_getCString(result)
-
-
-_index.clang_getCursorSpelling.errcheck = call_clang_getCString
-_index.clang_getFileName.errcheck = call_clang_getCString
-_index.clang_getDiagnosticSpelling.errcheck = call_clang_getCString
-
-
-def ref_translation_unit(result, _, arguments):
-    '''Store a reference to TranslationUnit in the Python object so that
-    it is not GC'ed before this cursor.'''
-    # pylint: disable=W0212
-    tunit = None
-    for arg in arguments:
-        if isinstance(arg, TranslationUnit):
-            tunit = arg
-            break
-        if hasattr(arg, '_translation_unit'):
-            tunit = arg._translation_unit
-            break
-    assert tunit is not None
-    result._translation_unit = tunit
-    return result
-
-
-def check_cursor(result, function, arguments):
-    '''Check returned cursor object.'''
-    if result == _index.clang_getNullCursor():
-        return None
-    return ref_translation_unit(result, function, arguments)
-
-
-_index.clang_Cursor_getArgument.errcheck = check_cursor
-_index.clang_getTranslationUnitCursor.errcheck = check_cursor
-_index.clang_getTypeDeclaration.errcheck = check_cursor
-
-
-_index.clang_getArgType.errcheck = ref_translation_unit
-_index.clang_getArrayElementType.errcheck = ref_translation_unit
-_index.clang_getCanonicalType.errcheck = ref_translation_unit
-_index.clang_getCursorSemanticParent.errcheck = ref_translation_unit
-_index.clang_getCursorType.errcheck = ref_translation_unit
-_index.clang_getEnumDeclIntegerType.errcheck = ref_translation_unit
-_index.clang_getPointeeType.errcheck = ref_translation_unit
-_index.clang_getResultType.errcheck = ref_translation_unit
-_index.clang_getTypedefDeclUnderlyingType.errcheck = ref_translation_unit
-
-
 ### Helper classes
 
 

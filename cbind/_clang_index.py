@@ -12,6 +12,7 @@ else:
     _lib = cdll.LoadLibrary('libclang.so')
 del sys
 
+from cbind.min_cindex_helper import check_cursor, ref_translation_unit
 class String(Structure):
     pass
 String._fields_ = [('data', c_void_p),
@@ -43,6 +44,7 @@ clang_disposeIndex.argtypes = [c_void_p]
 clang_getFileName = _lib.clang_getFileName
 clang_getFileName.argtypes = [c_void_p]
 clang_getFileName.restype = String
+clang_getFileName.errcheck = lambda result, *_: clang_getCString(result)
 
 class SourceLocation(Structure):
     pass
@@ -81,6 +83,7 @@ clang_getDiagnosticLocation.restype = SourceLocation
 clang_getDiagnosticSpelling = _lib.clang_getDiagnosticSpelling
 clang_getDiagnosticSpelling.argtypes = [c_void_p]
 clang_getDiagnosticSpelling.restype = String
+clang_getDiagnosticSpelling.errcheck = lambda result, *_: clang_getCString(result)
 
 clang_parseTranslationUnit = _lib.clang_parseTranslationUnit
 clang_parseTranslationUnit.argtypes = [c_void_p, c_char_p, POINTER(c_char_p), c_int, POINTER(UnsavedFile), c_uint, c_uint]
@@ -270,6 +273,7 @@ clang_getNullCursor.restype = Cursor
 clang_getTranslationUnitCursor = _lib.clang_getTranslationUnitCursor
 clang_getTranslationUnitCursor.argtypes = [POINTER(TranslationUnitImpl)]
 clang_getTranslationUnitCursor.restype = Cursor
+clang_getTranslationUnitCursor.errcheck = check_cursor
 
 clang_equalCursors = _lib.clang_equalCursors
 clang_equalCursors.argtypes = [Cursor, Cursor]
@@ -298,6 +302,7 @@ clang_getCursorLinkage.restype = LinkageKind
 clang_getCursorSemanticParent = _lib.clang_getCursorSemanticParent
 clang_getCursorSemanticParent.argtypes = [Cursor]
 clang_getCursorSemanticParent.restype = Cursor
+clang_getCursorSemanticParent.errcheck = check_cursor
 
 clang_getCursorLocation = _lib.clang_getCursorLocation
 clang_getCursorLocation.argtypes = [Cursor]
@@ -363,14 +368,17 @@ Type._fields_ = [('kind', TypeKind),
 clang_getCursorType = _lib.clang_getCursorType
 clang_getCursorType.argtypes = [Cursor]
 clang_getCursorType.restype = Type
+clang_getCursorType.errcheck = ref_translation_unit
 
 clang_getTypedefDeclUnderlyingType = _lib.clang_getTypedefDeclUnderlyingType
 clang_getTypedefDeclUnderlyingType.argtypes = [Cursor]
 clang_getTypedefDeclUnderlyingType.restype = Type
+clang_getTypedefDeclUnderlyingType.errcheck = ref_translation_unit
 
 clang_getEnumDeclIntegerType = _lib.clang_getEnumDeclIntegerType
 clang_getEnumDeclIntegerType.argtypes = [Cursor]
 clang_getEnumDeclIntegerType.restype = Type
+clang_getEnumDeclIntegerType.errcheck = ref_translation_unit
 
 clang_getEnumConstantDeclValue = _lib.clang_getEnumConstantDeclValue
 clang_getEnumConstantDeclValue.argtypes = [Cursor]
@@ -391,6 +399,7 @@ clang_Cursor_getNumArguments.restype = c_int
 clang_Cursor_getArgument = _lib.clang_Cursor_getArgument
 clang_Cursor_getArgument.argtypes = [Cursor, c_uint]
 clang_Cursor_getArgument.restype = Cursor
+clang_Cursor_getArgument.errcheck = check_cursor
 
 clang_equalTypes = _lib.clang_equalTypes
 clang_equalTypes.argtypes = [Type, Type]
@@ -399,18 +408,22 @@ clang_equalTypes.restype = c_uint
 clang_getCanonicalType = _lib.clang_getCanonicalType
 clang_getCanonicalType.argtypes = [Type]
 clang_getCanonicalType.restype = Type
+clang_getCanonicalType.errcheck = ref_translation_unit
 
 clang_getPointeeType = _lib.clang_getPointeeType
 clang_getPointeeType.argtypes = [Type]
 clang_getPointeeType.restype = Type
+clang_getPointeeType.errcheck = ref_translation_unit
 
 clang_getTypeDeclaration = _lib.clang_getTypeDeclaration
 clang_getTypeDeclaration.argtypes = [Type]
 clang_getTypeDeclaration.restype = Cursor
+clang_getTypeDeclaration.errcheck = check_cursor
 
 clang_getResultType = _lib.clang_getResultType
 clang_getResultType.argtypes = [Type]
 clang_getResultType.restype = Type
+clang_getResultType.errcheck = ref_translation_unit
 
 clang_getNumArgTypes = _lib.clang_getNumArgTypes
 clang_getNumArgTypes.argtypes = [Type]
@@ -419,6 +432,7 @@ clang_getNumArgTypes.restype = c_int
 clang_getArgType = _lib.clang_getArgType
 clang_getArgType.argtypes = [Type, c_uint]
 clang_getArgType.restype = Type
+clang_getArgType.errcheck = ref_translation_unit
 
 clang_isFunctionTypeVariadic = _lib.clang_isFunctionTypeVariadic
 clang_isFunctionTypeVariadic.argtypes = [Type]
@@ -427,6 +441,7 @@ clang_isFunctionTypeVariadic.restype = c_uint
 clang_getArrayElementType = _lib.clang_getArrayElementType
 clang_getArrayElementType.argtypes = [Type]
 clang_getArrayElementType.restype = Type
+clang_getArrayElementType.errcheck = ref_translation_unit
 
 clang_getArraySize = _lib.clang_getArraySize
 clang_getArraySize.argtypes = [Type]
@@ -450,6 +465,7 @@ clang_visitChildren.restype = c_uint
 clang_getCursorSpelling = _lib.clang_getCursorSpelling
 clang_getCursorSpelling.argtypes = [Cursor]
 clang_getCursorSpelling.restype = String
+clang_getCursorSpelling.errcheck = lambda result, *_: clang_getCString(result)
 
 clang_isCursorDefinition = _lib.clang_isCursorDefinition
 clang_isCursorDefinition.argtypes = [Cursor]
