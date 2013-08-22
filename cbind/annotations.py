@@ -2,6 +2,7 @@
 
 DECLARED = 'declared'
 DEFINED = 'defined'
+ERRCHECK = 'errcheck'
 FORWARD_DECLARATION = 'forward-declaration'
 NAME = 'name'
 REQUIRED = 'required'

@@ -3,7 +3,8 @@
 import functools
 from cbind.codegen import gen_tree_node, gen_record
 from cbind.config import SyntaxTreeMatcher
-from cbind.passes import (scan_required_nodes,
+from cbind.passes import (custom_pass,
+        scan_required_nodes,
         scan_and_rename,
         scan_forward_decl,
         scan_va_list_tag,
@@ -21,16 +22,21 @@ class CtypesBindingGenerator:
         self.preamble = None
         self.check_required = check_locally_defined
         self.rename = None
+        self.errcheck = None
 
     def config(self, config_data):
         '''Configure the generator.'''
         if 'preamble' in config_data:
             self.preamble = config_data['preamble']
         if 'import' in config_data:
-            matcher = SyntaxTreeMatcher.make(config_data['import'])
-            self.check_required = matcher.match
+            match = SyntaxTreeMatcher.make(config_data['import'])
+            self.check_required = match.do_match
         if 'rename' in config_data:
-            self.rename = SyntaxTreeMatcher.make(config_data['rename']).rename
+            rename = SyntaxTreeMatcher.make(config_data['rename'])
+            self.rename = rename.do_rename
+        if 'errcheck' in config_data:
+            errcheck = SyntaxTreeMatcher.make(config_data['errcheck'])
+            self.errcheck = errcheck.do_errcheck
 
     def parse(self, path, contents=None, args=None):
         '''Call parser.parse().'''
@@ -47,6 +53,10 @@ class CtypesBindingGenerator:
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
         scan_anonymous_pod(syntax_tree)
+
+        # Since now tree is "complete", we may attach information to it.
+        if self.errcheck:
+            custom_pass(syntax_tree, self.errcheck)
 
     def get_translation_units(self):
         '''Get translation units.'''

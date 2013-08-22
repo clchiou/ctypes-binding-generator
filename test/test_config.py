@@ -140,6 +140,28 @@ import types as __python_types
 preamble: import types as __python_types
         ''')
 
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_preamble(self):
+        self.run_test('''
+struct foo {
+    int i;
+};
+
+struct foo func(void);
+        ''', '''
+class foo(Structure):
+    pass
+foo._fields_ = [('i', c_int)]
+
+func = _lib.func
+func.restype = foo
+func.errcheck = errcheck_func
+        ''', config='''
+errcheck:
+    - restype: foo
+      errcheck: errcheck_func
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

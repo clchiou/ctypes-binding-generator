@@ -199,8 +199,11 @@ def _make_function(tree, output):
     if argtypes:
         output.write('%s.argtypes = [%s]\n' % (tree.name, argtypes))
     if tree.result_type.kind != TypeKind.VOID:
-        restype = _make_type(tree.result_type)
+        restype = make_function_restype(tree)
         output.write('%s.restype = %s\n' % (tree.name, restype))
+    errcheck = tree.get_annotation(annotations.ERRCHECK, False)
+    if errcheck:
+        output.write('%s.errcheck = %s\n' % (tree.name, errcheck))
 
 
 def _make_function_arguments(tree):
@@ -209,6 +212,13 @@ def _make_function_arguments(tree):
         return None
     args = (_make_type(arg.type) for arg in tree.get_arguments())
     return ', '.join(args)
+
+
+def make_function_restype(tree):
+    '''Make function restype.'''
+    if tree.result_type.kind == TypeKind.VOID:
+        return 'None'
+    return _make_type(tree.result_type)
 
 
 def _make_pod_header(tree, name, output):
