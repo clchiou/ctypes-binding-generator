@@ -4,19 +4,11 @@
 
 import collections
 import re
-import types
 from ctypes import CFUNCTYPE, byref, c_char_p, c_uint, c_void_p
 import cbind._clang_index as _index
 
 
 ### Utilities
-
-
-def set_method(cls, method_name, callable_object):
-    '''Turn a callable object into an unbound method.  This is necessary
-       when the callable object does not implement the descriptor protocol.
-    '''
-    setattr(cls, method_name, types.MethodType(callable_object, None, cls))
 
 
 class cursor_cached_property(object):  # pylint: disable=R0903
@@ -157,9 +149,6 @@ class TranslationUnit(ClangObject):
 ### Patch methods to classes
 
 
-set_method(_index.String, '__del__', _index.clang_disposeString)
-
-
 def SourceLocation_data(self):
     '''Create SourceLocation data.'''
     # pylint: disable=W0212
@@ -247,11 +236,7 @@ Cursor.__ne__ = lambda self, other: not self.__eq__(other)
 Cursor.enum_type = cursor_cached_property(_index.clang_getEnumDeclIntegerType)
 Cursor.enum_value = cursor_cached_property(Cursor_enum_value)
 Cursor.get_arguments = Cursor_get_arguments
-set_method(Cursor, 'get_bitfield_width', _index.clang_getFieldDeclBitWidth)
 Cursor.get_children = Cursor_get_children
-set_method(Cursor, 'get_num_arguments', _index.clang_Cursor_getNumArguments)
-set_method(Cursor, 'is_bitfield', _index.clang_Cursor_isBitField)
-set_method(Cursor, 'is_definition', _index.clang_isCursorDefinition)
 Cursor.linkage_kind = property(lambda self: _index.clang_getCursorLinkage(self))
 Cursor.location = cursor_cached_property(_index.clang_getCursorLocation)
 Cursor.result_type = cursor_cached_property(
@@ -291,14 +276,6 @@ Type = _index.Type
 Type. __eq__ = lambda self, other: _index.clang_equalTypes(self, other)
 Type.__ne__ = lambda self, other: not self.__eq__(other)
 Type.argument_types = lambda self: ArgumentsIterator(self)
-set_method(Type, 'get_align', _index.clang_Type_getAlignOf)
-set_method(Type, 'get_array_element_type', _index.clang_getArrayElementType)
-set_method(Type, 'get_array_size', _index.clang_getArraySize)
-set_method(Type, 'get_canonical', _index.clang_getCanonicalType)
-set_method(Type, 'get_declaration', _index.clang_getTypeDeclaration)
-set_method(Type, 'get_pointee', _index.clang_getPointeeType)
-set_method(Type, 'get_result', _index.clang_getResultType)
-set_method(Type, 'is_function_variadic', _index.clang_isFunctionTypeVariadic)
 
 
 ### Add enum tables

@@ -56,3 +56,33 @@ errcheck:
       errcheck:
     - restype: Cursor
       errcheck: check_cursor
+
+method:
+    - name: clang_disposeString
+      method: String.__del__
+
+    - name: clang_getFieldDeclBitWidth
+      method: Cursor.get_bitfield_width
+    - name: clang_Cursor_getNumArguments
+      method: Cursor.get_num_arguments
+    - name: clang_Cursor_isBitField
+      method: Cursor.is_bitfield
+    - name: clang_isCursorDefinition
+      method: Cursor.is_definition
+
+    - name: clang_Type_getAlignOf
+      method: Type.get_align
+    - name: clang_getArrayElementType
+      method: Type.get_array_element_type
+    - name: clang_getArraySize
+      method: Type.get_array_size
+    - name: clang_getCanonicalType
+      method: Type.get_canonical
+    - name: clang_getTypeDeclaration
+      method: Type.get_declaration
+    - name: clang_getPointeeType
+      method: Type.get_pointee
+    - name: clang_getResultType
+      method: Type.get_result
+    - name: clang_isFunctionTypeVariadic
+      method: Type.is_function_variadic
