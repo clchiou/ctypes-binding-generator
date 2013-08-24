@@ -1,14 +1,16 @@
 '''Helpers for _clang_index module.'''
 
+import cbind._clang_index
+import cbind.min_cindex
+
 
 def ref_translation_unit(result, _, arguments):
     '''Store a reference to TranslationUnit in the Python object so that
     it is not GC'ed before this cursor.'''
-    from cbind.min_cindex import TranslationUnit
     # pylint: disable=W0212
     tunit = None
     for arg in arguments:
-        if isinstance(arg, TranslationUnit):
+        if isinstance(arg, cbind.min_cindex.TranslationUnit):
             tunit = arg
             break
         if hasattr(arg, '_translation_unit'):
@@ -21,7 +23,7 @@ def ref_translation_unit(result, _, arguments):
 
 def check_cursor(result, function, arguments):
     '''Check returned cursor object.'''
-    from cbind._clang_index import clang_getNullCursor
-    if result == clang_getNullCursor():
+    # pylint: disable=W0212
+    if result == cbind._clang_index.clang_getNullCursor():
         return None
     return ref_translation_unit(result, function, arguments)
