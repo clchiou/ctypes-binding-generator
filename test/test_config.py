@@ -184,6 +184,20 @@ method:
       method: foo.method_bar
         ''')
 
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_mixin(self):
+        self.run_test('''
+struct foo {
+};
+        ''', '''
+class foo(MixinFoo1, MixinFoo2, Structure):
+    pass
+        ''', config='''
+mixin:
+    - name: foo
+      mixin: [MixinFoo1, MixinFoo2]
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

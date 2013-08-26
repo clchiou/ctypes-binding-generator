@@ -1,30 +1,12 @@
 '''Parse config data.'''
 
 from collections import namedtuple
-from functools import partial
 import logging
 import re
 
 from cbind.cindex import CursorKind
 from cbind.codegen import make_function_argtypes, make_function_restype
 import cbind.annotations as annotations
-
-
-class SumOfMatchers(namedtuple('SumOfMatchers', 'matchers')):
-    '''Aggregate of matchers.'''
-
-    # pylint: disable=R0903,W0232
-
-    def _or(self, tree, method=None):
-        '''Run an OR operation on matchers.'''
-        for matcher in self.matchers:  # pylint: disable=E1101
-            if method(matcher, tree):
-                return True
-        return False
-
-    def __getattr__(self, name):
-        method = getattr(SyntaxTreeMatcher, name)
-        return partial(self._or, method=method)
 
 
 class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
@@ -34,6 +16,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         rewrite
         errcheck
         method
+        mixin
         ''')):
     '''Match SyntaxTree node.'''
 
@@ -43,7 +26,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     def make(cls, matcher_specs):
         '''Create a sum of matchers.'''
         matchers = tuple(cls._make(spec) for spec in matcher_specs)
-        return SumOfMatchers(matchers=matchers)
+        return MatcherAggregator(matchers)
 
     @classmethod
     def _make(cls, spec):
@@ -62,6 +45,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         return cls(rewrite=spec.get('rewrite'),
                 errcheck=spec.get('errcheck'),
                 method=spec.get('method'),
+                mixin=spec.get('mixin'),
                 **patterns)
 
     def do_match(self, tree):
@@ -93,6 +77,10 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         '''Match tree.restype.'''
         return (tree.kind == CursorKind.FUNCTION_DECL and
                 self.restype.search(make_function_restype(tree)))
+
+    def do_import(self, tree):
+        '''Check if this tree should be imported.'''
+        return self.do_match(tree)
 
     def do_rename(self, tree):
         '''Rename tree.'''
@@ -126,3 +114,32 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
             return True
         tree.annotate(annotations.METHOD, self.method)
         return True
+
+    def do_mixin(self, tree):
+        '''Mix in classes.'''
+        if not self.do_match(tree):
+            return False
+        if not self.mixin:
+            logging.info('Could not mix in empty class list')
+            return True
+        tree.annotate(annotations.MIXIN, self.mixin)
+        return True
+
+
+class MatcherAggregator(list):
+    '''Aggregate of matchers.'''
+
+    def do_action(self, tree, method):
+        '''Run an OR operation on matchers.'''
+        for matcher in self:
+            if method(matcher, tree):
+                return True
+        return False
+
+
+def _make_doer(method):
+    '''Make doer.'''
+    return lambda self, tree: self.do_action(tree, method)
+for _name, _method in vars(SyntaxTreeMatcher).iteritems():
+    if _name.startswith('do_'):
+        setattr(MatcherAggregator, _name, _make_doer(_method))

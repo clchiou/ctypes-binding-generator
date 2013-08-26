@@ -231,8 +231,13 @@ def _make_pod_header(tree, name, output):
         pod_kind = 'Structure'
     else:
         pod_kind = 'Union'
-    output.write('class {0}({1}):\n'.format(name, pod_kind))
-    output.write('%spass\n' % INDENT)
+    mixin = tree.get_annotation(annotations.MIXIN, ())
+    if mixin:
+        fmt = 'class {name}({mixin}, {kind}):\n{indent}pass\n'
+    else:
+        fmt = 'class {name}({kind}):\n{indent}pass\n'
+    output.write(fmt.format(name=name, kind=pod_kind, indent=INDENT,
+        mixin=', '.join(mixin)))
 
 
 def _make_pod_body(tree, name, output):
@@ -261,8 +266,13 @@ def _make_pod_body(tree, name, output):
 def _make_enum(tree, output):
     '''Generate ctypes binding of a enum definition.'''
     if tree.name:
-        output.write('class %s(%s):\n%spass\n' %
-                (tree.name, _make_type(tree.enum_type), INDENT))
+        mixin = tree.get_annotation(annotations.MIXIN, ())
+        if mixin:
+            fmt = 'class {name}({mixin}, {type}):\n{indent}pass\n'
+        else:
+            fmt = 'class {name}({type}):\n{indent}pass\n'
+        output.write(fmt.format(name=tree.name, indent=INDENT,
+            type=_make_type(tree.enum_type), mixin=', '.join(mixin)))
     for enum in tree.get_children():
         if enum.get_annotation(annotations.REQUIRED, False):
             output.write('%s = %s\n' % (enum.name, enum.enum_value))
