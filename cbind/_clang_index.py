@@ -12,7 +12,7 @@ else:
     _lib = cdll.LoadLibrary('libclang.so')
 del sys
 
-from cbind.min_cindex_helper import check_cursor, ref_translation_unit
+from cbind.min_cindex_helper import (check_cursor, ref_translation_unit, CursorMixin, SourceLocationMixin, TypeMixin, EnumerateKindMixin)
 import types as _python_types
 class String(Structure):
     pass
@@ -48,7 +48,7 @@ clang_getFileName.argtypes = [c_void_p]
 clang_getFileName.restype = String
 clang_getFileName.errcheck = lambda result, *_: clang_getCString(result)
 
-class SourceLocation(Structure):
+class SourceLocation(SourceLocationMixin, Structure):
     pass
 SourceLocation._fields_ = [('ptr_data', (c_void_p * 2)),
                            ('int_data', c_uint)]
@@ -94,7 +94,7 @@ clang_parseTranslationUnit.restype = POINTER(TranslationUnitImpl)
 clang_disposeTranslationUnit = _lib.clang_disposeTranslationUnit
 clang_disposeTranslationUnit.argtypes = [POINTER(TranslationUnitImpl)]
 
-class CursorKind(c_uint):
+class CursorKind(EnumerateKindMixin, c_uint):
     pass
 Cursor_UnexposedDecl = 1
 Cursor_StructDecl = 2
@@ -263,7 +263,7 @@ Cursor_ModuleImportDecl = 600
 Cursor_FirstExtraDecl = 600
 Cursor_LastExtraDecl = 600
 
-class Cursor(Structure):
+class Cursor(CursorMixin, Structure):
     pass
 Cursor._fields_ = [('kind', CursorKind),
                    ('xdata', c_int),
@@ -289,7 +289,7 @@ clang_isDeclaration = _lib.clang_isDeclaration
 clang_isDeclaration.argtypes = [CursorKind]
 clang_isDeclaration.restype = c_uint
 
-class LinkageKind(c_uint):
+class LinkageKind(EnumerateKindMixin, c_uint):
     pass
 Linkage_Invalid = 0
 Linkage_NoLinkage = 1
@@ -310,7 +310,7 @@ clang_getCursorLocation = _lib.clang_getCursorLocation
 clang_getCursorLocation.argtypes = [Cursor]
 clang_getCursorLocation.restype = SourceLocation
 
-class TypeKind(c_uint):
+class TypeKind(EnumerateKindMixin, c_uint):
     pass
 Type_Invalid = 0
 Type_Unexposed = 1
@@ -362,7 +362,7 @@ Type_IncompleteArray = 114
 Type_VariableArray = 115
 Type_DependentSizedArray = 116
 
-class Type(Structure):
+class Type(TypeMixin, Structure):
     pass
 Type._fields_ = [('kind', TypeKind),
                  ('data', (c_void_p * 2))]

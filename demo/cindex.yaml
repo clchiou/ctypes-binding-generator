@@ -1,5 +1,10 @@
 preamble:
-    from cbind.min_cindex_helper import check_cursor, ref_translation_unit
+    from cbind.min_cindex_helper import (check_cursor,
+                                         ref_translation_unit,
+                                         CursorMixin,
+                                         SourceLocationMixin,
+                                         TypeMixin,
+                                         EnumerateKindMixin)
 
 import:
     - name: ^clang_createIndex$
@@ -86,3 +91,13 @@ method:
       method: Type.get_result
     - name: clang_isFunctionTypeVariadic
       method: Type.is_function_variadic
+
+mixin:
+    - name: ^Cursor$
+      mixin: [CursorMixin]
+    - name: ^SourceLocation$
+      mixin: [SourceLocationMixin]
+    - name: ^Type$
+      mixin: [TypeMixin]
+    - name: ^(Cursor|Type|Linkage)Kind$
+      mixin: [EnumerateKindMixin]

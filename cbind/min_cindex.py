@@ -4,27 +4,13 @@
 
 import collections
 import re
-from ctypes import CFUNCTYPE, byref, c_char_p, c_uint, c_void_p
+from ctypes import c_char_p, c_void_p
+
 import cbind._clang_index as _index
+from cbind._clang_index import Cursor, CursorKind, Type, TypeKind, LinkageKind
 
 
-### Utilities
-
-
-class cursor_cached_property(object):  # pylint: disable=R0903
-    '''Cached property decorator for Cursor class.'''
-
-    def __init__(self, getter):
-        self.getter = getter
-        self.cache = {}
-
-    def __get__(self, cursor, _):
-        if cursor is None:
-            return self
-        key = _index.clang_hashCursor(cursor)
-        if key not in self.cache:
-            self.cache[key] = self.getter(cursor)
-        return self.cache[key]
+__all__ = ['Index', 'Cursor', 'CursorKind', 'Type', 'TypeKind', 'LinkageKind']
 
 
 ### Helper classes
@@ -146,138 +132,6 @@ class TranslationUnit(ClangObject):
     diagnostics = property(DiagnosticsIterator)
 
 
-### Patch methods to classes
-
-
-def SourceLocation_data(self):
-    '''Create SourceLocation data.'''
-    # pylint: disable=W0212
-    if not hasattr(self, '_data'):
-        file_, line, column, offset = c_void_p(), c_uint(), c_uint(), c_uint()
-        _index.clang_getInstantiationLocation(self,
-                byref(file_), byref(line), byref(column), byref(offset))
-        if file_:
-            file_ = File(file_)
-        else:
-            file_ = None
-        self._data = SourceLocationData(file_,
-                line.value, column.value, offset.value)
-    return self._data
-
-
-SourceLocation = _index.SourceLocation
-SourceLocation.__eq__ = lambda self, other: \
-        _index.clang_equalLocations(self, other)
-SourceLocation.__ne__ = lambda self, other: not self.__eq__(other)
-SourceLocationData = collections.namedtuple('SourceLocationData',
-        'file line column offset')
-SourceLocation.data = property(SourceLocation_data)
-SourceLocation.file = property(lambda self: self.data.file)
-SourceLocation.line = property(lambda self: self.data.line)
-SourceLocation.column = property(lambda self: self.data.column)
-SourceLocation.offset = property(lambda self: self.data.offset)
-
-
-def Cursor_get_arguments(self):
-    '''Return an iterator of arguments.'''
-    num_args = _index.clang_Cursor_getNumArguments(self)
-    for i in xrange(num_args):
-        yield _index.clang_Cursor_getArgument(self, i)
-
-
-def Cursor_get_children(self):
-    '''Return a list of children.'''
-    children = []
-    def visit(child, *_):
-        '''Visit children callback.'''
-        assert child != _index.clang_getNullCursor()
-        # Store reference to TranslationUnit...
-        # pylint: disable=W0212
-        child._translation_unit = self._translation_unit
-        children.append(child)
-        return 1  # continue
-    callback_proto = CFUNCTYPE(_index.ChildVisitResult,
-            _index.Cursor, _index.Cursor, c_void_p)
-    visit_callback = callback_proto(visit)
-    _index.clang_visitChildren(self, visit_callback, None)
-    return children
-
-
-def Cursor_enum_value(self):
-    '''Return the value of an enum constant.'''
-    # pylint: disable=E1101
-    underlying_type = self.type
-    if underlying_type.kind == TypeKind.ENUM:
-        underlying_type = underlying_type.get_declaration().enum_type
-    if underlying_type.kind in (TypeKind.CHAR_U,
-                                TypeKind.UCHAR,
-                                TypeKind.CHAR16,
-                                TypeKind.CHAR32,
-                                TypeKind.USHORT,
-                                TypeKind.UINT,
-                                TypeKind.ULONG,
-                                TypeKind.ULONGLONG,
-                                TypeKind.UINT128):
-        return _index.clang_getEnumConstantDeclUnsignedValue(self)
-    else:
-        return _index.clang_getEnumConstantDeclValue(self)
-
-
-def Cursor_spelling(self):
-    '''Return Cursor spelling.'''
-    if not _index.clang_isDeclaration(self.kind):
-        return None
-    return _index.clang_getCursorSpelling(self)
-
-
-Cursor = _index.Cursor
-Cursor.__eq__ = lambda self, other: _index.clang_equalCursors(self, other)
-Cursor.__ne__ = lambda self, other: not self.__eq__(other)
-Cursor.enum_type = cursor_cached_property(_index.clang_getEnumDeclIntegerType)
-Cursor.enum_value = cursor_cached_property(Cursor_enum_value)
-Cursor.get_arguments = Cursor_get_arguments
-Cursor.get_children = Cursor_get_children
-Cursor.linkage_kind = property(lambda self: _index.clang_getCursorLinkage(self))
-Cursor.location = cursor_cached_property(_index.clang_getCursorLocation)
-Cursor.result_type = cursor_cached_property(
-        lambda self: _index.clang_getResultType(self.type))
-Cursor.semantic_parent = \
-        cursor_cached_property(_index.clang_getCursorSemanticParent)
-Cursor.spelling = cursor_cached_property(Cursor_spelling)
-Cursor.type = cursor_cached_property(_index.clang_getCursorType)
-Cursor.underlying_typedef_type = cursor_cached_property(
-        _index.clang_getTypedefDeclUnderlyingType)
-
-
-class ArgumentsIterator(collections.Sequence):  # pylint: disable=R0924
-    '''Indexable iterator of arguments.'''
-
-    def __init__(self, type_):
-        '''Initialize the object.'''
-        self.type_ = type_
-        self.length = None
-
-    def __len__(self):
-        if self.length is None:
-            self.length = _index.clang_getNumArgTypes(self.type_)
-        return self.length
-
-    def __getitem__(self, index):
-        if not (0 <= index < len(self)):
-            raise IndexError('Index out of range: index=%d, len=%d' %
-                    (index, len(self)))
-        result = _index.clang_getArgType(self.type_, index)
-        if result.kind == TypeKind.INVALID:  # pylint: disable=E1101
-            raise IndexError('Argument could not be retrieved.')
-        return result
-
-
-Type = _index.Type
-Type. __eq__ = lambda self, other: _index.clang_equalTypes(self, other)
-Type.__ne__ = lambda self, other: not self.__eq__(other)
-Type.argument_types = lambda self: ArgumentsIterator(self)
-
-
 ### Add enum tables
 
 
@@ -302,24 +156,10 @@ def camel_case_to_underscore(name):
     return re.sub(r'([a-z])([A-Z])', r'\1_\2', name).upper()
 
 
-CursorKind = _index.CursorKind
-CursorKind.__hash__ = lambda self: int(self.value)
-CursorKind.__eq__ = lambda self, other: self.value == other.value
-CursorKind.__ne__ = lambda self, other: not self.__eq__(other)
 add_enum_constants(CursorKind, re.compile(r'Cursor_([\w_]+)'),
         camel_case_to_underscore)
 
-
-TypeKind = _index.TypeKind
-TypeKind.__hash__ = lambda self: int(self.value)
-TypeKind.__eq__ = lambda self, other: self.value == other.value
-TypeKind.__ne__ = lambda self, other: not self.__eq__(other)
 add_enum_constants(TypeKind, re.compile(r'Type_([\w_]+)'), str.upper)
 
-
-LinkageKind = _index.LinkageKind
-LinkageKind.__hash__ = lambda self: int(self.value)
-LinkageKind.__eq__ = lambda self, other: self.value == other.value
-LinkageKind.__ne__ = lambda self, other: not self.__eq__(other)
 add_enum_constants(LinkageKind, re.compile(r'Linkage_([\w_]+)'),
         camel_case_to_underscore)
