@@ -49,7 +49,7 @@ import:
 
 rename:
     - name: CX(\w+)
-      rewrite: \1
+      rename: \1
 
 errcheck:
     - restype: String

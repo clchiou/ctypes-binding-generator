@@ -3,6 +3,7 @@
 from collections import namedtuple
 import logging
 import re
+import types
 
 from cbind.cindex import CursorKind
 from cbind.codegen import make_function_argtypes, make_function_restype
@@ -10,13 +11,13 @@ import cbind.annotations as annotations
 
 
 class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
-        name
         argtypes
-        restype
-        rewrite
         errcheck
         method
         mixin
+        name
+        rename
+        restype
         ''')):
     '''Match SyntaxTree node.'''
 
@@ -41,8 +42,22 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
             else:
                 val = None
             patterns[attr] = val
+        rename = spec.get('rename')
+        if rename:
+            if type(rename) in types.StringTypes:
+                rename = [(re.compile(spec['name']), rename)]
+            else:
+                rename_rules = []
+                for blob in rename:
+                    pattern = re.compile(blob[0])
+                    if len(blob) == 2:
+                        replace = blob[1]
+                    else:
+                        replace = eval(blob[1], {})
+                    rename_rules.append((pattern, replace))
+                rename = rename_rules
         # pylint: disable=W0142
-        return cls(rewrite=spec.get('rewrite'),
+        return cls(rename=rename,
                 errcheck=spec.get('errcheck'),
                 method=spec.get('method'),
                 mixin=spec.get('mixin'),
@@ -86,10 +101,12 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         '''Rename tree.'''
         if not self.do_match(tree):
             return False
-        if not self.name or not self.rewrite:
-            logging.info('Could not rename with no rewrite rule')
+        if not self.name or not self.rename:
+            logging.info('Could not rename with no rename rule')
             return True
-        new_name = self.name.sub(self.rewrite, tree.name)
+        new_name = tree.name
+        for pattern, replace in self.rename:
+            new_name = pattern.sub(replace, new_name)
         if new_name == tree.name:
             return False
         tree.annotate(annotations.NAME, new_name)

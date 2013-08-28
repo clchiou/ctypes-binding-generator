@@ -128,7 +128,20 @@ XYZW = c_int.in_dll(_lib, 'long_long_name_XYZW')
         ''', config=r'''
 rename:
     - name: long_long_name_(X)
-      rewrite: \1
+      rename: \1
+        ''')
+
+        self.run_test('''
+int Prefix_HelloWorld = 1;
+        ''', '''
+HELLO_WORLD = c_int.in_dll(_lib, 'Prefix_HelloWorld')
+        ''', config=r'''
+rename:
+    - name: Prefix_
+      rename:
+        - ['Prefix_', '']
+        - ['([a-z])([A-Z])', \1_\2]
+        - [(.*), 'lambda match: match.group(1).upper()', Function]
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')
