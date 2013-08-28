@@ -48,6 +48,13 @@ import:
     - name: ^CX(Cursor|Linkage|Type)(Kind|_\w+)?$
 
 rename:
+    - name: CXType_
+      rename:
+        - [CX(\w+), 'lambda match: match.group(1).upper()', Function]
+    - name: CX(Cursor|Linkage)_
+      rename:
+        - ['([a-z])([A-Z])', \1_\2]
+        - [CX(\w+), 'lambda match: match.group(1).upper()', Function]
     - name: CX(\w+)
       rename: \1
 

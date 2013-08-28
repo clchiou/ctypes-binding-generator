@@ -3,7 +3,6 @@
 # pylint: disable=C0103,W0108,W0142
 
 import collections
-import re
 from ctypes import c_char_p, c_void_p
 
 import cbind._clang_index as _index
@@ -135,14 +134,13 @@ class TranslationUnit(ClangObject):
 ### Add enum tables
 
 
-def add_enum_constants(cls, name_matcher, converter):
+def add_enum_constants(cls, prefix):
     '''Add enum constants to class.'''
     cls_name = cls.__name__
     name_mapping = {}
     for name, value in vars(_index).iteritems():
-        match = name_matcher.match(name)
-        if match:
-            new_name = converter(match.group(1))
+        if name.startswith(prefix):
+            new_name = name[len(prefix):]
             setattr(cls, new_name, cls(value))
             name_mapping[value] = new_name
     def to_str(self):
@@ -150,16 +148,6 @@ def add_enum_constants(cls, name_matcher, converter):
         return '%s.%s' % (cls_name, name_mapping[self.value])
     cls.__str__ = to_str
 
-
-def camel_case_to_underscore(name):
-    '''Convert CamelCase to CAMEL_CASE.'''
-    return re.sub(r'([a-z])([A-Z])', r'\1_\2', name).upper()
-
-
-add_enum_constants(CursorKind, re.compile(r'Cursor_([\w_]+)'),
-        camel_case_to_underscore)
-
-add_enum_constants(TypeKind, re.compile(r'Type_([\w_]+)'), str.upper)
-
-add_enum_constants(LinkageKind, re.compile(r'Linkage_([\w_]+)'),
-        camel_case_to_underscore)
+add_enum_constants(CursorKind, 'CURSOR_')
+add_enum_constants(TypeKind, 'TYPE_')
+add_enum_constants(LinkageKind, 'LINKAGE_')
