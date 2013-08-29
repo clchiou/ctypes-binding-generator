@@ -1,13 +1,148 @@
 '''Helpers for _clang_index module.'''
 
 from collections import Sequence, namedtuple
-from ctypes import CFUNCTYPE, byref, c_uint, c_void_p
+from ctypes import CFUNCTYPE, byref, c_uint, c_char_p, c_void_p
 
 import cbind._clang_index
-import cbind.min_cindex
 
 
-# pylint: disable=W0212
+# pylint: disable=C0103,W0212,W0108,W0142
+
+
+class ClangObject(object):  # pylint: disable=R0903
+    '''Helper for Clang objects.'''
+
+    def __init__(self, object_):
+        '''Initialize the object.'''
+        if isinstance(object_, int):
+            object_ = c_void_p(object_)
+        self.object_ = self._as_parameter_ = object_
+
+
+class File(ClangObject):
+    '''File object.'''
+
+    # pylint: disable=R0903,C0111
+
+    @property
+    def name(self):
+        return cbind._clang_index.clang_getFileName(self)
+
+
+class DiagnosticsIterator(Sequence):  # pylint: disable=R0903,R0924
+    '''Indexable iterator object of diagnostics.'''
+
+    def __init__(self, tunit):
+        '''Initialize the object.'''
+        self.tunit = tunit
+
+    def __len__(self):
+        return int(cbind._clang_index.clang_getNumDiagnostics(self.tunit))
+
+    def __getitem__(self, index):
+        diag = cbind._clang_index.clang_getDiagnostic(self.tunit, index)
+        if not diag:
+            raise IndexError()
+        return Diagnostic(diag)
+
+
+class Diagnostic(ClangObject):
+    '''A diagnostic object.'''
+
+    # pylint: disable=R0903,C0111
+
+    Ignored = 0
+    Note    = 1
+    Warning = 2
+    Error   = 3
+    Fatal   = 4
+
+    def __del__(self):
+        '''Delete the object.'''
+        cbind._clang_index.clang_disposeDiagnostic(self)
+
+    @property
+    def severity(self):
+        return cbind._clang_index.clang_getDiagnosticSeverity(self)
+
+    @property
+    def location(self):
+        return cbind._clang_index.clang_getDiagnosticLocation(self)
+
+    @property
+    def spelling(self):
+        return cbind._clang_index.clang_getDiagnosticSpelling(self)
+
+
+class Index(ClangObject):
+    '''Primary interface to Clang CIndex library.'''
+
+    @staticmethod
+    def create(excludeDecls=False):
+        '''Create a new Index.'''
+        return Index(cbind._clang_index.clang_createIndex(excludeDecls, 0))
+
+    def __del__(self):
+        '''Delete the object.'''
+        cbind._clang_index.clang_disposeIndex(self)
+
+    def parse(self, path, args=None, unsaved_files=None, options=0):
+        '''Call TranslationUnit.from_source.'''
+        return TranslationUnit.from_source(path, args, unsaved_files, options,
+                self)
+
+
+class TranslationUnitLoadError(Exception):
+    '''Exception raised by TranslationUnit.'''
+    pass
+
+
+class TranslationUnit(ClangObject):
+    '''Represent a source code translation unit.'''
+
+    # pylint: disable=R0903,R0913,C0111
+
+    @classmethod
+    def from_source(cls, filename, args=None, unsaved_files=None, options=0,
+            index=None):
+        '''Create translation unit.'''
+        args = args or []
+        unsaved_files = unsaved_files or []
+        index = index or Index.create()
+        if args:
+            args_array = (c_char_p * len(args))(*args)
+        else:
+            args_array = None
+        if unsaved_files:
+            unsaved_array = (cbind._clang_index.UnsavedFile *
+                    len(unsaved_files))()
+            for i, (name, contents) in enumerate(unsaved_files):
+                if hasattr(contents, 'read'):
+                    contents = contents.read()
+                unsaved_array[i].Filename = name
+                unsaved_array[i].Contents = contents
+                unsaved_array[i].Length = len(contents)
+        else:
+            unsaved_array = None
+        ptr = cbind._clang_index.clang_parseTranslationUnit(index, filename,
+                args_array, len(args),
+                unsaved_array, len(unsaved_files),
+                options)
+        if not ptr:
+            raise TranslationUnitLoadError('Error parsing translation unit.')
+        return cls(ptr)
+
+    def __del__(self):
+        '''Delete the object.'''
+        cbind._clang_index.clang_disposeTranslationUnit(self)
+
+    @property
+    def cursor(self):
+        return cbind._clang_index.clang_getTranslationUnitCursor(self)
+
+    @property
+    def diagnostics(self):
+        return DiagnosticsIterator(self)
 
 
 def ref_translation_unit(result, _, arguments):
@@ -15,7 +150,7 @@ def ref_translation_unit(result, _, arguments):
     it is not GC'ed before this cursor.'''
     tunit = None
     for arg in arguments:
-        if isinstance(arg, cbind.min_cindex.TranslationUnit):
+        if isinstance(arg, TranslationUnit):
             tunit = arg
             break
         if hasattr(arg, '_translation_unit'):
@@ -33,7 +168,7 @@ def check_cursor(result, function, arguments):
     return ref_translation_unit(result, function, arguments)
 
 
-class cached_property(object):  # pylint: disable=C0103,R0903
+class cached_property(object):  # pylint: disable=R0903
     '''Cached property decorator for Cursor class.'''
 
     def __init__(self, getter):
@@ -47,7 +182,7 @@ class cached_property(object):  # pylint: disable=C0103,R0903
         return value
 
 
-SourceLocationData = namedtuple('SourceLocationData',  # pylint: disable=C0103
+SourceLocationData = namedtuple('SourceLocationData',
         'file line column offset')
 
 
@@ -84,7 +219,7 @@ class SourceLocationMixin(object):
         cbind._clang_index.clang_getInstantiationLocation(self,
                 byref(file_), byref(line), byref(column), byref(offset))
         if file_:
-            file_ = cbind.min_cindex.File(file_)
+            file_ = File(file_)
         else:
             file_ = None
         return SourceLocationData(file_, line.value, column.value, offset.value)
