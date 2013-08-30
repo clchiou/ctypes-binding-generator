@@ -25,7 +25,7 @@ class CtypesBindingGenerator:
         '''Configure the generator.'''
         if 'preamble' in config_data:
             self._config['preamble'] = config_data['preamble']
-        for name in ('import', 'rename', 'errcheck', 'method', 'mixin'):
+        for name in 'enum errcheck import method mixin rename'.split():
             if name in config_data:
                 matcher = SyntaxTreeMatcher.make(config_data[name])
                 self._config[name] = getattr(matcher, 'do_' + name)
@@ -47,7 +47,7 @@ class CtypesBindingGenerator:
         scan_anonymous_pod(syntax_tree)
 
         # Since now tree is "complete", we may attach information to it.
-        for name in ('errcheck', 'method', 'mixin'):
+        for name in 'enum errcheck method mixin'.split():
             if name in self._config:
                 custom_pass(syntax_tree, self._config[name])
 

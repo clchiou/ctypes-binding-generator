@@ -211,6 +211,34 @@ mixin:
       mixin: [MixinFoo1, MixinFoo2]
         ''')
 
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_enum(self):
+        self.run_test('''
+enum {
+    X = 1,
+    Y = 2,
+};
+
+enum my_type {
+    W = 1,
+    Z = 2,
+};
+        ''', '''
+foo.X = func(1)
+foo.Y = func(2)
+
+class my_type(c_uint):
+    pass
+my_type.W = c_uint(1)
+my_type.Z = c_uint(2)
+        ''', config='''
+enum:
+    - name: '[XY]'
+      enum: 'foo.{enum_field} = func({enum_value})'
+    - parent: {name: my_type}
+      enum: '{enum_name}.{enum_field} = {enum_type}({enum_value})'
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

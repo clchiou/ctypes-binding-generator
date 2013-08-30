@@ -10,12 +10,52 @@ from cbind.codegen import make_function_argtypes, make_function_restype
 import cbind.annotations as annotations
 
 
+def call_do_match(func):
+    '''Make a call to do_match().'''
+    def wrapper(self, tree):
+        '''Wrapper of func.'''
+        if not self.do_match(tree):
+            return False
+        return func(self, tree)
+    return wrapper
+
+
+def check_matcher_data(field_names):
+    '''Check if the matcher has these fields defined.'''
+    def make_wrapper(func):
+        '''Make wrapper.'''
+        def wrapper(self, tree):
+            '''Wrapper of func.'''
+            call_func = True
+            for name in field_names:
+                if not getattr(self, name):
+                    logging.info('Could not continue without %s', name)
+                    call_func = False
+            if call_func:
+                return func(self, tree)
+            else:
+                return True
+        return wrapper
+    return make_wrapper
+
+
+def make_annotator(annotation_name, field_name):
+    '''Make annotator.'''
+    def annotator(self, tree):
+        '''annotator function.'''
+        tree.annotate(annotation_name, getattr(self, field_name))
+        return True
+    return annotator
+
+
 class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         argtypes
+        enum
         errcheck
         method
         mixin
         name
+        parent
         rename
         restype
         ''')):
@@ -32,45 +72,63 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     @classmethod
     def _make(cls, spec):
         '''Create a matcher.'''
-        patterns = {'argtypes': None}
+        patterns = {}
         if 'argtypes' in spec:
             patterns['argtypes'] = tuple(re.compile(regex, re.VERBOSE)
                     for regex in spec['argtypes'])
+        else:
+            patterns['argtypes'] = None
+        if 'parent' in spec:
+            patterns['parent'] = cls._make(spec['parent'])
+        else:
+            patterns['parent'] = None
         for attr in ('name', 'restype'):
             if attr in spec:
                 val = re.compile(spec[attr], re.VERBOSE)
             else:
                 val = None
             patterns[attr] = val
-        rename = spec.get('rename')
-        if rename:
-            if type(rename) in types.StringTypes:
-                rename = [(re.compile(spec['name']), rename)]
-            else:
-                rename_rules = []
-                for blob in rename:
-                    pattern = re.compile(blob[0])
-                    if len(blob) == 2:
-                        replace = blob[1]
-                    else:
-                        replace = eval(blob[1], {})
-                    rename_rules.append((pattern, replace))
-                rename = rename_rules
+        if 'rename' in spec:
+            rename = cls._make_rename_rules(spec)
+        else:
+            rename = None
         # pylint: disable=W0142
         return cls(rename=rename,
+                enum=spec.get('enum'),
                 errcheck=spec.get('errcheck'),
                 method=spec.get('method'),
                 mixin=spec.get('mixin'),
                 **patterns)
 
+    @staticmethod
+    def _make_rename_rules(spec):
+        '''Make rename rules.'''
+        rename = spec['rename']
+        if type(rename) in types.StringTypes:
+            return [(re.compile(spec['name']), rename)]
+        rename_rules = []
+        for blob in rename:
+            pattern = re.compile(blob[0])
+            if len(blob) == 2:
+                replace = blob[1]
+            else:
+                replace = eval(blob[1], {})
+            rename_rules.append((pattern, replace))
+        return rename_rules
+
     def do_match(self, tree):
         '''Match tree.'''
-        if not self.name and not self.restype and not self.argtypes:
+        if (not self.argtypes and
+            not self.name and
+            not self.parent and
+            not self.restype):
             logging.info('Could not match with empty rule')
             return False
         return ((not self.name or self._match_name(tree)) and
                 (not self.argtypes or self._match_argtypes(tree)) and
-                (not self.restype or self._match_restype(tree)))
+                (not self.restype or self._match_restype(tree)) and
+                (not self.parent or not tree.semantic_parent or
+                 self.parent.do_match(tree.semantic_parent)))
 
     def _match_name(self, tree):
         '''Match tree.name.'''
@@ -97,13 +155,10 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         '''Check if this tree should be imported.'''
         return self.do_match(tree)
 
+    @call_do_match
+    @check_matcher_data(('name', 'rename'))
     def do_rename(self, tree):
         '''Rename tree.'''
-        if not self.do_match(tree):
-            return False
-        if not self.name or not self.rename:
-            logging.info('Could not rename with no rename rule')
-            return True
         new_name = tree.name
         for pattern, replace in self.rename:
             new_name = pattern.sub(replace, new_name)
@@ -112,35 +167,21 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         tree.annotate(annotations.NAME, new_name)
         return True
 
-    def do_errcheck(self, tree):
-        '''Attach errcheck.'''
-        if not self.do_match(tree):
-            return False
-        if not self.errcheck:
-            logging.info('Could not attach empty errcheck')
-            return True
-        tree.annotate(annotations.ERRCHECK, self.errcheck)
-        return True
+    do_errcheck = call_do_match(
+            check_matcher_data(('errcheck', ))(
+                make_annotator(annotations.ERRCHECK, 'errcheck')))
 
-    def do_method(self, tree):
-        '''Attach method.'''
-        if not self.do_match(tree):
-            return False
-        if not self.method:
-            logging.info('Could not attach empty method')
-            return True
-        tree.annotate(annotations.METHOD, self.method)
-        return True
+    do_method = call_do_match(
+            check_matcher_data(('method', ))(
+                make_annotator(annotations.METHOD, 'method')))
 
-    def do_mixin(self, tree):
-        '''Mix in classes.'''
-        if not self.do_match(tree):
-            return False
-        if not self.mixin:
-            logging.info('Could not mix in empty class list')
-            return True
-        tree.annotate(annotations.MIXIN, self.mixin)
-        return True
+    do_mixin = call_do_match(
+            check_matcher_data(('mixin', ))(
+                make_annotator(annotations.MIXIN, 'mixin')))
+
+    do_enum = call_do_match(
+            check_matcher_data(('enum', ))(
+                make_annotator(annotations.ENUM, 'enum')))
 
 
 class MatcherAggregator(list):

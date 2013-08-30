@@ -2,6 +2,7 @@
 
 DECLARED = 'declared'
 DEFINED = 'defined'
+ENUM = 'enum'
 ERRCHECK = 'errcheck'
 FORWARD_DECLARATION = 'forward-declaration'
 METHOD = 'method'

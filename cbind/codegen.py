@@ -266,16 +266,27 @@ def _make_pod_body(tree, name, output):
 def _make_enum(tree, output):
     '''Generate ctypes binding of a enum definition.'''
     if tree.name:
+        enum_name = tree.name
+        enum_type = _make_type(tree.enum_type)
+    else:
+        enum_name = ''
+        enum_type = 'c_uint'
+    if tree.name:
         mixin = tree.get_annotation(annotations.MIXIN, ())
         if mixin:
             fmt = 'class {name}({mixin}, {type}):\n{indent}pass\n'
         else:
             fmt = 'class {name}({type}):\n{indent}pass\n'
-        output.write(fmt.format(name=tree.name, indent=INDENT,
-            type=_make_type(tree.enum_type), mixin=', '.join(mixin)))
+        output.write(fmt.format(name=enum_name, indent=INDENT,
+            type=enum_type, mixin=', '.join(mixin)))
     for enum in tree.get_children():
-        if enum.get_annotation(annotations.REQUIRED, False):
-            output.write('%s = %s\n' % (enum.name, enum.enum_value))
+        if not enum.get_annotation(annotations.REQUIRED, False):
+            continue
+        fmt = enum.get_annotation(annotations.ENUM,
+                '{enum_field} = {enum_value}')
+        output.write(fmt.format(enum_name=enum_name, enum_type=enum_type,
+            enum_field=enum.name, enum_value=enum.enum_value))
+        output.write('\n')
 
 
 def _make_var(tree, output):
