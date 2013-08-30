@@ -368,6 +368,14 @@ class EnumerateKindMixin(object):
 
     # pylint: disable=R0903
 
+    @classmethod
+    def register(cls, name, value):
+        '''Register enum constant.'''
+        if not hasattr(cls, 'enum_value_map'):
+            cls.enum_value_map = {}
+        cls.enum_value_map[value] = name
+        setattr(cls, name, cls(value))
+
     def __hash__(self):
         return int(self.value)
 
@@ -376,3 +384,6 @@ class EnumerateKindMixin(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __str__(self):
+        return '%s.%s' % (type(self).__name__, self.enum_value_map[self.value])

@@ -50,11 +50,12 @@ import:
 rename:
     - name: CXType_
       rename:
-        - [CX(\w+), 'lambda match: match.group(1).upper()', Function]
+        - [CXType_(\w+), 'lambda match: match.group(1).upper()', Function]
     - name: CX(Cursor|Linkage)_
       rename:
         - ['([a-z])([A-Z])', \1_\2]
-        - [CX(\w+), 'lambda match: match.group(1).upper()', Function]
+        - [CX(Cursor|Linkage)_(\w+), 'lambda match: match.group(2).upper()',
+           Function]
     - name: CX(\w+)
       rename: \1
 
@@ -108,3 +109,7 @@ mixin:
       mixin: [TypeMixin]
     - name: ^(Cursor|Type|Linkage)Kind$
       mixin: [EnumerateKindMixin]
+
+enum:
+    - parent: {name: (Cursor|Type|Linkage)Kind}
+      enum: '{enum_name}.register("{enum_field}", {enum_value})'
