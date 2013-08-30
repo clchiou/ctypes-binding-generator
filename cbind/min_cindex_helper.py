@@ -1,9 +1,9 @@
-'''Helpers for _clang_index module.'''
+'''Helpers for min_cindex module.'''
 
 from collections import Sequence, namedtuple
 from ctypes import CFUNCTYPE, byref, c_uint, c_char_p, c_void_p
 
-import cbind._clang_index
+import cbind.min_cindex
 
 
 # pylint: disable=C0103,W0212,W0108,W0142
@@ -26,7 +26,7 @@ class File(ClangObject):
 
     @property
     def name(self):
-        return cbind._clang_index.clang_getFileName(self)
+        return cbind.min_cindex.clang_getFileName(self)
 
 
 class DiagnosticsIterator(Sequence):  # pylint: disable=R0903,R0924
@@ -37,10 +37,10 @@ class DiagnosticsIterator(Sequence):  # pylint: disable=R0903,R0924
         self.tunit = tunit
 
     def __len__(self):
-        return int(cbind._clang_index.clang_getNumDiagnostics(self.tunit))
+        return int(cbind.min_cindex.clang_getNumDiagnostics(self.tunit))
 
     def __getitem__(self, index):
-        diag = cbind._clang_index.clang_getDiagnostic(self.tunit, index)
+        diag = cbind.min_cindex.clang_getDiagnostic(self.tunit, index)
         if not diag:
             raise IndexError()
         return Diagnostic(diag)
@@ -59,19 +59,19 @@ class Diagnostic(ClangObject):
 
     def __del__(self):
         '''Delete the object.'''
-        cbind._clang_index.clang_disposeDiagnostic(self)
+        cbind.min_cindex.clang_disposeDiagnostic(self)
 
     @property
     def severity(self):
-        return cbind._clang_index.clang_getDiagnosticSeverity(self)
+        return cbind.min_cindex.clang_getDiagnosticSeverity(self)
 
     @property
     def location(self):
-        return cbind._clang_index.clang_getDiagnosticLocation(self)
+        return cbind.min_cindex.clang_getDiagnosticLocation(self)
 
     @property
     def spelling(self):
-        return cbind._clang_index.clang_getDiagnosticSpelling(self)
+        return cbind.min_cindex.clang_getDiagnosticSpelling(self)
 
 
 class Index(ClangObject):
@@ -80,11 +80,11 @@ class Index(ClangObject):
     @staticmethod
     def create(excludeDecls=False):
         '''Create a new Index.'''
-        return Index(cbind._clang_index.clang_createIndex(excludeDecls, 0))
+        return Index(cbind.min_cindex.clang_createIndex(excludeDecls, 0))
 
     def __del__(self):
         '''Delete the object.'''
-        cbind._clang_index.clang_disposeIndex(self)
+        cbind.min_cindex.clang_disposeIndex(self)
 
     def parse(self, path, args=None, unsaved_files=None, options=0):
         '''Call TranslationUnit.from_source.'''
@@ -114,8 +114,8 @@ class TranslationUnit(ClangObject):
         else:
             args_array = None
         if unsaved_files:
-            unsaved_array = (cbind._clang_index.UnsavedFile *
-                    len(unsaved_files))()
+            array_type = cbind.min_cindex.UnsavedFile * len(unsaved_files)
+            unsaved_array = array_type()
             for i, (name, contents) in enumerate(unsaved_files):
                 if hasattr(contents, 'read'):
                     contents = contents.read()
@@ -124,7 +124,7 @@ class TranslationUnit(ClangObject):
                 unsaved_array[i].Length = len(contents)
         else:
             unsaved_array = None
-        ptr = cbind._clang_index.clang_parseTranslationUnit(index, filename,
+        ptr = cbind.min_cindex.clang_parseTranslationUnit(index, filename,
                 args_array, len(args),
                 unsaved_array, len(unsaved_files),
                 options)
@@ -134,11 +134,11 @@ class TranslationUnit(ClangObject):
 
     def __del__(self):
         '''Delete the object.'''
-        cbind._clang_index.clang_disposeTranslationUnit(self)
+        cbind.min_cindex.clang_disposeTranslationUnit(self)
 
     @property
     def cursor(self):
-        return cbind._clang_index.clang_getTranslationUnitCursor(self)
+        return cbind.min_cindex.clang_getTranslationUnitCursor(self)
 
     @property
     def diagnostics(self):
@@ -163,7 +163,7 @@ def ref_translation_unit(result, _, arguments):
 
 def check_cursor(result, function, arguments):
     '''Check returned cursor object.'''
-    if result == cbind._clang_index.clang_getNullCursor():
+    if result == cbind.min_cindex.clang_getNullCursor():
         return None
     return ref_translation_unit(result, function, arguments)
 
@@ -192,7 +192,7 @@ class SourceLocationMixin(object):
     # pylint: disable=C0111
 
     def __eq__(self, other):
-        return cbind._clang_index.clang_equalLocations(self, other)
+        return cbind.min_cindex.clang_equalLocations(self, other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -216,7 +216,7 @@ class SourceLocationMixin(object):
     @cached_property
     def data(self):
         file_, line, column, offset = c_void_p(), c_uint(), c_uint(), c_uint()
-        cbind._clang_index.clang_getInstantiationLocation(self,
+        cbind.min_cindex.clang_getInstantiationLocation(self,
                 byref(file_), byref(line), byref(column), byref(offset))
         if file_:
             file_ = File(file_)
@@ -231,87 +231,86 @@ class CursorMixin(object):
     # pylint: disable=C0111
 
     def __eq__(self, other):
-        return cbind._clang_index.clang_equalCursors(self, other)
+        return cbind.min_cindex.clang_equalCursors(self, other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     @cached_property
     def enum_type(self):
-        return cbind._clang_index.clang_getEnumDeclIntegerType(self)
+        return cbind.min_cindex.clang_getEnumDeclIntegerType(self)
 
     @property
     def linkage_kind(self):
-        return cbind._clang_index.clang_getCursorLinkage(self)
+        return cbind.min_cindex.clang_getCursorLinkage(self)
 
     @cached_property
     def location(self):
-        return cbind._clang_index.clang_getCursorLocation(self)
+        return cbind.min_cindex.clang_getCursorLocation(self)
 
     @cached_property
     def result_type(self):
-        return cbind._clang_index.clang_getResultType(self.type)
+        return cbind.min_cindex.clang_getResultType(self.type)
 
     @cached_property
     def semantic_parent(self):
-        return cbind._clang_index.clang_getCursorSemanticParent(self)
+        return cbind.min_cindex.clang_getCursorSemanticParent(self)
 
     @cached_property
     def type(self):
-        return cbind._clang_index.clang_getCursorType(self)
+        return cbind.min_cindex.clang_getCursorType(self)
 
     @cached_property
     def underlying_typedef_type(self):
-        return cbind._clang_index.clang_getTypedefDeclUnderlyingType(self)
+        return cbind.min_cindex.clang_getTypedefDeclUnderlyingType(self)
 
     @cached_property
     def enum_value(self):
         '''Return the value of an enum constant.'''
         # pylint: disable=E1101
         underlying_type = self.type
-        if underlying_type.kind == cbind._clang_index.TypeKind.ENUM:
+        if underlying_type.kind == cbind.min_cindex.TypeKind.ENUM:
             underlying_type = underlying_type.get_declaration().enum_type
-        if underlying_type.kind in (cbind._clang_index.TypeKind.CHAR_U,
-                                    cbind._clang_index.TypeKind.UCHAR,
-                                    cbind._clang_index.TypeKind.CHAR16,
-                                    cbind._clang_index.TypeKind.CHAR32,
-                                    cbind._clang_index.TypeKind.USHORT,
-                                    cbind._clang_index.TypeKind.UINT,
-                                    cbind._clang_index.TypeKind.ULONG,
-                                    cbind._clang_index.TypeKind.ULONGLONG,
-                                    cbind._clang_index.TypeKind.UINT128):
-            return cbind._clang_index.\
-                    clang_getEnumConstantDeclUnsignedValue(self)
+        if underlying_type.kind in (cbind.min_cindex.TypeKind.CHAR_U,
+                                    cbind.min_cindex.TypeKind.UCHAR,
+                                    cbind.min_cindex.TypeKind.CHAR16,
+                                    cbind.min_cindex.TypeKind.CHAR32,
+                                    cbind.min_cindex.TypeKind.USHORT,
+                                    cbind.min_cindex.TypeKind.UINT,
+                                    cbind.min_cindex.TypeKind.ULONG,
+                                    cbind.min_cindex.TypeKind.ULONGLONG,
+                                    cbind.min_cindex.TypeKind.UINT128):
+            return cbind.min_cindex.clang_getEnumConstantDeclUnsignedValue(self)
         else:
-            return cbind._clang_index.clang_getEnumConstantDeclValue(self)
+            return cbind.min_cindex.clang_getEnumConstantDeclValue(self)
 
     @cached_property
     def spelling(self):
         '''Return Cursor spelling.'''
-        if not cbind._clang_index.clang_isDeclaration(self.kind):
+        if not cbind.min_cindex.clang_isDeclaration(self.kind):
             return None
-        return cbind._clang_index.clang_getCursorSpelling(self)
+        return cbind.min_cindex.clang_getCursorSpelling(self)
 
     def get_arguments(self):
         '''Return an iterator of arguments.'''
-        num_args = cbind._clang_index.clang_Cursor_getNumArguments(self)
+        num_args = cbind.min_cindex.clang_Cursor_getNumArguments(self)
         for i in xrange(num_args):
-            yield cbind._clang_index.clang_Cursor_getArgument(self, i)
+            yield cbind.min_cindex.clang_Cursor_getArgument(self, i)
 
     def get_children(self):
         '''Return a list of children.'''
         children = []
         def visit(child, *_):
             '''Visit children callback.'''
-            assert child != cbind._clang_index.clang_getNullCursor()
+            assert child != cbind.min_cindex.clang_getNullCursor()
             # Store reference to TranslationUnit...
             child._translation_unit = self._translation_unit
             children.append(child)
             return 1  # continue
-        callback_proto = CFUNCTYPE(cbind._clang_index.ChildVisitResult,
-                cbind._clang_index.Cursor, cbind._clang_index.Cursor, c_void_p)
+        callback_proto = CFUNCTYPE(cbind.min_cindex.ChildVisitResult,
+                cbind.min_cindex.Cursor, cbind.min_cindex.Cursor, c_void_p)
         visit_callback = callback_proto(visit)
-        cbind._clang_index.clang_visitChildren(self, visit_callback, None)
+        cbind.min_cindex.clang_visitChildren(self, visit_callback, None)
         return children
 
 
@@ -327,16 +326,16 @@ class ArgumentsIterator(Sequence):
 
     def __len__(self):
         if self.length is None:
-            self.length = cbind._clang_index.clang_getNumArgTypes(self.type_)
+            self.length = cbind.min_cindex.clang_getNumArgTypes(self.type_)
         return self.length
 
     def __getitem__(self, index):
         if not (0 <= index < len(self)):
             raise IndexError('Index out of range: index=%d, len=%d' %
                     (index, len(self)))
-        result = cbind._clang_index.clang_getArgType(self.type_, index)
+        result = cbind.min_cindex.clang_getArgType(self.type_, index)
         # pylint: disable=E1101
-        if result.kind == cbind._clang_index.TypeKind.INVALID:
+        if result.kind == cbind.min_cindex.TypeKind.INVALID:
             raise IndexError('Argument could not be retrieved.')
         return result
 
@@ -353,7 +352,7 @@ class TypeMixin(object):
     # pylint: disable=R0903
 
     def __eq__(self, other):
-        return cbind._clang_index.clang_equalTypes(self, other)
+        return cbind.min_cindex.clang_equalTypes(self, other)
 
     def __ne__(self, other):
         return not self.__eq__(other)

@@ -24,7 +24,7 @@ You may generate the binding with:
 
     $ cbind -i /path/to/clang/include/clang-c/Index.h \
             -l libclang.so \
-            -o cbind/_clang_index.py \
+            -o cbind/min_cindex.py \
             --config demo/cindex.yaml \
             -- -I /usr/local/lib/clang/3.4/include
 

@@ -1,6 +1,7 @@
 preamble:
     from cbind.min_cindex_helper import (check_cursor,
                                          ref_translation_unit,
+                                         Index,
                                          CursorMixin,
                                          SourceLocationMixin,
                                          TypeMixin,
