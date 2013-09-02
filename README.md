@@ -4,11 +4,8 @@ ctypes-binding-generator
 **ctypes-binding-generator** is a Python package to generate ctypes binding
 from C source files.  It requires libclang to parse source files.
 
-Examples
---------
-
-ctypes-binding-generator includes a small command-line program called
-**cbind**.  You may use it to generate ctypes binding for, say, stdio.h.
+ctypes-binding-generator provides a command-line program called **cbind**.
+You may use it to generate ctypes binding for, say, stdio.h.
 
     $ cbind -i /usr/include/stdio.h -o stdio.py -l libc.so.6 \
         -- -I/usr/local/lib/clang/3.4/include
@@ -31,7 +28,48 @@ You may generate the binding with:
 If you would like cbind to use the official libclang binding maintained by
 the Clang project, run cbind with --cindex clang-cindex flag.
 
-### Macros ###
+Configuration
+-------------
+
+In the above example we generated libclang binding by cbind.  However, the "raw"
+binding would not be very useful, and so we provided configuration file
+demo/cindex.yaml, which guided cbind to generate a object-oriented interface on
+top of the raw binding (as the suffix suggests, the configuration file is in
+YAML format).  The configuration file is basically a YAML mapping.  The
+supported keys of the mappings are:
+
+  * preamble
+  * import
+  * rename
+  * enum
+  * errcheck
+  * method
+  * mixin
+
+We introduce each of them below.
+
+The *preamble* key maps to a string which will be inserted into the binding
+of the output binding.  Generally it could be used for import helper Python
+modules.
+
+The *import* key maps to a list of matchers (explained below).  If a syntax
+tree node is matched by one of the matchers, it will be imported (added to)
+output binding.  If the import key is not presented, cbind will import only
+syntax tree nodes of input files.
+
+A *matcher* is a mapping that specifies how to match a syntax tree node.  It
+supports the following keys:
+
+  * argtypes: A list of regular expressions matching function argument types.
+  * name: A regular expression matching syntax tree node's name.
+  * parent: A matcher matching syntax tree node's parent.
+  * restype: A regular expression matching function return type.
+
+Note that the type string that is going to be matched is the ctypes binding for
+that type, i.e., Python codes, rather than C codes.
+
+Macros
+------
 
 Since macros are an important part of C headers, cbind may translate
 simple C macros to Python codes.  For those complicated macros that cbind
