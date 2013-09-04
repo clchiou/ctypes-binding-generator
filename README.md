@@ -26,7 +26,7 @@ You may generate the binding with:
             -- -I /usr/local/lib/clang/3.4/include
 
 If you would like cbind to use the official libclang binding maintained by
-the Clang project, run cbind with --cindex clang-cindex flag.
+the Clang project, run cbind with `--cindex clang-cindex` flag.
 
 Configuration
 -------------
@@ -60,13 +60,38 @@ syntax tree nodes of input files.
 A *matcher* is a mapping that specifies how to match a syntax tree node.  It
 supports the following keys:
 
-  * argtypes: A list of regular expressions matching function argument types.
-  * name: A regular expression matching syntax tree node's name.
-  * parent: A matcher matching syntax tree node's parent.
-  * restype: A regular expression matching function return type.
+  * *argtypes*: A list of regular expressions matching function argument types.
+  * *name*: A regular expression matching syntax tree node's name.
+  * *parent*: A matcher matching syntax tree node's parent.
+  * *restype*: A regular expression matching function return type.
 
 Note that the type string that is going to be matched is the ctypes binding for
 that type, i.e., Python codes, rather than C codes.
+
+The *rename* key maps to a list of matchers with rename rule.  The rename rule
+can be a substitution string of a regular expression of syntax tree node's
+name.  Let us take demo/cindex.yaml for example.
+
+```
+- name: CX(\w+)
+  rename: \1
+```
+
+This matches node names containing "CX" and strips it out.
+
+The rename rule could also be a list of regular expressions and substitutions.
+For example,
+
+```
+- name: CX(Cursor|Linkage)_
+  rename:
+    - ['([a-z])([A-Z])', \1_\2]
+    - [CX(Cursor|Linkage)_(\w+), 'lambda match: match.group(2).upper()', Function]
+```
+
+This matches node names containing "CXCursor_" or "CXLinkage_", and then it
+inserts underscore and applies `upper()` function, effectively replacing
+CamelStyle with UNDERSCORE_STYLE.
 
 Macros
 ------
@@ -77,7 +102,7 @@ cannot understand, you have to translate them manually.  Let's consider
 Linux input.h header as an example, and write a small program that dumps
 input events, such as mouse movements.
 
-To enable macro translation, just provide --enable-macro flag to cbind.
+To enable macro translation, just provide `--enable-macro` flag to cbind.
 
     $ cbind -i /usr/include/linux/input.h -o demo/linux_input.py -v \
         --enable-macro \
@@ -93,7 +118,7 @@ To enable macro translation, just provide --enable-macro flag to cbind.
     macro.py: Could not parse macro: #define EVIOCSABS(abs) (((1U) << (((0 +8)+8)+14)) | ((('E')) << (0 +8)) | (((0xc0 + (abs))) << 0) | ((((sizeof(struct input_absinfo)))) << ((0 +8)+8)))
     macro.py: Could not parse macro: #define EVIOCSFF (((1U) << (((0 +8)+8)+14)) | (('E') << (0 +8)) | ((0x80) << 0) | ((sizeof(struct ff_effect)) << ((0 +8)+8)))
 
-Note that we provide -v flag to cbind, which enables verbose output, and
+Note that we provide `-v` flag to cbind, which enables verbose output, and
 cbind reports macros that it cannot understand.  However, not all of them
 are incomprehensible to cbind - it just needs some hints.  cbind may translate
 constant integer expressions, thanks to Clang, but you have to tell cbind
