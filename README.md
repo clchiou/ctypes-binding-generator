@@ -93,6 +93,14 @@ This matches node names containing "CXCursor_" or "CXLinkage_", and then it
 inserts underscore and applies `upper()` function, effectively replacing
 CamelStyle with UNDERSCORE_STYLE.
 
+The *enum* key generates extra binding codes around enum constant declarations.
+
+The *errcheck* key attaches `errcheck` function to ctypes classes.
+
+The *method* key wraps and attaches ctypes functions to ctype classes.
+
+The *mixin* key inserts mix-in classes to ctypes classes.
+
 Macros
 ------
 
