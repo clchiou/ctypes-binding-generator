@@ -85,8 +85,10 @@ For example,
 ```
 - name: CX(Cursor|Linkage)_
   rename:
-    - ['([a-z])([A-Z])', \1_\2]
-    - [CX(Cursor|Linkage)_(\w+), 'lambda match: match.group(2).upper()', Function]
+    - pattern: '([a-z])([A-Z])'
+      replace: \1_\2
+    - pattern: CX(Cursor|Linkage)_(\w+)
+      function: 'lambda match: match.group(2).upper()'
 ```
 
 This matches node names containing "CXCursor_" or "CXLinkage_", and then it

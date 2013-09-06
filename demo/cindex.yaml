@@ -51,12 +51,14 @@ import:
 rename:
     - name: CXType_
       rename:
-        - [CXType_(\w+), 'lambda match: match.group(1).upper()', Function]
+        - pattern: CXType_(\w+)
+          function: 'lambda match: match.group(1).upper()'
     - name: CX(Cursor|Linkage)_
       rename:
-        - ['([a-z])([A-Z])', \1_\2]
-        - [CX(Cursor|Linkage)_(\w+), 'lambda match: match.group(2).upper()',
-           Function]
+        - pattern: '([a-z])([A-Z])'
+          replace: \1_\2
+        - pattern: CX(Cursor|Linkage)_(\w+)
+          function: 'lambda match: match.group(2).upper()'
     - name: CX(\w+)
       rename: \1
 

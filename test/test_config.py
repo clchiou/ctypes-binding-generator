@@ -139,9 +139,12 @@ HELLO_WORLD = c_int.in_dll(_lib, 'Prefix_HelloWorld')
 rename:
     - name: Prefix_
       rename:
-        - ['Prefix_', '']
-        - ['([a-z])([A-Z])', \1_\2]
-        - [(.*), 'lambda match: match.group(1).upper()', Function]
+        - pattern: 'Prefix_'
+          replace: ''
+        - pattern: '([a-z])([A-Z])'
+          replace: \1_\2
+        - pattern: (.*)
+          function: 'lambda match: match.group(1).upper()'
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')

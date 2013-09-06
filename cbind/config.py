@@ -107,12 +107,12 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         if type(rename) in types.StringTypes:
             return [(re.compile(spec['name']), rename)]
         rename_rules = []
-        for blob in rename:
-            pattern = re.compile(blob[0])
-            if len(blob) == 2:
-                replace = blob[1]
+        for rule in rename:
+            pattern = re.compile(rule['pattern'])
+            if 'replace' in rule:
+                replace = rule['replace']
             else:
-                replace = eval(blob[1], {})
+                replace = eval(rule['function'], {})
             rename_rules.append((pattern, replace))
         return rename_rules
 
