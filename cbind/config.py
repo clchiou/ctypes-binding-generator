@@ -52,6 +52,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         argtypes
         enum
         errcheck
+        import_
         method
         mixin
         name
@@ -96,6 +97,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         return cls(rename=rename,
                 enum=spec.get('enum'),
                 errcheck=spec.get('errcheck'),
+                import_=spec.get('import', True),
                 method=spec.get('method'),
                 mixin=spec.get('mixin'),
                 **patterns)
@@ -151,9 +153,12 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         return (tree.kind == CursorKind.FUNCTION_DECL and
                 self.restype.search(make_function_restype(tree)))
 
-    def do_import(self, tree):
+    @call_do_match
+    def do_import(self, _):
         '''Check if this tree should be imported.'''
-        return self.do_match(tree)
+        if self.import_:
+            return True
+        raise StopIteration()
 
     @call_do_match
     @check_matcher_data(('name', 'rename'))
@@ -189,9 +194,12 @@ class MatcherAggregator(list):
 
     def do_action(self, tree, method):
         '''Run an OR operation on matchers.'''
-        for matcher in self:
-            if method(matcher, tree):
-                return True
+        try:
+            for matcher in self:
+                if method(matcher, tree):
+                    return True
+        except StopIteration:
+            pass
         return False
 
 

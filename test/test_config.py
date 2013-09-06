@@ -107,6 +107,18 @@ import:
     - name: ^alias_type$
         ''')
 
+        self.run_test('''
+enum { A, B, C };
+        ''', '''
+B = 1
+C = 2
+        ''', config='''
+import:
+    - name: A
+      import: False
+    - name: '[ABC]'
+        ''')
+
     @unittest.skipIf(not check_yaml(), 'require package yaml')
     def test_rename(self):
         self.run_test('''
