@@ -31,13 +31,13 @@ def _typedef_pod(tree):
     # the _real_anonymous_pod() function.
     if decl.spelling:
         return
-    decl.annotate(annotations.NAME, tree.name)
+    decl.annotate(annotations.ORIGINAL_NAME, tree.original_name)
     tree.annotate(annotations.REQUIRED, False)
 
 
 def _real_anonymous_pod(tree):
     '''Generate the name for the POD.'''
-    if tree.name:
+    if tree.original_name:
         return
     if tree.kind == CursorKind.STRUCT_DECL:
         kind = 'struct'
@@ -49,4 +49,4 @@ def _real_anonymous_pod(tree):
         filename = 'none'
     name = '_%s_%s_%d_%d' % (kind, filename,
             tree.location.line, tree.location.column)
-    tree.annotate(annotations.NAME, name)
+    tree.annotate(annotations.ORIGINAL_NAME, name)

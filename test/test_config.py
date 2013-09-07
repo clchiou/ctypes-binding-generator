@@ -254,6 +254,41 @@ enum:
       enum: '{enum_name}.{enum_field} = {enum_type}({enum_value})'
         ''')
 
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_config_order(self):
+        self.run_test('''
+enum {
+    X = 1,
+    Y = 2,
+};
+        ''', '''
+Z = 1
+Y = 2
+        ''', config='''
+import:
+    - name: '[XY]'
+rename:
+    - name: X
+      rename: Z
+        ''')
+
+        self.run_test('''
+enum {
+    X = 1,
+    Y = 2,
+};
+        ''', '''
+Z = u_int(1)
+Y = u_int(2)
+        ''', config='''
+rename:
+    - name: X
+      rename: Z
+enum:
+    - name: '[XY]'
+      enum: '{enum_field} = u_int({enum_value})'
+        ''')
+
 
 if __name__ == '__main__':
     unittest.main()

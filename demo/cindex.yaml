@@ -104,13 +104,13 @@ method:
       method: Type.is_function_variadic
 
 mixin:
-    - name: ^Cursor$
+    - name: ^CXCursor$
       mixin: [CursorMixin]
-    - name: ^SourceLocation$
+    - name: ^CXSourceLocation$
       mixin: [SourceLocationMixin]
-    - name: ^Type$
+    - name: ^CXType$
       mixin: [TypeMixin]
-    - name: ^(Cursor|Type|Linkage)Kind$
+    - name: ^CX(Cursor|Type|Linkage)Kind$
       mixin: [EnumerateKindMixin]
 
 enum:

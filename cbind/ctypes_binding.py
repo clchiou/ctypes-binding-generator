@@ -40,13 +40,13 @@ class CtypesBindingGenerator:
         syntax_tree = self.syntax_tree_forest.parse(path,
                 contents=contents, args=args)
         scan_required_nodes(syntax_tree, check_required)
-        if 'rename' in self._config:
-            scan_and_rename(syntax_tree, self._config['rename'])
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
         scan_anonymous_pod(syntax_tree)
 
         # Since now tree is "complete", we may attach information to it.
+        if 'rename' in self._config:
+            scan_and_rename(syntax_tree, self._config['rename'])
         for name in 'enum errcheck method mixin'.split():
             if name in self._config:
                 custom_pass(syntax_tree, self._config[name])

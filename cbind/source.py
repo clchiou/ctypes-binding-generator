@@ -130,9 +130,14 @@ class SyntaxTree:
         return attr
 
     @property
+    def original_name(self):
+        '''Return original_name of this node.'''
+        return self.get_annotation(annotations.ORIGINAL_NAME, self.spelling)
+
+    @property
     def name(self):
         '''Return name of this node.'''
-        return self.get_annotation(annotations.NAME, self.spelling)
+        return self.get_annotation(annotations.NAME, self.original_name)
 
     def is_external_linkage(self):
         '''Test if linkage is external.'''

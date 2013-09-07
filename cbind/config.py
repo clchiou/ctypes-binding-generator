@@ -39,15 +39,6 @@ def check_matcher_data(field_names):
     return make_wrapper
 
 
-def make_annotator(annotation_name, field_name):
-    '''Make annotator.'''
-    def annotator(self, tree):
-        '''annotator function.'''
-        tree.annotate(annotation_name, getattr(self, field_name))
-        return True
-    return annotator
-
-
 class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         argtypes
         enum
@@ -126,15 +117,15 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
             not self.restype):
             logging.info('Could not match with empty rule')
             return False
-        return ((not self.name or self._match_name(tree)) and
+        return ((not self.name or self._match_original_name(tree)) and
                 (not self.argtypes or self._match_argtypes(tree)) and
                 (not self.restype or self._match_restype(tree)) and
                 (not self.parent or not tree.semantic_parent or
                  self.parent.do_match(tree.semantic_parent)))
 
-    def _match_name(self, tree):
-        '''Match tree.name.'''
-        return tree.name and self.name.search(tree.name)
+    def _match_original_name(self, tree):
+        '''Match tree.original_name (before any rename).'''
+        return tree.original_name and self.name.search(tree.original_name)
 
     def _match_argtypes(self, tree):
         '''Match tree.argtypes.'''
@@ -172,21 +163,33 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         tree.annotate(annotations.NAME, new_name)
         return True
 
-    do_errcheck = call_do_match(
-            check_matcher_data(('errcheck', ))(
-                make_annotator(annotations.ERRCHECK, 'errcheck')))
+    @call_do_match
+    @check_matcher_data(('errcheck', ))
+    def do_errcheck(self, tree):
+        '''Attach errcheck.'''
+        tree.annotate(annotations.ERRCHECK, self.errcheck)
+        return True
 
-    do_method = call_do_match(
-            check_matcher_data(('method', ))(
-                make_annotator(annotations.METHOD, 'method')))
+    @call_do_match
+    @check_matcher_data(('method', ))
+    def do_method(self, tree):
+        '''Attach method.'''
+        tree.annotate(annotations.METHOD, self.method)
+        return True
 
-    do_mixin = call_do_match(
-            check_matcher_data(('mixin', ))(
-                make_annotator(annotations.MIXIN, 'mixin')))
+    @call_do_match
+    @check_matcher_data(('mixin', ))
+    def do_mixin(self, tree):
+        '''Add mixin classes.'''
+        tree.annotate(annotations.MIXIN, self.mixin)
+        return True
 
-    do_enum = call_do_match(
-            check_matcher_data(('enum', ))(
-                make_annotator(annotations.ENUM, 'enum')))
+    @call_do_match
+    @check_matcher_data(('enum', ))
+    def do_enum(self, tree):
+        '''Make enum.'''
+        tree.annotate(annotations.ENUM, self.enum)
+        return True
 
 
 class MatcherAggregator(list):
