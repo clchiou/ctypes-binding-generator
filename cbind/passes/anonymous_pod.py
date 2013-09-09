@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Scan anonymous PODs.'''
 
 import re

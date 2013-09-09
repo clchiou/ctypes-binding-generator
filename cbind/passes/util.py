@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Utility functions.'''
 
 from cbind.cindex import CursorKind, TypeKind

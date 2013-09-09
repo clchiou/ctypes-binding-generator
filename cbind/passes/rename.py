@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Scan syntax tree and rename nodes.'''
 
 from cbind.passes.util import traverse_postorder

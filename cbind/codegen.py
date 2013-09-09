@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Generate ctypes binding from syntax tree.'''
 
 import logging

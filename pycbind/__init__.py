@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Package of main function and for configuring cbind before loading it.'''
 
 

@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Data structures representing C source codes'''
 
 from collections import defaultdict

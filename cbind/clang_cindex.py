@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Compatibility layer of libclang cindex module.'''
 
 from ctypes import c_uint

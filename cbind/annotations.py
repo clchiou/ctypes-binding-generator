@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''List of annotation names.'''
 
 DECLARED = 'declared'

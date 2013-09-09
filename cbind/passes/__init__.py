@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Package of syntax tree passes (transformations).'''
 
 from cbind.passes.required_nodes import scan_required_nodes

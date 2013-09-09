@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Scan syntax tree for forward declarations.'''
 
 from cbind.cindex import CursorKind

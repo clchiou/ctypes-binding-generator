@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Scan syntax tree's use of __va_list_tag.'''
 
 from cbind.passes.util import traverse_postorder, strip_type

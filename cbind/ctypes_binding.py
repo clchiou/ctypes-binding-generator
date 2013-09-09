@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Parse and generate ctypes binding from C sources with clang.'''
 
 import functools

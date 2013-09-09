@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Parse config data.'''
 
 from collections import namedtuple

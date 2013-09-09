@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Scan syntax tree for required nodes.'''
 
 from cbind.cindex import CursorKind, TypeKind

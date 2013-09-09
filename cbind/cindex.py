@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Import either min_cindex or clang_cindex.'''
 
 import pycbind

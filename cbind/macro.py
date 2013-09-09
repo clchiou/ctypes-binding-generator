@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Generate Python codes from macro constants.'''
 
 import logging

@@ -1,3 +1,5 @@
+# Copyright (C) 2013 Che-Liang Chiou.
+
 '''Helpers for min_cindex module.'''
 
 from collections import Sequence, namedtuple
