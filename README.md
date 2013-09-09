@@ -33,10 +33,10 @@ Configuration
 
 In the above example we generated libclang binding by cbind.  However, the "raw"
 binding would not be very useful, and so we provided configuration file
-demo/cindex.yaml, which guided cbind to generate a object-oriented interface on
-top of the raw binding (as the suffix suggests, the configuration file is in
+`demo/cindex.yaml`, which guided cbind to generate a object-oriented interface
+on top of the raw binding (as the suffix suggests, the configuration file is in
 YAML format).  The configuration file is basically a YAML mapping.  The
-supported keys of the mappings are:
+supported top-level keys of the mappings are:
 
   * preamble
   * import
@@ -48,14 +48,21 @@ supported keys of the mappings are:
 
 We introduce each of them below.
 
-The *preamble* key maps to a string which will be inserted into the binding
-of the output binding.  Generally it could be used for import helper Python
-modules.
+The *preamble* top-level key maps to a string which will be inserted into the
+binding of the output binding.  Generally it could be used for import helper
+Python modules.
 
-The *import* key maps to a list of matchers (explained below).  If a syntax
-tree node is matched by one of the matchers, it will be imported (added to)
-output binding.  If the import key is not presented, cbind will import only
-syntax tree nodes of input files.
+All other top-level keys map to a list of matchers and actions.  The action
+of the first matcher that matches the syntax tree node, and only the action of
+the first matched matcher, will be performed.  An action is a key-value pair,
+and the name of action is the same with the top-level key.  For example, a
+top-level key "import" with one matcher and one action might look like this:
+
+```
+import:
+    - name: ^clang_createIndex$
+      import: True
+```
 
 A *matcher* is a mapping that specifies how to match a syntax tree node.  It
 supports the following keys:
@@ -68,40 +75,83 @@ supports the following keys:
 Note that the type string that is going to be matched is the ctypes binding for
 that type, i.e., Python codes, rather than C codes.
 
-The *rename* key maps to a list of matchers with rename rule.  The rename rule
-can be a substitution string of a regular expression of syntax tree node's
-name.  Let us take demo/cindex.yaml for example.
+The *import* top-level key determines which syntax tree nodes are imported to
+(added to) output Python binding codes.  The (optional) action is Boolean
+valued; if true, the matched syntax tree node will be imported.  If the import
+top-level key is not presented, cbind will import only syntax tree nodes of
+input files.
+
+The *rename* top-level key changes the name of output syntax tree nodes.
+The (simplest) action value is a substitution string, whose accompanying
+regular expression is specified in the "name" matcher key.  For example, this
+matches node names containing "CX" and removes it
 
 ```
-- name: CX(\w+)
-  rename: \1
+rename:
+    - name: CX(\w+)
+      rename: \1
 ```
 
-This matches node names containing "CX" and strips it out.
-
-The rename rule could also be a list of regular expressions and substitutions.
-For example,
+The action value could be a list of regular expressions and substitutions.
+For example, this matches node names containing "CXCursor_" or "CXLinkage_",
+and then this inserts underscore and applies `upper()` function to the matched
+string, effectively replacing CamelStyle with UNDERSCORE_STYLE
 
 ```
-- name: CX(Cursor|Linkage)_
-  rename:
-    - pattern: '([a-z])([A-Z])'
-      replace: \1_\2
-    - pattern: CX(Cursor|Linkage)_(\w+)
-      function: 'lambda match: match.group(2).upper()'
+rename:
+    - name: CX(Cursor|Linkage)_
+      rename:
+        - pattern: '([a-z])([A-Z])'
+          replace: \1_\2
+        - pattern: CX(Cursor|Linkage)_(\w+)
+          function: 'lambda match: match.group(2).upper()'
 ```
 
-This matches node names containing "CXCursor_" or "CXLinkage_", and then it
-inserts underscore and applies `upper()` function, effectively replacing
-CamelStyle with UNDERSCORE_STYLE.
+The *enum* top-level key generates extra binding codes around enum constant
+declarations.  The action value is a Python format string; the supported keys
+are
 
-The *enum* key generates extra binding codes around enum constant declarations.
+  * *enum_name*: The name of enum declaration.
+  * *enum_type*: The integral type of enum values.
+  * *enum_field*: The name of enum constants.
+  * *enum_value*: The value of that constant.
 
-The *errcheck* key attaches `errcheck` function to ctypes classes.
+The *errcheck* top-level key attaches `errcheck` function to ctypes functions.
+If the action value is empty, no errcheck function will be attached.  You may
+use this feature combined with the fact that cbind applies matcher sequentially
+to avoid attach errcheck function to some ctypes functions.  For example, this
+attaches ``check_cursor`` to errcheck of functions whose return type is
+`Cursor`, except ``clang_getNullCursor`` function
 
-The *method* key wraps and attaches ctypes functions to ctype classes.
+```
+errcheck:
+    - name: clang_getNullCursor
+      errcheck:
+    - restype: Cursor
+      errcheck: check_cursor
+```
 
-The *mixin* key inserts mix-in classes to ctypes classes.
+The *method* top-level key matches ctypes functions, and adds these function to
+ctypes classes.  The action value is a "class.method"-style string.
+
+The *mixin* top-level key inserts mix-in classes when subclassing ctypes
+Structure and Union, and when generating subclass for C-enum.  Note that the
+mix-in classes are placed at first of inheritance in subclass definition so
+that they may override methods of ctypes classes.  For example, if Foo is a
+C-struct, given the config below
+
+```
+mixin:
+    - name: ^Foo$
+      mixin: [FooMixin]
+```
+
+The output binding would be like
+
+```
+class Foo(FooMixin, Structure):
+    pass
+```
 
 Macros
 ------
