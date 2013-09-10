@@ -4,6 +4,7 @@
 
 from collections import Sequence, namedtuple
 from ctypes import CFUNCTYPE, byref, c_uint, c_char_p, c_void_p
+from pycbind.compatibility import decode_str    # pylint: disable=W0611
 
 import cbind.min_cindex
 
@@ -112,7 +113,9 @@ class TranslationUnit(ClangObject):
         unsaved_files = unsaved_files or []
         index = index or Index.create()
         if args:
-            args_array = (c_char_p * len(args))(*args)
+            args_array = (c_char_p * len(args))()
+            for i, arg in enumerate(args):
+                args_array[i] = arg.encode()
         else:
             args_array = None
         if unsaved_files:
@@ -121,12 +124,15 @@ class TranslationUnit(ClangObject):
             for i, (name, contents) in enumerate(unsaved_files):
                 if hasattr(contents, 'read'):
                     contents = contents.read()
+                name = name.encode()
+                contents = contents.encode()
                 unsaved_array[i].Filename = name
                 unsaved_array[i].Contents = contents
                 unsaved_array[i].Length = len(contents)
         else:
             unsaved_array = None
-        ptr = cbind.min_cindex.clang_parseTranslationUnit(index, filename,
+        ptr = cbind.min_cindex.clang_parseTranslationUnit(index,
+                filename.encode(),
                 args_array, len(args),
                 unsaved_array, len(unsaved_files),
                 options)
@@ -296,7 +302,7 @@ class CursorMixin(object):
     def get_arguments(self):
         '''Return an iterator of arguments.'''
         num_args = cbind.min_cindex.clang_Cursor_getNumArguments(self)
-        for i in xrange(num_args):
+        for i in range(num_args):
             yield cbind.min_cindex.clang_Cursor_getArgument(self, i)
 
     def get_children(self):

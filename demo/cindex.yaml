@@ -1,5 +1,6 @@
 preamble:
     from cbind.min_cindex_helper import (check_cursor,
+                                         decode_str,
                                          ref_translation_unit,
                                          Index,
                                          CursorMixin,
@@ -64,7 +65,7 @@ rename:
 
 errcheck:
     - restype: String
-      errcheck: "lambda result, *_: clang_getCString(result)"
+      errcheck: "lambda result, *_: decode_str(clang_getCString(result))"
     - restype: Type
       errcheck: ref_translation_unit
     # Don't attach check_cursor to clang_getNullCursor.errcheck

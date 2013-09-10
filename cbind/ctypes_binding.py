@@ -15,6 +15,27 @@ from cbind.source import SyntaxTreeForest
 import cbind.annotations as annotations
 
 
+METHOD_DESCRIPTOR = '''
+import sys as _python_sys
+import types as _python_types
+
+class _CtypesFunctor(object):
+    def __init__(self, functor):
+        self.functor = functor
+
+    if _python_sys.version_info.major == 3:
+        def __get__(self, obj, objtype=None):
+            if obj is None:
+                return self.functor
+            else:
+                return _python_types.MethodType(self.functor, obj)
+
+    else:
+        def __get__(self, obj, objtype=None):
+            return _python_types.MethodType(self.functor, obj, objtype)
+'''
+
+
 class CtypesBindingGenerator:
     '''Generate ctypes binding from C source files with libclang.'''
 
@@ -64,7 +85,7 @@ class CtypesBindingGenerator:
             output.write(self._config['preamble'])
             output.write('\n')
         if 'method' in self._config:
-            output.write('import types as _python_types\n')
+            output.write(METHOD_DESCRIPTOR)
         for syntax_tree in self.syntax_tree_forest:
             va_list_tag = syntax_tree.get_annotation(
                     annotations.USE_VA_LIST_TAG, False)

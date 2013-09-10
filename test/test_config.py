@@ -1,5 +1,6 @@
 import unittest
 import helper
+import cbind.ctypes_binding
 
 
 def check_yaml():
@@ -197,15 +198,13 @@ struct foo {
 };
 
 void bar(struct foo*);
-        ''', '''
-import types as _python_types
-
+        ''', cbind.ctypes_binding.METHOD_DESCRIPTOR + '''
 class foo(Structure):
     pass
 
 bar = _lib.bar
 bar.argtypes = [POINTER(foo)]
-foo.method_bar = _python_types.MethodType(bar, None, foo)
+foo.method_bar = _CtypesFunctor(bar)
         ''', config='''
 method:
     - argtypes: [POINTER\(foo\)]

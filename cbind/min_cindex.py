@@ -12,8 +12,25 @@ else:
     _lib = cdll.LoadLibrary('libclang.so')
 del sys
 
-from cbind.min_cindex_helper import (check_cursor, ref_translation_unit, Index, CursorMixin, SourceLocationMixin, TypeMixin, EnumerateKindMixin)
+from cbind.min_cindex_helper import (check_cursor, decode_str, ref_translation_unit, Index, CursorMixin, SourceLocationMixin, TypeMixin, EnumerateKindMixin)
+
+import sys as _python_sys
 import types as _python_types
+
+class _CtypesFunctor(object):
+    def __init__(self, functor):
+        self.functor = functor
+
+    if _python_sys.version_info.major == 3:
+        def __get__(self, obj, objtype=None):
+            if obj is None:
+                return self.functor
+            else:
+                return _python_types.MethodType(self.functor, obj)
+
+    else:
+        def __get__(self, obj, objtype=None):
+            return _python_types.MethodType(self.functor, obj, objtype)
 class String(Structure):
     pass
 String._fields_ = [('data', c_void_p),
@@ -25,7 +42,7 @@ clang_getCString.restype = c_char_p
 
 clang_disposeString = _lib.clang_disposeString
 clang_disposeString.argtypes = [String]
-String.__del__ = _python_types.MethodType(clang_disposeString, None, String)
+String.__del__ = _CtypesFunctor(clang_disposeString)
 
 class TranslationUnitImpl(Structure):
     pass
@@ -46,7 +63,7 @@ clang_disposeIndex.argtypes = [c_void_p]
 clang_getFileName = _lib.clang_getFileName
 clang_getFileName.argtypes = [c_void_p]
 clang_getFileName.restype = String
-clang_getFileName.errcheck = lambda result, *_: clang_getCString(result)
+clang_getFileName.errcheck = lambda result, *_: decode_str(clang_getCString(result))
 
 class SourceLocation(SourceLocationMixin, Structure):
     pass
@@ -85,7 +102,7 @@ clang_getDiagnosticLocation.restype = SourceLocation
 clang_getDiagnosticSpelling = _lib.clang_getDiagnosticSpelling
 clang_getDiagnosticSpelling.argtypes = [c_void_p]
 clang_getDiagnosticSpelling.restype = String
-clang_getDiagnosticSpelling.errcheck = lambda result, *_: clang_getCString(result)
+clang_getDiagnosticSpelling.errcheck = lambda result, *_: decode_str(clang_getCString(result))
 
 clang_parseTranslationUnit = _lib.clang_parseTranslationUnit
 clang_parseTranslationUnit.argtypes = [c_void_p, c_char_p, POINTER(c_char_p), c_int, POINTER(UnsavedFile), c_uint, c_uint]
@@ -393,12 +410,12 @@ clang_getEnumConstantDeclUnsignedValue.restype = c_ulonglong
 clang_getFieldDeclBitWidth = _lib.clang_getFieldDeclBitWidth
 clang_getFieldDeclBitWidth.argtypes = [Cursor]
 clang_getFieldDeclBitWidth.restype = c_int
-Cursor.get_bitfield_width = _python_types.MethodType(clang_getFieldDeclBitWidth, None, Cursor)
+Cursor.get_bitfield_width = _CtypesFunctor(clang_getFieldDeclBitWidth)
 
 clang_Cursor_getNumArguments = _lib.clang_Cursor_getNumArguments
 clang_Cursor_getNumArguments.argtypes = [Cursor]
 clang_Cursor_getNumArguments.restype = c_int
-Cursor.get_num_arguments = _python_types.MethodType(clang_Cursor_getNumArguments, None, Cursor)
+Cursor.get_num_arguments = _CtypesFunctor(clang_Cursor_getNumArguments)
 
 clang_Cursor_getArgument = _lib.clang_Cursor_getArgument
 clang_Cursor_getArgument.argtypes = [Cursor, c_uint]
@@ -413,25 +430,25 @@ clang_getCanonicalType = _lib.clang_getCanonicalType
 clang_getCanonicalType.argtypes = [Type]
 clang_getCanonicalType.restype = Type
 clang_getCanonicalType.errcheck = ref_translation_unit
-Type.get_canonical = _python_types.MethodType(clang_getCanonicalType, None, Type)
+Type.get_canonical = _CtypesFunctor(clang_getCanonicalType)
 
 clang_getPointeeType = _lib.clang_getPointeeType
 clang_getPointeeType.argtypes = [Type]
 clang_getPointeeType.restype = Type
 clang_getPointeeType.errcheck = ref_translation_unit
-Type.get_pointee = _python_types.MethodType(clang_getPointeeType, None, Type)
+Type.get_pointee = _CtypesFunctor(clang_getPointeeType)
 
 clang_getTypeDeclaration = _lib.clang_getTypeDeclaration
 clang_getTypeDeclaration.argtypes = [Type]
 clang_getTypeDeclaration.restype = Cursor
 clang_getTypeDeclaration.errcheck = check_cursor
-Type.get_declaration = _python_types.MethodType(clang_getTypeDeclaration, None, Type)
+Type.get_declaration = _CtypesFunctor(clang_getTypeDeclaration)
 
 clang_getResultType = _lib.clang_getResultType
 clang_getResultType.argtypes = [Type]
 clang_getResultType.restype = Type
 clang_getResultType.errcheck = ref_translation_unit
-Type.get_result = _python_types.MethodType(clang_getResultType, None, Type)
+Type.get_result = _CtypesFunctor(clang_getResultType)
 
 clang_getNumArgTypes = _lib.clang_getNumArgTypes
 clang_getNumArgTypes.argtypes = [Type]
@@ -445,28 +462,28 @@ clang_getArgType.errcheck = ref_translation_unit
 clang_isFunctionTypeVariadic = _lib.clang_isFunctionTypeVariadic
 clang_isFunctionTypeVariadic.argtypes = [Type]
 clang_isFunctionTypeVariadic.restype = c_uint
-Type.is_function_variadic = _python_types.MethodType(clang_isFunctionTypeVariadic, None, Type)
+Type.is_function_variadic = _CtypesFunctor(clang_isFunctionTypeVariadic)
 
 clang_getArrayElementType = _lib.clang_getArrayElementType
 clang_getArrayElementType.argtypes = [Type]
 clang_getArrayElementType.restype = Type
 clang_getArrayElementType.errcheck = ref_translation_unit
-Type.get_array_element_type = _python_types.MethodType(clang_getArrayElementType, None, Type)
+Type.get_array_element_type = _CtypesFunctor(clang_getArrayElementType)
 
 clang_getArraySize = _lib.clang_getArraySize
 clang_getArraySize.argtypes = [Type]
 clang_getArraySize.restype = c_longlong
-Type.get_array_size = _python_types.MethodType(clang_getArraySize, None, Type)
+Type.get_array_size = _CtypesFunctor(clang_getArraySize)
 
 clang_Type_getAlignOf = _lib.clang_Type_getAlignOf
 clang_Type_getAlignOf.argtypes = [Type]
 clang_Type_getAlignOf.restype = c_longlong
-Type.get_align = _python_types.MethodType(clang_Type_getAlignOf, None, Type)
+Type.get_align = _CtypesFunctor(clang_Type_getAlignOf)
 
 clang_Cursor_isBitField = _lib.clang_Cursor_isBitField
 clang_Cursor_isBitField.argtypes = [Cursor]
 clang_Cursor_isBitField.restype = c_uint
-Cursor.is_bitfield = _python_types.MethodType(clang_Cursor_isBitField, None, Cursor)
+Cursor.is_bitfield = _CtypesFunctor(clang_Cursor_isBitField)
 
 class ChildVisitResult(c_uint):
     pass
@@ -478,10 +495,10 @@ clang_visitChildren.restype = c_uint
 clang_getCursorSpelling = _lib.clang_getCursorSpelling
 clang_getCursorSpelling.argtypes = [Cursor]
 clang_getCursorSpelling.restype = String
-clang_getCursorSpelling.errcheck = lambda result, *_: clang_getCString(result)
+clang_getCursorSpelling.errcheck = lambda result, *_: decode_str(clang_getCString(result))
 
 clang_isCursorDefinition = _lib.clang_isCursorDefinition
 clang_isCursorDefinition.argtypes = [Cursor]
 clang_isCursorDefinition.restype = c_uint
-Cursor.is_definition = _python_types.MethodType(clang_isCursorDefinition, None, Cursor)
+Cursor.is_definition = _CtypesFunctor(clang_isCursorDefinition)
 

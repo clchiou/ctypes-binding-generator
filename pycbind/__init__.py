@@ -43,7 +43,7 @@ def _parse_args():
             help='C source file')
     parser.add_argument('-o', metavar='OUTPUT', default='-',
             help='output file, default to \'-\' (stdout)')
-    parser.add_argument('--config', type=file,
+    parser.add_argument('--config', type=argparse.FileType('r'),
             help='configuration file')
     parser.add_argument('--cindex', default=MIN_CINDEX,
             choices=[MIN_CINDEX, CLANG_CINDEX],
@@ -52,7 +52,8 @@ def _parse_args():
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-l', metavar='LIBRARY',
             help='library name; use default loader codes')
-    group.add_argument('--loader-codes', metavar='FILE', type=file,
+    group.add_argument('--loader-codes', metavar='FILE',
+            type=argparse.FileType('r'),
             help='customized Python loader codes')
 
     group = parser.add_argument_group(title='macro parser arguments',

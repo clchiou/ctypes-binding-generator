@@ -1,9 +1,9 @@
 '''Unit tests of C expression tokenizer.'''
 
 import unittest
-from cStringIO import StringIO
 
 from cbind.macro import Token, Expression, Parser
+from pycbind.compatibility import StringIO
 
 
 class TestToken(unittest.TestCase):

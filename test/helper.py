@@ -5,9 +5,8 @@ import tempfile
 import token
 import tokenize
 import unittest
-from cStringIO import StringIO
-from itertools import izip
 from cbind import CtypesBindingGenerator, MacroGenerator
+from pycbind.compatibility import StringIO
 
 
 class TestCtypesBindingGenerator(unittest.TestCase):
@@ -63,14 +62,14 @@ class TestMacroGenerator(unittest.TestCase):
 def compare_codes(code1, code2):
     '''Test if Python codes are equivalent.'''
     unimportant_token_types = frozenset(
-            (token.NEWLINE, token.INDENT, token.DEDENT, 54))
+            (token.NEWLINE, token.INDENT, token.DEDENT, token.N_TOKENS + 1))
     def get_tokens(code):
         '''Return tokens important to comparison.'''
         tokens = tokenize.generate_tokens(StringIO(code).readline)
         for token_type, token_str, _, _, _ in tokens:
             if token_type not in unimportant_token_types:
                 yield token_str
-    for token1, token2 in izip(get_tokens(code1), get_tokens(code2)):
+    for token1, token2 in zip(get_tokens(code1), get_tokens(code2)):
         if token1 != token2:
             return False
     return True
@@ -114,7 +113,7 @@ def format_ast(tunits, output):
             name = cursor.spelling
         else:
             name = '\'\''
-        output.write('{0:<24} {1:<24} {2}\n'.format(begin,
+        output.write('{0!s:<24} {1!s:<24} {2!s}\n'.format(begin,
             name, cursor.kind))
         for child in cursor.get_children():
             traverse(child, indent + '  ')

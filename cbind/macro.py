@@ -7,9 +7,9 @@ import os
 import re
 import subprocess
 from collections import OrderedDict, namedtuple
-from cStringIO import StringIO
 from cbind.cindex import CursorKind
 from cbind.source import SyntaxTree
+from pycbind.compatibility import StringIO, decode_str
 
 
 # List of direct-translation symbols.
@@ -157,7 +157,7 @@ class MacroGenerator:
 
     def generate(self, output):
         '''Generate macro constants.'''
-        for symbol in self.symbol_table.itervalues():
+        for symbol in self.symbol_table.values():
             if not symbol:
                 continue
             output.write('%s = ' % symbol.name)
@@ -192,7 +192,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
         # Generate C source and feed it to preprocessor
         source = StringIO()
         source.write('#include "%s"\n' % c_path)
-        for symbol in candidates.itervalues():
+        for symbol in candidates.values():
             if symbol.args is not None:
                 args_list = '(%s)' % ', '.join(symbol.args)
             else:
@@ -203,7 +203,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
         clang.extend(clang_args or ())
         proc = subprocess.Popen(clang,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        macros = proc.communicate(source.getvalue())[0]
+        macros = decode_str(proc.communicate(source.getvalue().encode())[0])
         if proc.returncode != 0:
             raise MacroException('clang preprocessor returns %d' %
                     proc.returncode)
@@ -304,7 +304,7 @@ class Parser:
             self._prev_token = None
         else:
             try:
-                token = self._tokens.next()
+                token = next(self._tokens)
             except StopIteration:
                 raise CSyntaxError('End of token sequence')
         return token

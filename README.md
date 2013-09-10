@@ -2,7 +2,9 @@ ctypes-binding-generator
 ========================
 
 **ctypes-binding-generator** is a Python package to generate ctypes binding
-from C source files.  It requires libclang to parse source files.
+from C source files.  It runs under Python 2 and Python 3, and generates
+Python bindings that are compatible with Python 2 and Python 3.  It requires
+libclang to parse source files.
 
 ctypes-binding-generator provides a command-line program called **cbind**.
 You may use it to generate ctypes binding for, say, stdio.h.

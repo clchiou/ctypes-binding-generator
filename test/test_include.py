@@ -229,7 +229,7 @@ class TestNestedInclude(helper.TestCtypesBindingGenerator):
         header_paths = []
         header_info = {}
         try:
-            for i in xrange(len(header_codes)):
+            for i in range(len(header_codes)):
                 _, header_path = tempfile.mkstemp(suffix='.h')
                 header_paths.append(header_path)
                 header_info['header_%d' % i] = header_path

@@ -5,7 +5,6 @@
 from collections import namedtuple
 import logging
 import re
-import types
 
 from cbind.cindex import CursorKind
 from cbind.codegen import make_function_argtypes, make_function_restype
@@ -99,7 +98,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     def _make_rename_rules(spec):
         '''Make rename rules.'''
         rename = spec['rename']
-        if type(rename) in types.StringTypes:
+        if isinstance(rename, str):
             return [(re.compile(spec['name']), rename)]
         rename_rules = []
         for rule in rename:
@@ -211,6 +210,6 @@ class MatcherAggregator(list):
 def _make_doer(method):
     '''Make doer.'''
     return lambda self, tree: self.do_action(tree, method)
-for _name, _method in vars(SyntaxTreeMatcher).iteritems():
+for _name, _method in vars(SyntaxTreeMatcher).items():
     if _name.startswith('do_'):
         setattr(MatcherAggregator, _name, _make_doer(_method))

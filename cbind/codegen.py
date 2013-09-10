@@ -208,9 +208,7 @@ def _make_function(tree, output):
         output.write('%s.errcheck = %s\n' % (tree.name, errcheck))
     method = tree.get_annotation(annotations.METHOD, False)
     if method:
-        cls = method[:method.rindex('.')]
-        output.write('%s = _python_types.MethodType(%s, None, %s)\n' %
-                (method, tree.name, cls))
+        output.write('%s = _CtypesFunctor(%s)\n' % (method, tree.name))
 
 
 def make_function_argtypes(tree):
