@@ -76,15 +76,12 @@ class SyntaxTree:
         # is released.
         index = Index.create()
         tunit = index.parse(path, args=args, unsaved_files=unsaved_files)
-        if not tunit:
-            message = 'Could not parse C source: %s' % path
-            raise SyntaxError(message)
         for diag in tunit.diagnostics:
             if diag.severity >= diag.Warning:
-                if diag.location.file:
-                    filename = diag.location.file.name
-                else:
-                    filename = 'None'
+                # I can't think of any test cases or real world scenarios
+                # that diag.location.file is None...
+                assert diag.location.file
+                filename = diag.location.file.name
                 raise SyntaxError('%s:%d:%d: %s' %
                         (filename, diag.location.line, diag.location.column,
                             diag.spelling))
@@ -211,12 +208,12 @@ class SyntaxTreeType:
         self.c_type = c_type
         self.syntax_tree = syntax_tree
 
-    def __eq__(self, other):
+    def __eq__(self, _):
         '''Wrapper of __eq__().'''
-        return self.c_type == other.c_type
+        raise AttributeError('__eq__ not implemented')
 
     def __ne__(self, other):
-        '''Wrapper of __ne__().'''
+        '''Implement __ne__().'''
         return not self.__eq__(other)
 
     def __getattr__(self, name):

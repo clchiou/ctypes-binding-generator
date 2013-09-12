@@ -1,5 +1,6 @@
 import unittest
 import helper
+from cbind.macro import MacroException
 
 
 class TestMacro(helper.TestMacroGenerator):
@@ -14,6 +15,7 @@ class TestMacro(helper.TestMacroGenerator):
 #define F "hello world"
 #define G 0x1f
 #define H sizeof(int)
+#define I(x) sizeof(&x)  // This could not be parsed yet...
         ''', '''
 B = 1
 C = 0x10
@@ -78,6 +80,14 @@ B = lambda x: x
 C = lambda x, y: x * y
 D = lambda x, y, z: x + y - z
         ''')
+
+    def test_syntax_error(self):
+        with open('/dev/null', 'w') as stderr:
+            with self.assertRaises(MacroException):
+                self.run_test('''
+#define_something_wrongly X Y
+                ''', '''
+                ''', stderr=stderr)
 
 
 if __name__ == '__main__':

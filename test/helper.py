@@ -44,13 +44,13 @@ class TestMacroGenerator(unittest.TestCase):
     def tearDown(self):
         os.remove(self.header_path)
 
-    def run_test(self, c_code, python_code, args=None, macro_int=None):
+    def run_test(self, c_code, python_code, macro_int=None, stderr=None):
         '''Generate Python code from C code and compare it to the answer.'''
         with os.fdopen(self.header_fd, 'w') as header_file:
             header_file.write(c_code)
 
         mcgen = MacroGenerator(macro_int=macro_int)
-        mcgen.parse(self.header_path, args)
+        mcgen.parse(self.header_path, None, stderr=stderr)
         output = StringIO()
         mcgen.generate(output)
         gen_code = output.getvalue()

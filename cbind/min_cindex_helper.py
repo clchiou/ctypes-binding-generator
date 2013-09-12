@@ -66,7 +66,7 @@ class Diagnostic(ClangObject):
 
     @property
     def severity(self):
-        return cbind.min_cindex.clang_getDiagnosticSeverity(self)
+        return cbind.min_cindex.clang_getDiagnosticSeverity(self).value
 
     @property
     def location(self):

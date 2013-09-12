@@ -15,6 +15,18 @@ def check_yaml():
 class TestConfig(helper.TestCtypesBindingGenerator):
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')
+    def test_empty_rule(self):
+        self.run_test('''
+enum {
+    X = 1
+};
+        ''', '''
+        ''', config='''
+import:
+    - import: True
+        ''')
+
+    @unittest.skipIf(not check_yaml(), 'require package yaml')
     def test_import(self):
         self.run_test('''
 enum Enum {
@@ -51,6 +63,8 @@ struct struct_2 {
 
 void func_1(struct struct_1 *);
 struct struct_2 *func_2(void);
+
+void func_3(void);
         ''', '''
 class struct_1(Structure):
     pass
@@ -65,9 +79,12 @@ func_1.argtypes = [POINTER(struct_1)]
 
 func_2 = _lib.func_2
 func_2.restype = POINTER(struct_2)
+
+func_3 = _lib.func_3
         ''', config='''
 import:
     - name: ^func_([12])$
+    - restype: None
         ''')
 
         self.run_test('''
@@ -170,13 +187,15 @@ preamble: import types as __python_types
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')
-    def test_preamble(self):
+    def test_errcheck(self):
         self.run_test('''
 struct foo {
     int i;
 };
 
 struct foo func(void);
+
+struct foo no_errcheck(void);
         ''', '''
 class foo(Structure):
     pass
@@ -185,8 +204,13 @@ foo._fields_ = [('i', c_int)]
 func = _lib.func
 func.restype = foo
 func.errcheck = errcheck_func
+
+no_errcheck = _lib.no_errcheck
+no_errcheck.restype = foo
         ''', config='''
 errcheck:
+    - name: no_errcheck
+      errcheck:
     - restype: foo
       errcheck: errcheck_func
         ''')
@@ -198,6 +222,10 @@ struct foo {
 };
 
 void bar(struct foo*);
+
+void not_method_1(struct foo*, int i);
+
+void not_method_2(struct foo);
         ''', cbind.ctypes_binding.METHOD_DESCRIPTOR + '''
 class foo(Structure):
     pass
@@ -205,6 +233,12 @@ class foo(Structure):
 bar = _lib.bar
 bar.argtypes = [POINTER(foo)]
 foo.method_bar = _CtypesFunctor(bar)
+
+not_method_1 = _lib.not_method_1
+not_method_1.argtypes = [POINTER(foo), c_int]
+
+not_method_2 = _lib.not_method_2
+not_method_2.argtypes = [foo]
         ''', config='''
 method:
     - argtypes: [POINTER\(foo\)]
@@ -216,13 +250,23 @@ method:
         self.run_test('''
 struct foo {
 };
+
+enum bar {
+    X = 1
+};
         ''', '''
 class foo(MixinFoo1, MixinFoo2, Structure):
     pass
+
+class bar(MixinBar, c_uint):
+    pass
+X = 1
         ''', config='''
 mixin:
     - name: foo
       mixin: [MixinFoo1, MixinFoo2]
+    - name: bar
+      mixin: [MixinBar]
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')
@@ -259,16 +303,20 @@ enum:
 enum {
     X = 1,
     Y = 2,
+    UNCHANGED = 3,
 };
         ''', '''
 Z = 1
 Y = 2
-        ''', config='''
+UNCHANGED = 3
+        ''', config=r'''
 import:
-    - name: '[XY]'
+    - name: '[XY]|UNCHANGED'
 rename:
     - name: X
       rename: Z
+    - name: (UNCHANGED)
+      rename: \1
         ''')
 
         self.run_test('''

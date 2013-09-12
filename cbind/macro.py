@@ -46,10 +46,10 @@ class MacroGenerator:
         else:
             self.macro_int = lambda s: False
 
-    def parse(self, c_path, args):
+    def parse(self, c_path, args, stderr=None):
         '''Parse the source files.'''
         int_symbols = []
-        for symbol in MacroSymbol.process(c_path, args):
+        for symbol in MacroSymbol.process(c_path, args, stderr):
             if not symbol.body:
                 # Ignore empty macros
                 continue
@@ -120,9 +120,9 @@ class MacroGenerator:
             if tree.kind == CursorKind.ENUM_DECL and tree.is_definition():
                 enum_trees.append(tree)
         syntax_tree.traverse(search_enum_def)
-        if not enum_trees:
-            message = 'Could not find enum in generated C source'
-            raise MacroException(message)
+        # I can't think of any real world scenarios that
+        # the generated enum_trees would be empty...
+        assert enum_trees
         enum_field_trees = []
         for enum_tree in enum_trees:
             enum_field_trees.extend(enum_tree.get_children())
@@ -135,8 +135,9 @@ class MacroGenerator:
                 if self.symbol_table[name])
         for name in self.symbol_table.keys():
             symbol = self.symbol_table[name]
-            if not symbol:
-                continue
+            # I can't think of any real world scenarios
+            # that symbol is None...
+            assert symbol
             if symbol.args:
                 env = bound_names.union(symbol.args)
             else:
@@ -186,7 +187,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
             \)''', re.VERBOSE)
 
     @classmethod
-    def process(cls, c_path, clang_args):
+    def process(cls, c_path, clang_args, stderr):
         '''Run clang preprocessor and return an iterator of MacroSymbol.'''
         candidates = cls._list_candidates(c_path)
         # Generate C source and feed it to preprocessor
@@ -202,7 +203,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
         clang = ['clang', '-E', '-x', 'c', '-']
         clang.extend(clang_args or ())
         proc = subprocess.Popen(clang,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr)
         macros = decode_str(proc.communicate(source.getvalue().encode())[0])
         if proc.returncode != 0:
             raise MacroException('clang preprocessor returns %d' %
@@ -303,17 +304,13 @@ class Parser:
             token = self._prev_token
             self._prev_token = None
         else:
-            try:
-                token = next(self._tokens)
-            except StopIteration:
-                raise CSyntaxError('End of token sequence')
+            # Parser should not let it raise StopIteration...
+            token = next(self._tokens)
         return token
 
     def _putback(self, token):
         '''Put back this token.'''
-        if self._prev_token is not None:
-            raise CSyntaxError('Previous is not empty: %s' %
-                    str(self._prev_token))
+        assert self._prev_token is None, str(self._prev_token)
         self._prev_token = token
 
     def _may_match(self, *matches):

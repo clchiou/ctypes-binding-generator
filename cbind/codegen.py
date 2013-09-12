@@ -117,8 +117,6 @@ def _make_type(type_):
     if type_.is_user_defined_type():
         tree = type_.get_declaration()
         c_type = tree.name
-        if not c_type and tree.kind == CursorKind.ENUM_DECL:
-            c_type = _make_type(tree.enum_type)
     elif type_.kind == TypeKind.TYPEDEF:
         tree = type_.get_declaration()
         c_type = (BUILTIN_TYPEDEFS.get(tree.name) or
@@ -147,15 +145,14 @@ def _make_pointer_type(pointer_type=None, pointee_type=None):
     decl = pointee_type.get_declaration()
     if pointee_type.kind == TypeKind.CHAR_S:
         c_type = 'c_char_p'
-    elif pointee_type.kind == TypeKind.WCHAR:
-        c_type = 'c_wchar_p'
     elif pointee_type.kind == TypeKind.VOID:
         c_type = 'c_void_p'
     elif (pointee_type.kind == TypeKind.TYPEDEF and
             canonical.kind == TypeKind.VOID):
         # Handle special case "typedef void foo;"
         c_type = 'c_void_p'
-    elif (pointee_type.kind == TypeKind.TYPEDEF and decl.name == 'wchar_t'):
+    elif (pointee_type.kind == TypeKind.WCHAR or
+            (pointee_type.kind == TypeKind.TYPEDEF and decl.name == 'wchar_t')):
         c_type = 'c_wchar_p'
     elif canonical.kind == TypeKind.FUNCTIONPROTO:
         c_type = _make_function_pointer(canonical)
@@ -270,7 +267,7 @@ def _make_enum(tree, output):
         enum_type = _make_type(tree.enum_type)
     else:
         enum_name = ''
-        enum_type = 'c_uint'
+        enum_type = _make_type(tree.enum_type)
     if tree.name:
         mixin = tree.get_annotation(annotations.MIXIN, ())
         if mixin:

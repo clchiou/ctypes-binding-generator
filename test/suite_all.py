@@ -2,6 +2,7 @@ import sys
 import unittest
 
 import test_builtin
+import test_cindex
 import test_config
 import test_cparser
 import test_enum
@@ -17,6 +18,7 @@ import test_variable
 
 suite_all = unittest.TestSuite([
     unittest.TestLoader().loadTestsFromModule(test_builtin),
+    unittest.TestLoader().loadTestsFromModule(test_cindex),
     unittest.TestLoader().loadTestsFromModule(test_config),
     unittest.TestLoader().loadTestsFromModule(test_cparser),
     unittest.TestLoader().loadTestsFromModule(test_enum),

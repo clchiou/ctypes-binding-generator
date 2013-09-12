@@ -45,10 +45,10 @@ def _real_anonymous_pod(tree):
         kind = 'struct'
     else:
         kind = 'union'
-    if tree.location.file:
-        filename = re.sub(r'[^\w]', '_', tree.location.file.name)
-    else:
-        filename = 'none'
+    # I can't think of any test cases or real world scenarios
+    # that tree.location.file is None...
+    assert tree.location.file
+    filename = re.sub(r'[^\w]', '_', tree.location.file.name)
     name = '_%s_%s_%d_%d' % (kind, filename,
             tree.location.line, tree.location.column)
     tree.annotate(annotations.ORIGINAL_NAME, name)
