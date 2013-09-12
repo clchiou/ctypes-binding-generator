@@ -31,15 +31,17 @@ export PYTHONPATH="$(pwd)"
 
 pushd "${TEST_DIR}"
 
+PATHS_ARG='--source=cbind,pycbind,.'
+
 rm -f .coverage
 echo "Run tests under Python 2 (and generates test coverage report)"
-${COVERAGE} run suite_all.py || die "Tests failed"
+${COVERAGE} run ${PATHS_ARG} suite_all.py || die "Tests failed"
 
 echo "Run tests under Python 3"
 python3 suite_all.py || die "Tests failed"
 
-echo "Run tests with Clang's binding"
-python suite_clang_cindex.py || die "Tests failed"
+echo "Run tests with Clang's binding (and generates test coverage report)"
+${COVERAGE} run -a ${PATHS_ARG} suite_clang_cindex.py || die "Tests failed"
 
 echo "Output test coverage report"
 ${COVERAGE} report -m
