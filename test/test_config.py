@@ -179,11 +179,36 @@ rename:
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')
     def test_preamble(self):
+        header = cbind.ctypes_binding.HEADER.format(progname='cbind')
+        loader = cbind.ctypes_binding.LOAD_LIBRARY.format(
+                posix_library='libclang.so',
+                darwin_library='libclang.dylib',
+                windows_library='libclang.dll')
+
         self.run_test('''
-        ''', '''
+        ''', header + '''
 import types as __python_types
         ''', config='''
 preamble: import types as __python_types
+        ''')
+
+        self.run_test('''
+        ''', header + '''
+import types as __python_types
+        ''' + loader, config='''
+preamble:
+    codes: import types as __python_types
+    library: libclang.so
+        ''')
+
+        self.run_test('''
+        ''', header + '''
+import types as __python_types
+        ''', config='''
+preamble:
+    codes: import types as __python_types
+    use_custom_loader: True
+    library: libclang.so
         ''')
 
     @unittest.skipIf(not check_yaml(), 'require package yaml')

@@ -52,7 +52,14 @@ We introduce each of them below.
 
 The *preamble* top-level key maps to a string which will be inserted into the
 binding of the output binding.  Generally it could be used for import helper
-Python modules.
+Python modules.  Alternatively, preambles maps to a mapping that supports the
+following keys:
+
+  * *codes*: A string of codes that will be inserted.
+  * *library*: A string of the name of the shared library.
+  * *use_custom_loader*: (Optional) Boolean value; if true, the codes string
+    will be used as library loader, and the default loader codes will not be
+    inserted.
 
 All other top-level keys map to a list of matchers and actions.  The action
 of the first matcher that matches the syntax tree node, and only the action of

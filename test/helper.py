@@ -17,7 +17,8 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         cbgen = CtypesBindingGenerator()
         if config is not None:
             import yaml
-            cbgen.config(yaml.load(config))
+            config = yaml.load(config)
+            cbgen.config(config)
         if isinstance(c_code, str):
             c_src = StringIO(c_code)
             cbgen.parse('input.c', contents=c_src, args=args)
@@ -26,6 +27,8 @@ class TestCtypesBindingGenerator(unittest.TestCase):
                 c_src = StringIO(code)
                 cbgen.parse(filename, contents=c_src, args=args)
         output = StringIO()
+        if config and 'preamble' in config:
+            cbgen.generate_preamble('cbind', None, output)
         cbgen.generate(output)
         gen_code = output.getvalue()
 
