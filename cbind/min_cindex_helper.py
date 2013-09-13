@@ -2,17 +2,16 @@
 
 '''Helpers for min_cindex module.'''
 
-from collections import Sequence, namedtuple
+from collections import namedtuple
 from ctypes import CFUNCTYPE, byref, c_uint, c_char_p, c_void_p
-from pycbind.compatibility import decode_str    # pylint: disable=W0611
 
 import cbind.min_cindex
 
 
-# pylint: disable=C0103,W0212,W0108,W0142
+# pylint: disable=R0903
 
 
-class ClangObject(object):  # pylint: disable=R0903
+class ClangObject(object):
     '''Helper for Clang objects.'''
 
     def __init__(self, object_):
@@ -22,37 +21,8 @@ class ClangObject(object):  # pylint: disable=R0903
         self.object_ = self._as_parameter_ = object_
 
 
-class File(ClangObject):
-    '''File object.'''
-
-    # pylint: disable=R0903,C0111
-
-    @property
-    def name(self):
-        return cbind.min_cindex.clang_getFileName(self)
-
-
-class DiagnosticsIterator(Sequence):  # pylint: disable=R0903,R0924
-    '''Indexable iterator object of diagnostics.'''
-
-    def __init__(self, tunit):
-        '''Initialize the object.'''
-        self.tunit = tunit
-
-    def __len__(self):
-        return int(cbind.min_cindex.clang_getNumDiagnostics(self.tunit))
-
-    def __getitem__(self, index):
-        diag = cbind.min_cindex.clang_getDiagnostic(self.tunit, index)
-        if not diag:
-            raise IndexError()
-        return Diagnostic(diag)
-
-
 class Diagnostic(ClangObject):
     '''A diagnostic object.'''
-
-    # pylint: disable=R0903,C0111
 
     Ignored = 0
     Note    = 1
@@ -60,39 +30,32 @@ class Diagnostic(ClangObject):
     Error   = 3
     Fatal   = 4
 
+    def __init__(self, object_):
+        super(Diagnostic, self).__init__(object_)
+        self.severity = cbind.min_cindex.clang_getDiagnosticSeverity(self).value
+        self.location = cbind.min_cindex.clang_getDiagnosticLocation(self)
+        self.spelling = cbind.min_cindex.clang_getDiagnosticSpelling(self)
+
     def __del__(self):
         '''Delete the object.'''
         cbind.min_cindex.clang_disposeDiagnostic(self)
-
-    @property
-    def severity(self):
-        return cbind.min_cindex.clang_getDiagnosticSeverity(self).value
-
-    @property
-    def location(self):
-        return cbind.min_cindex.clang_getDiagnosticLocation(self)
-
-    @property
-    def spelling(self):
-        return cbind.min_cindex.clang_getDiagnosticSpelling(self)
 
 
 class Index(ClangObject):
     '''Primary interface to Clang CIndex library.'''
 
     @staticmethod
-    def create(excludeDecls=False):
+    def create(exclude_decls=False):
         '''Create a new Index.'''
-        return Index(cbind.min_cindex.clang_createIndex(excludeDecls, 0))
+        return Index(cbind.min_cindex.clang_createIndex(exclude_decls, 0))
 
     def __del__(self):
         '''Delete the object.'''
         cbind.min_cindex.clang_disposeIndex(self)
 
-    def parse(self, path, args=None, unsaved_files=None, options=0):
+    def parse(self, path, args=None, unsaved_files=None):
         '''Call TranslationUnit.from_source.'''
-        return TranslationUnit.from_source(path, args, unsaved_files, options,
-                self)
+        return TranslationUnit.from_source(path, args, unsaved_files, self)
 
 
 class TranslationUnitLoadError(Exception):
@@ -103,12 +66,10 @@ class TranslationUnitLoadError(Exception):
 class TranslationUnit(ClangObject):
     '''Represent a source code translation unit.'''
 
-    # pylint: disable=R0903,R0913,C0111
-
     @classmethod
-    def from_source(cls, filename, args=None, unsaved_files=None, options=0,
-            index=None):
+    def from_source(cls, filename, args, unsaved_files, index):
         '''Create translation unit.'''
+        options = 0
         args = args or []
         unsaved_files = unsaved_files or []
         index = index or Index.create()
@@ -146,11 +107,16 @@ class TranslationUnit(ClangObject):
 
     @property
     def cursor(self):
+        '''cursor property.'''
         return cbind.min_cindex.clang_getTranslationUnitCursor(self)
 
     @property
     def diagnostics(self):
-        return DiagnosticsIterator(self)
+        '''Return an iterator of Diagnostic objects.'''
+        for i in range(int(cbind.min_cindex.clang_getNumDiagnostics(self))):
+            diag = cbind.min_cindex.clang_getDiagnostic(self, i)
+            assert diag
+            yield Diagnostic(diag)
 
 
 def ref_translation_unit(result, _, arguments):
@@ -162,10 +128,10 @@ def ref_translation_unit(result, _, arguments):
             tunit = arg
             break
         if hasattr(arg, '_translation_unit'):
-            tunit = arg._translation_unit
+            tunit = getattr(arg, '_translation_unit')
             break
     assert tunit is not None
-    result._translation_unit = tunit
+    setattr(result, '_translation_unit', tunit)
     return result
 
 
@@ -176,58 +142,57 @@ def check_cursor(result, function, arguments):
     return ref_translation_unit(result, function, arguments)
 
 
-class cached_property(object):  # pylint: disable=R0903
+class cached_property(object):  # pylint: disable=C0103
     '''Cached property decorator for Cursor class.'''
 
     def __init__(self, getter):
         self.getter = getter
 
     def __get__(self, cursor, _):
-        if cursor is None:
-            return self
         value = self.getter(cursor)
         setattr(cursor, self.getter.__name__, value)
         return value
 
 
-SourceLocationData = namedtuple('SourceLocationData',
-        'file line column offset')
+class SourceLocationData(namedtuple('SourceLocationData',
+        'file line column offset')):
+    '''Data blob of source location.'''
+    # pylint: disable=W0232
+    pass
 
 
 class SourceLocationMixin(object):
     '''Mixin class of SourceLocation.'''
 
-    # pylint: disable=C0111
-
-    def __eq__(self, other):
-        return cbind.min_cindex.clang_equalLocations(self, other)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     @property
     def file(self):
+        '''file property.'''
         return self.data.file
 
     @property
     def line(self):
+        '''line property.'''
         return self.data.line
 
     @property
     def column(self):
+        '''column property.'''
         return self.data.column
 
     @property
     def offset(self):
+        '''offset property.'''
         return self.data.offset
 
     @cached_property
     def data(self):
+        '''data blob of properties.'''
         file_, line, column, offset = c_void_p(), c_uint(), c_uint(), c_uint()
         cbind.min_cindex.clang_getInstantiationLocation(self,
                 byref(file_), byref(line), byref(column), byref(offset))
         if file_:
-            file_ = File(file_)
+            file_ = ClangObject(file_)
+            setattr(file_, 'name', cbind.min_cindex.clang_getFileName(file_))
         else:
             file_ = None
         return SourceLocationData(file_, line.value, column.value, offset.value)
@@ -235,8 +200,6 @@ class SourceLocationMixin(object):
 
 class CursorMixin(object):
     '''Mixin class of Cursor.'''
-
-    # pylint: disable=C0111
 
     def __eq__(self, other):
         return cbind.min_cindex.clang_equalCursors(self, other)
@@ -246,30 +209,37 @@ class CursorMixin(object):
 
     @cached_property
     def enum_type(self):
+        '''enum_type property.'''
         return cbind.min_cindex.clang_getEnumDeclIntegerType(self)
 
     @property
     def linkage_kind(self):
+        '''linkage_kind property.'''
         return cbind.min_cindex.clang_getCursorLinkage(self)
 
     @cached_property
     def location(self):
+        '''location property.'''
         return cbind.min_cindex.clang_getCursorLocation(self)
 
     @cached_property
     def result_type(self):
+        '''result_type property.'''
         return cbind.min_cindex.clang_getResultType(self.type)
 
     @cached_property
     def semantic_parent(self):
+        '''semantic_parent property.'''
         return cbind.min_cindex.clang_getCursorSemanticParent(self)
 
     @cached_property
     def type(self):
+        '''type property.'''
         return cbind.min_cindex.clang_getCursorType(self)
 
     @cached_property
     def underlying_typedef_type(self):
+        '''underlying_typedef_type property.'''
         return cbind.min_cindex.clang_getTypedefDeclUnderlyingType(self)
 
     @cached_property
@@ -312,7 +282,7 @@ class CursorMixin(object):
             '''Visit children callback.'''
             assert child != cbind.min_cindex.clang_getNullCursor()
             # Store reference to TranslationUnit...
-            child._translation_unit = self._translation_unit
+            setattr(child, '_translation_unit', self._translation_unit)
             children.append(child)
             return 1  # continue
         callback_proto = CFUNCTYPE(cbind.min_cindex.ChildVisitResult,
@@ -322,58 +292,21 @@ class CursorMixin(object):
         return children
 
 
-class ArgumentsIterator(Sequence):
-    '''Indexable iterator of arguments.'''
-
-    # pylint: disable=R0903
-
-    def __init__(self, type_):
-        '''Initialize the object.'''
-        self.type_ = type_
-        self.length = None
-
-    def __len__(self):
-        if self.length is None:
-            self.length = cbind.min_cindex.clang_getNumArgTypes(self.type_)
-        return self.length
-
-    def __getitem__(self, index):
-        if not (0 <= index < len(self)):
-            raise IndexError('Index out of range: index=%d, len=%d' %
-                    (index, len(self)))
-        result = cbind.min_cindex.clang_getArgType(self.type_, index)
-        # pylint: disable=E1101
-        if result.kind == cbind.min_cindex.TypeKind.INVALID:
-            raise IndexError('Argument could not be retrieved.')
-        return result
-
-    def __setitem__(self, *_):
-        raise AttributeError('__setitem__ is not implemented')
-
-    def __delitem__(self, *_):
-        raise AttributeError('__delitem__ is not implemented')
-
-
 class TypeMixin(object):
     '''Mixin class of Type.'''
 
-    # pylint: disable=R0903
-
-    def __eq__(self, other):
-        return cbind.min_cindex.clang_equalTypes(self, other)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def argument_types(self):
-        '''Return argument types iterator.'''
-        return ArgumentsIterator(self)
+        '''Return iterator of argument types.'''
+        length = cbind.min_cindex.clang_getNumArgTypes(self)
+        for i in range(length):
+            argtype = cbind.min_cindex.clang_getArgType(self, i)
+            # pylint: disable=E1101
+            assert argtype.kind != cbind.min_cindex.TypeKind.INVALID
+            yield argtype
 
 
 class EnumerateKindMixin(object):
     '''Mixin class of CursorKind, TypeKind, and LinkageKind.'''
-
-    # pylint: disable=R0903
 
     @classmethod
     def register(cls, name, value):

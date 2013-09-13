@@ -78,6 +78,7 @@ time python3 bin/cbind \
   -- -I "${CLANG_INCLUDE}"
 
 diff "${OUTPUT1}" "${OUTPUT2}"
+diff "${OUTPUT1}" cbind/min_cindex.py
 
 rm -f "${OUTPUT1}"
 rm -f "${OUTPUT2}"

@@ -108,9 +108,7 @@ class CtypesBindingGenerator:
     def generate_preamble(self, progname, library, output):
         '''Generate preamble of Python binding.'''
         output.write(HEADER.format(progname=progname))
-        preamble = ''
-        if 'preamble' in self._config:
-            preamble += self._config['preamble']
+        preamble = self._config.get('preamble', '')
         library = library or self._config.get('library')
         if library:
             if not self._config.get('use_custom_loader'):

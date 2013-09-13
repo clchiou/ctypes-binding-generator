@@ -5,13 +5,13 @@ from ctypes import *
 
 # pylint: disable-all
 from cbind.min_cindex_helper import (check_cursor,
-                                     decode_str,
                                      ref_translation_unit,
                                      Index,
                                      CursorMixin,
                                      SourceLocationMixin,
                                      TypeMixin,
                                      EnumerateKindMixin)
+from pycbind.compatibility import decode_str
 
 if _python_sys.platform == 'darwin':
     _lib = cdll.LoadLibrary('libclang.dylib')
@@ -76,10 +76,6 @@ class SourceLocation(SourceLocationMixin, Structure):
     pass
 SourceLocation._fields_ = [('ptr_data', (c_void_p * 2)),
                            ('int_data', c_uint)]
-
-clang_equalLocations = _lib.clang_equalLocations
-clang_equalLocations.argtypes = [SourceLocation, SourceLocation]
-clang_equalLocations.restype = c_uint
 
 clang_getInstantiationLocation = _lib.clang_getInstantiationLocation
 clang_getInstantiationLocation.argtypes = [SourceLocation, POINTER(c_void_p), POINTER(c_uint), POINTER(c_uint), POINTER(c_uint)]
@@ -428,10 +424,6 @@ clang_Cursor_getArgument = _lib.clang_Cursor_getArgument
 clang_Cursor_getArgument.argtypes = [Cursor, c_uint]
 clang_Cursor_getArgument.restype = Cursor
 clang_Cursor_getArgument.errcheck = check_cursor
-
-clang_equalTypes = _lib.clang_equalTypes
-clang_equalTypes.argtypes = [Type, Type]
-clang_equalTypes.restype = c_uint
 
 clang_getCanonicalType = _lib.clang_getCanonicalType
 clang_getCanonicalType.argtypes = [Type]

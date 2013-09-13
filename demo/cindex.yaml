@@ -1,19 +1,19 @@
 preamble: |
     # pylint: disable-all
     from cbind.min_cindex_helper import (check_cursor,
-                                         decode_str,
                                          ref_translation_unit,
                                          Index,
                                          CursorMixin,
                                          SourceLocationMixin,
                                          TypeMixin,
                                          EnumerateKindMixin)
+    from pycbind.compatibility import decode_str
 
 import:
     - name: ^clang_createIndex$
     - name: ^clang_Cursor_(getArgument|getNumArguments|isBitField)$
     - name: ^clang_dispose(Diagnostic|Index|String|TranslationUnit)$
-    - name: ^clang_equal(Cursors|Locations|Types)$
+    - name: ^clang_equalCursors$
     - name: ^clang_get(ArgType|
                        ArrayElementType|
                        ArraySize|

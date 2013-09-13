@@ -52,7 +52,7 @@ We introduce each of them below.
 
 The *preamble* top-level key maps to a string which will be inserted into the
 binding of the output binding.  Generally it could be used for import helper
-Python modules.  Alternatively, preambles maps to a mapping that supports the
+Python modules.  Alternatively, preamble maps to a mapping that supports the
 following keys:
 
   * *codes*: A string of codes that will be inserted.
