@@ -479,6 +479,11 @@ clang_Type_getAlignOf.argtypes = [Type]
 clang_Type_getAlignOf.restype = c_longlong
 Type.get_align = _CtypesFunctor(clang_Type_getAlignOf)
 
+clang_Type_getOffsetOf = _lib.clang_Type_getOffsetOf
+clang_Type_getOffsetOf.argtypes = [Type, c_char_p]
+clang_Type_getOffsetOf.restype = c_longlong
+Type.get_offset = _CtypesFunctor(clang_Type_getOffsetOf)
+
 clang_Cursor_isBitField = _lib.clang_Cursor_isBitField
 clang_Cursor_isBitField.argtypes = [Cursor]
 clang_Cursor_isBitField.restype = c_uint

@@ -17,8 +17,7 @@ def _scan_tree(tree):
     '''Scan anonymous PODs.'''
     if tree.kind == CursorKind.TYPEDEF_DECL:
         _typedef_pod(tree)
-    elif (tree.kind == CursorKind.STRUCT_DECL or
-            tree.kind == CursorKind.UNION_DECL):
+    elif tree.is_user_defined_pod_decl():
         _real_anonymous_pod(tree)
 
 
@@ -43,6 +42,8 @@ def _real_anonymous_pod(tree):
         return
     if tree.kind == CursorKind.STRUCT_DECL:
         kind = 'struct'
+    elif tree.kind == CursorKind.CLASS_DECL:
+        kind = 'class'
     else:
         kind = 'union'
     # I can't think of any test cases or real world scenarios

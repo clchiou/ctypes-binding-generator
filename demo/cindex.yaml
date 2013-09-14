@@ -45,7 +45,7 @@ import:
     - name: ^clang_hashCursor$
     - name: ^clang_is(CursorDefinition|Declaration|FunctionTypeVariadic)$
     - name: ^clang_parseTranslationUnit$
-    - name: ^clang_Type_getAlignOf$
+    - name: ^clang_Type_get(AlignOf|OffsetOf)$
     - name: ^clang_visitChildren$
     - name: ^CX(ChildVisitResult|SourceLocation|String|UnsavedFile)$
     - name: ^CX(Cursor|Linkage|Type)(Kind|_\w+)?$
@@ -90,6 +90,8 @@ method:
 
     - name: clang_Type_getAlignOf
       method: Type.get_align
+    - name: clang_Type_getOffsetOf
+      method: Type.get_offset
     - name: clang_getArrayElementType
       method: Type.get_array_element_type
     - name: clang_getArraySize

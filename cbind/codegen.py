@@ -3,6 +3,7 @@
 '''Generate ctypes binding from syntax tree.'''
 
 import logging
+
 from cbind.cindex import CursorKind, TypeKind
 import cbind.annotations as annotations
 
@@ -84,8 +85,7 @@ def gen_tree_node(tree, output):
         _make_typedef(tree, output)
     elif tree.kind == CursorKind.FUNCTION_DECL:
         _make_function(tree, output)
-    elif (tree.kind == CursorKind.STRUCT_DECL or
-            tree.kind == CursorKind.UNION_DECL):
+    elif tree.is_user_defined_pod_decl():
         declared = tree.get_annotation(annotations.DECLARED, False)
         declaration = not tree.is_definition()
         gen_record(tree, output,
@@ -224,10 +224,10 @@ def make_function_restype(tree):
 
 def _make_pod_header(tree, name, output):
     '''Generate the 'class ...' part of POD.'''
-    if tree.kind == CursorKind.STRUCT_DECL:
-        pod_kind = 'Structure'
-    else:
+    if tree.kind == CursorKind.UNION_DECL:
         pod_kind = 'Union'
+    else:
+        pod_kind = 'Structure'
     mixin = tree.get_annotation(annotations.MIXIN, ())
     if mixin:
         fmt = 'class {name}({mixin}, {kind}):\n{indent}pass\n'
@@ -247,7 +247,11 @@ def _make_pod_body(tree, name, output):
     indent = ' ' * len(field_stmt)
     output.write(field_stmt)
     first = True
+    last_offset = -1  # Offsets of struct and class should be increasing
     for field in fields:
+        offset = tree.type.get_offset(field.original_name.encode())
+        assert tree.kind == CursorKind.UNION_DECL or last_offset < offset
+        last_offset = offset
         blob = ['\'%s\'' % field.name, _make_type(field.type)]
         if field.is_bitfield():
             blob.append(str(field.get_bitfield_width()))

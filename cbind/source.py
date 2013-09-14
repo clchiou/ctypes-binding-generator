@@ -54,13 +54,20 @@ class SyntaxTree:
     '''.split())
 
     UDT_DECL = frozenset((CursorKind.STRUCT_DECL,
+        CursorKind.CLASS_DECL,
         CursorKind.UNION_DECL,
         CursorKind.ENUM_DECL))
+
+    POD_DECL = frozenset((CursorKind.STRUCT_DECL,
+        CursorKind.CLASS_DECL,
+        CursorKind.UNION_DECL))
 
     UDT_FIELD_DECL = frozenset((CursorKind.ENUM_CONSTANT_DECL,
         CursorKind.FIELD_DECL))
 
-    HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL, CursorKind.UNION_DECL))
+    HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL,
+        CursorKind.CLASS_DECL,
+        CursorKind.UNION_DECL))
 
     @classmethod
     def parse(cls, path, contents=None, args=None, annotation_table=None):
@@ -146,6 +153,10 @@ class SyntaxTree:
         '''Test if this node is declaration of user-defined type.'''
         return self.kind in self.UDT_DECL
 
+    def is_user_defined_pod_decl(self):
+        '''Test if this node is declaration of user-defined POD type.'''
+        return self.kind in self.POD_DECL
+
     def is_field_decl(self):
         '''Test if this is a field declaration.'''
         return self.kind in self.UDT_FIELD_DECL
@@ -197,6 +208,7 @@ class SyntaxTreeType:
         is_function_variadic
         get_align
         get_array_size
+        get_offset
         kind
     '''.split())
 
