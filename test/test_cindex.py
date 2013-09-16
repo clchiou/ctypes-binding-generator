@@ -1,4 +1,6 @@
+import os
 import unittest
+
 import helper
 from cbind import CtypesBindingGenerator
 from cbind.source import SyntaxTree, SyntaxTreeType
@@ -49,8 +51,9 @@ int foo(,);
             t1.xxx
 
     def test_file(self):
+        c_file = os.path.join(os.path.dirname(__file__), 'file.c')
         cbgen = CtypesBindingGenerator()
-        cbgen.parse('./file.c')
+        cbgen.parse(c_file)
 
 
 if __name__ == '__main__':
