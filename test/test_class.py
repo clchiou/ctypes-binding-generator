@@ -42,20 +42,30 @@ class TestMangler(helper.TestCppMangler):
 
     def test_mangler(self):
         self.run_test('''
-class foo {
+class cls {
   public:
-    static int x;
+    static int smemb1;
 };
 
 namespace space {
-    class bar {
-      public:
-        static int y;
-    };
+class cls {
+  public:
+    static int smemb2;
+};
 }
+
+namespace std {
+void func_std_ns(void);
+}
+
+void func1(void);
+int func2(char *, ...);
         ''',
-        [('x', '_ZN3foo1xE'),
-         ('y', '_ZN5space3bar1yE')])
+        [('smemb1', '_ZN3cls6smemb1E'),
+         ('smemb2', '_ZN5space3cls6smemb2E'),
+         ('func_std_ns', '_ZSt11func_std_nsv'),
+         ('func1', '_Z5func1v'),
+         ('func2', '_Z5func2Pcz')])
 
 
 if __name__ == '__main__':
