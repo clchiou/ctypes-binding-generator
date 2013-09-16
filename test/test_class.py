@@ -38,5 +38,16 @@ bar._fields_ = [('x', c_int)]
         ''', filename='input.cpp')
 
 
+class TestMangler(helper.TestCppMangler):
+
+    def test_mangler(self):
+        self.run_test('''
+class foo {
+  public:
+    static int x;
+};
+        ''', 'x', '_ZN3foo1xE')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -5,7 +5,7 @@ import tempfile
 import token
 import tokenize
 import unittest
-from cbind import CtypesBindingGenerator, MacroGenerator
+from cbind import CtypesBindingGenerator, MacroGenerator, mangle
 from pycbind.compatibility import StringIO
 
 
@@ -38,6 +38,35 @@ class TestCtypesBindingGenerator(unittest.TestCase):
                 tunits=cbgen.get_translation_units())
         self.assertTrue(compare_codes(gen_code, python_code), error_message)
         compile(gen_code, 'output.py', 'exec')
+
+
+class TestCppMangler(unittest.TestCase):
+    '''Boilerplate of unit tests.'''
+
+    def run_test(self, cpp_code, symbol, mangled_name, args=None):
+        '''Test mangler.'''
+        cbgen = CtypesBindingGenerator()
+        cpp_src = StringIO(cpp_code)
+        cbgen.parse('input.cpp', contents=cpp_src, args=args)
+        root = cbgen.syntax_tree_forest[0]
+        result = []
+        def search_node(tree):
+            '''Search node that matched by name.'''
+            if tree.name == symbol:
+                result.append(tree)
+                raise StopIteration()
+        try:
+            root.traverse(preorder=search_node)
+        except StopIteration:
+            pass
+        tree = result[0]
+        name = mangle(tree)
+
+        errmsg = StringIO()
+        errmsg.write('when mangling symbol %s: %s != %s\n' %
+                (repr(symbol), repr(mangled_name), repr(name)))
+        format_ast([root.translation_unit], errmsg)
+        self.assertEqual(mangled_name, name, errmsg.getvalue())
 
 
 class TestMacroGenerator(unittest.TestCase):

@@ -4,3 +4,4 @@
 
 from cbind.ctypes_binding import CtypesBindingGenerator
 from cbind.macro import MacroGenerator
+from cbind.mangler import mangle
