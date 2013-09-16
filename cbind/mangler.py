@@ -78,7 +78,8 @@ def _unqualified_name(tree, output):
 
 def _source_name(tree, output):
     '''<source-name> ::= <positive length number> <identifier>'''
-    output.write('%d%s' % (len(tree.name), tree.name))
+    assert tree.spelling
+    output.write('%d%s' % (len(tree.spelling), tree.spelling))
 
 
 def _cv_qualifiers(tree, output):

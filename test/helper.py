@@ -52,7 +52,7 @@ class TestCppMangler(unittest.TestCase):
         result = []
         def search_node(tree):
             '''Search node that matched by name.'''
-            if tree.name == symbol:
+            if tree.spelling == symbol:
                 result.append(tree)
                 raise StopIteration()
         try:
