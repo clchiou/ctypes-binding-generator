@@ -46,7 +46,16 @@ class foo {
   public:
     static int x;
 };
-        ''', 'x', '_ZN3foo1xE')
+
+namespace space {
+    class bar {
+      public:
+        static int y;
+    };
+}
+        ''',
+        [('x', '_ZN3foo1xE'),
+         ('y', '_ZN5space3bar1yE')])
 
 
 if __name__ == '__main__':

@@ -62,7 +62,8 @@ def _prefix(tree, output):
                 ::= <substitution>
                 ::= <prefix> <data-member-prefix>
     '''
-    if tree.semantic_parent.kind == CursorKind.CLASS_DECL:
+    if (tree.semantic_parent.kind == CursorKind.NAMESPACE or
+            tree.semantic_parent.kind == CursorKind.CLASS_DECL):
         _prefix(tree.semantic_parent, output)
         _unqualified_name(tree.semantic_parent, output)
 

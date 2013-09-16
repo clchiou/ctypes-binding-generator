@@ -43,30 +43,31 @@ class TestCtypesBindingGenerator(unittest.TestCase):
 class TestCppMangler(unittest.TestCase):
     '''Boilerplate of unit tests.'''
 
-    def run_test(self, cpp_code, symbol, mangled_name, args=None):
+    def run_test(self, cpp_code, symbols, args=None):
         '''Test mangler.'''
         cbgen = CtypesBindingGenerator()
         cpp_src = StringIO(cpp_code)
         cbgen.parse('input.cpp', contents=cpp_src, args=args)
         root = cbgen.syntax_tree_forest[0]
-        result = []
+        symbol_table = dict((symbol, {}) for symbol, _ in symbols)
         def search_node(tree):
             '''Search node that matched by name.'''
-            if tree.spelling == symbol:
-                result.append(tree)
-                raise StopIteration()
-        try:
-            root.traverse(preorder=search_node)
-        except StopIteration:
-            pass
-        tree = result[0]
-        name = mangle(tree)
+            if tree.spelling in symbol_table:
+                symbol_table[tree.spelling]['tree'] = tree
+        root.traverse(preorder=search_node)
+        for blob in symbol_table.values():
+            blob['output_name'] = mangle(blob['tree'])
 
         errmsg = StringIO()
-        errmsg.write('when mangling symbol %s: %s != %s\n' %
-                (repr(symbol), repr(mangled_name), repr(name)))
+        for symbol, mangled_name in symbols:
+            output_name = symbol_table[symbol]['output_name']
+            errmsg.write('mangling symbol %s: %s vs %s\n' %
+                    (repr(symbol), repr(mangled_name), repr(output_name)))
         format_ast([root.translation_unit], errmsg)
-        self.assertEqual(mangled_name, name, errmsg.getvalue())
+        errmsg = errmsg.getvalue()
+        for symbol, mangled_name in symbols:
+            output_name = symbol_table[symbol]['output_name']
+            self.assertEqual(mangled_name, output_name, errmsg)
 
 
 class TestMacroGenerator(unittest.TestCase):
