@@ -65,6 +65,10 @@ void func_std_ns(void);
 void func1(void);
 int func2(char *, ...);
 void func3(float *, short &, double _Complex, const volatile long*);
+enum enum1 {
+    X
+};
+void func4(cls, enum1);
         ''',
         [({'name': 'cls', 'kind': ['CONSTRUCTOR']}, '_ZN3clsC1Ev'),
          ('~cls', '_ZN3clsD1Ev'),
@@ -76,8 +80,9 @@ void func3(float *, short &, double _Complex, const volatile long*);
          ('func_std_ns', '_ZSt11func_std_nsv'),
          ('func1', '_Z5func1v'),
          ('func2', '_Z5func2Pcz'),
-         ('func3', '_Z5func3PfRsCdPVKl')],
-        args=['-std=c++11'])
+         ('func3', '_Z5func3PfRsCdPVKl'),
+         ('func4', '_Z5func43cls5enum1'),
+        ], args=['-std=c++11'])
 
 
 if __name__ == '__main__':

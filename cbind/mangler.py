@@ -32,6 +32,8 @@ def _encoding(tree, output):
             tree.kind == CursorKind.DESTRUCTOR):
         _name(tree, output)
         _bare_function_type(tree, output, mangle_return_type=False)
+    elif _is_special_entity(tree):
+        _special_name(tree, output)
     else:
         _name(tree, output)
 
@@ -45,8 +47,22 @@ def _name(tree, output):
     if (tree.semantic_parent.kind == CursorKind.TRANSLATION_UNIT or
             _is_std_namespace(tree)):
         _unscoped_name(tree, output)
+    elif _is_unscoped_template(tree):
+        _unscoped_template_name(tree, output)
+        _template_args(tree, output)
+    elif _is_local_entity(tree):
+        _local_name(tree, output)
     else:
         _nested_name(tree, output)
+
+
+def _special_name(tree, output):
+    '''<special-name> ::= TV <type> # virtual table
+                      ::= TT <type> # VTT structure (construction vtable index)
+                      ::= TI <type> # typeinfo structure
+                      ::= TS <type> # typeinfo name (null-terminated byte string)
+    '''
+    pass
 
 
 def _unscoped_name(tree, output):
@@ -56,6 +72,13 @@ def _unscoped_name(tree, output):
     if _is_std_namespace(tree):
         output.write('St')
     _unqualified_name(tree, output)
+
+
+def _unscoped_template_name(tree, output):
+    '''<unscoped-template-name> ::= <unscoped-name>
+                                ::= <substitution>
+    '''
+    _unscoped_name(tree, output)
 
 
 def _nested_name(tree, output):
@@ -76,15 +99,26 @@ def _prefix(tree, output):
     '''<prefix> ::= <prefix> <unqualified-name>
                 ::= <template-prefix> <template-args>
                 ::= <template-param>
-                ::= <decltype>
                 ::= # empty
                 ::= <substitution>
-                ::= <prefix> <data-member-prefix>
     '''
     if (tree.semantic_parent.kind == CursorKind.NAMESPACE or
             tree.semantic_parent.kind == CursorKind.CLASS_DECL):
         _prefix(tree.semantic_parent, output)
         _unqualified_name(tree.semantic_parent, output)
+    elif _is_template(tree):
+        _template_prefix(tree, output)
+        _template_args(tree, output)
+    elif _is_template_param(tree):
+        _template_param(tree, output)
+
+
+def _template_prefix(tree, output):
+    '''<template-prefix> ::= <prefix> <template unqualified-name>
+                         ::= <template-param>
+                         ::= <substitution>
+    '''
+    pass
 
 
 def _unqualified_name(tree, output):
@@ -225,6 +259,8 @@ def _type(type_, output):
     _cv_qualifiers(type_, output)
     if type_.kind in BUILTIN_TYPE_MAP:
         output.write(BUILTIN_TYPE_MAP[type_.kind])
+    elif type_.is_user_defined_type():
+        _class_enum_type(type_.get_declaration(), output)
 
 
 def _cv_qualifiers(type_, output):
@@ -259,10 +295,65 @@ def _bare_function_type(tree, output, mangle_return_type):
             output.write('z')
 
 
+def _class_enum_type(tree, output):
+    '''<class-enum-type> ::= <name>'''
+    _name(tree, output)
+
+
+def _template_param(tree, output):
+    '''<template-param> ::= T_  # first template parameter
+                        ::= T <parameter-2 non-negative number> _
+    '''
+    pass
+
+
+def _template_args(tree, output):
+    '''<template-args> ::= I <template-arg>+ E
+       <template-arg>  ::= <type>               # type or template
+                       ::= X <expression> E     # expression
+                       ::= <expr-primary>       # simple expressions
+                       ::= J <template-arg>* E  # argument pack
+    '''
+    pass
+
+
+def _local_name(tree, output):
+    '''<local-name> := Z <function encoding> E <entity name> [<discriminator>]
+                    := Z <function encoding> E s [<discriminator>]
+       <discriminator> := _ <non-negative number>
+    '''
+    pass
+
+
 def _is_std_namespace(tree):
     '''Check if it is declared in std namespace.'''
     while tree:
         if tree.kind == CursorKind.NAMESPACE and tree.spelling == 'std':
             return True
         tree = tree.semantic_parent
+    return False
+
+
+def _is_special_entity(tree):
+    '''Check if it is a special entity.'''
+    return False
+
+
+def _is_local_entity(tree):
+    '''Check if it is a local entity.'''
+    return False
+
+
+def _is_unscoped_template(tree):
+    '''Check if it is a function or class template.'''
+    return False
+
+
+def _is_template(tree):
+    '''Check if it is a function or class template.'''
+    return False
+
+
+def _is_template_param(tree):
+    '''Check if it is a function or class template.'''
     return False
