@@ -172,6 +172,7 @@ def _type(type_, output):
               ::= C <type>  # complex pair (C 2000)
               ::= G <type>  # imaginary (C 2000)
               ::= U <source-name> <type>    # vendor extended type qualifier
+
        <builtin-type> ::= v     # void
                       ::= w     # wchar_t
                       ::= b     # bool
@@ -205,27 +206,42 @@ def _type(type_, output):
                       ::= Dn    # std::nullptr_t (i.e., decltype(nullptr))
                       ::= u <source-name>   # vendor extended type
     '''
-    _cv_qualifiers(type_, output)
     while True:
+        # TODO(clchiou): G <type>  # imaginary (C 2000)
         if type_.kind == TypeKind.POINTER:
             output.write('P')
             type_ = type_.get_pointee()
+        elif type_.kind == TypeKind.LVALUEREFERENCE:
+            output.write('R')
+            type_ = type_.get_pointee()
+        elif type_.kind == TypeKind.RVALUEREFERENCE:
+            output.write('O')
+            type_ = type_.get_pointee()
+        elif type_.kind == TypeKind.COMPLEX:
+            output.write('C')
+            type_ = type_.get_element_type()
         else:
             break
+    _cv_qualifiers(type_, output)
     if type_.kind in BUILTIN_TYPE_MAP:
         output.write(BUILTIN_TYPE_MAP[type_.kind])
 
 
 def _cv_qualifiers(type_, output):
     '''<CV-qualifiers> ::= [r] [V] [K]  # restrict (C99), volatile, const'''
-    pass
+    # TODO(clchiou): [r]  # restrict (C99)
+    if type_.is_volatile_qualified():
+        output.write('V')
+    if type_.is_const_qualified():
+        output.write('K')
 
 
 def _ref_qualifier(type_, output):
     '''<ref-qualifier> ::= R    # & ref-qualifier
                        ::= O    # && ref-qualifier
     '''
-    pass
+    if type_.kind == TypeKind.FUNCTIONPROTO:
+        pass  # TODO: ref-qualifier is not exposed through libclang.
 
 
 def _bare_function_type(tree, output, mangle_return_type):

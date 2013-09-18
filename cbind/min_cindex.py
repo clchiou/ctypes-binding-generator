@@ -431,6 +431,16 @@ clang_getCanonicalType.restype = Type
 clang_getCanonicalType.errcheck = ref_translation_unit
 Type.get_canonical = _CtypesFunctor(clang_getCanonicalType)
 
+clang_isConstQualifiedType = _lib.clang_isConstQualifiedType
+clang_isConstQualifiedType.argtypes = [Type]
+clang_isConstQualifiedType.restype = c_uint
+Type.is_const_qualified = _CtypesFunctor(clang_isConstQualifiedType)
+
+clang_isVolatileQualifiedType = _lib.clang_isVolatileQualifiedType
+clang_isVolatileQualifiedType.argtypes = [Type]
+clang_isVolatileQualifiedType.restype = c_uint
+Type.is_volatile_qualified = _CtypesFunctor(clang_isVolatileQualifiedType)
+
 clang_getPointeeType = _lib.clang_getPointeeType
 clang_getPointeeType.argtypes = [Type]
 clang_getPointeeType.restype = Type
@@ -462,6 +472,12 @@ clang_isFunctionTypeVariadic = _lib.clang_isFunctionTypeVariadic
 clang_isFunctionTypeVariadic.argtypes = [Type]
 clang_isFunctionTypeVariadic.restype = c_uint
 Type.is_function_variadic = _CtypesFunctor(clang_isFunctionTypeVariadic)
+
+clang_getElementType = _lib.clang_getElementType
+clang_getElementType.argtypes = [Type]
+clang_getElementType.restype = Type
+clang_getElementType.errcheck = ref_translation_unit
+Type.get_element_type = _CtypesFunctor(clang_getElementType)
 
 clang_getArrayElementType = _lib.clang_getArrayElementType
 clang_getArrayElementType.argtypes = [Type]

@@ -31,6 +31,7 @@ import:
                        EnumConstantDeclUnsignedValue|
                        EnumConstantDeclValue|
                        EnumDeclIntegerType|
+                       ElementType|
                        FieldDeclBitWidth|
                        FileName|
                        InstantiationLocation|
@@ -43,7 +44,11 @@ import:
                        TypeDeclaration|
                        TypedefDeclUnderlyingType)$
     - name: ^clang_hashCursor$
-    - name: ^clang_is(CursorDefinition|Declaration|FunctionTypeVariadic)$
+    - name: ^clang_is(ConstQualifiedType|
+                      CursorDefinition|
+                      Declaration|
+                      FunctionTypeVariadic|
+                      VolatileQualifiedType)$
     - name: ^clang_parseTranslationUnit$
     - name: ^clang_Type_get(AlignOf|OffsetOf)$
     - name: ^clang_visitChildren$
@@ -98,14 +103,20 @@ method:
       method: Type.get_array_size
     - name: clang_getCanonicalType
       method: Type.get_canonical
+    - name: clang_getElementType
+      method: Type.get_element_type
     - name: clang_getTypeDeclaration
       method: Type.get_declaration
     - name: clang_getPointeeType
       method: Type.get_pointee
     - name: clang_getResultType
       method: Type.get_result
+    - name: clang_isConstQualifiedType
+      method: Type.is_const_qualified
     - name: clang_isFunctionTypeVariadic
       method: Type.is_function_variadic
+    - name: clang_isVolatileQualifiedType
+      method: Type.is_volatile_qualified
 
 mixin:
     - name: ^CXCursor$
