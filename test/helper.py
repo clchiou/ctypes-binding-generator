@@ -6,6 +6,7 @@ import token
 import tokenize
 import unittest
 from cbind import CtypesBindingGenerator, MacroGenerator, mangle
+from cbind.config import SyntaxTreeMatcher
 from pycbind.compatibility import StringIO
 
 
@@ -43,30 +44,53 @@ class TestCtypesBindingGenerator(unittest.TestCase):
 class TestCppMangler(unittest.TestCase):
     '''Boilerplate of unit tests.'''
 
+    def _make_symbol_table(self, symbols, root):
+        '''Make symbol table.'''
+        symbol_table = []
+        for spec, mangled_name in symbols:
+            if isinstance(spec, str):
+                symbol = spec
+                matcher = SyntaxTreeMatcher.make([{'name': '^%s$' % spec}])
+            else:
+                symbol = spec['name']
+                matcher = SyntaxTreeMatcher.make([spec])
+            symbol_table.append({
+                'symbol': symbol,
+                'matcher': matcher,
+                'mangled_name': mangled_name,
+            })
+        def search_node(tree):
+            '''Search matched node.'''
+            for blob in symbol_table:
+                if blob['matcher'].do_match(tree):
+                    self.assertTrue('tree' not in blob)  # Unique matching
+                    blob['tree'] = tree
+        root.traverse(preorder=search_node)
+        for blob in symbol_table:
+            blob['output_name'] = mangle(blob['tree'])
+        return symbol_table
+
     def run_test(self, cpp_code, symbols, args=None):
         '''Test mangler.'''
         cbgen = CtypesBindingGenerator()
         cpp_src = StringIO(cpp_code)
         cbgen.parse('input.cpp', contents=cpp_src, args=args)
         root = cbgen.syntax_tree_forest[0]
-        symbol_table = dict((symbol, {}) for symbol, _ in symbols)
-        def search_node(tree):
-            '''Search node that matched by name.'''
-            if tree.spelling in symbol_table:
-                symbol_table[tree.spelling]['tree'] = tree
-        root.traverse(preorder=search_node)
-        for blob in symbol_table.values():
-            blob['output_name'] = mangle(blob['tree'])
-
+        symbol_table = self._make_symbol_table(symbols, root)
         errmsg = StringIO()
-        for symbol, mangled_name in symbols:
-            output_name = symbol_table[symbol]['output_name']
-            errmsg.write('mangling symbol %s: %s vs %s\n' %
-                    (repr(symbol), repr(mangled_name), repr(output_name)))
+        errmsg.write('In comparing mangled names:\n')
+        for blob in symbol_table:
+            symbol = blob['symbol']
+            mangled_name = blob['mangled_name']
+            output_name = blob['output_name']
+            if mangled_name != output_name:
+                errmsg.write('Mangling symbol %s: %s != %s\n' %
+                        (repr(symbol), repr(mangled_name), repr(output_name)))
         format_ast([root.translation_unit], errmsg)
         errmsg = errmsg.getvalue()
-        for symbol, mangled_name in symbols:
-            output_name = symbol_table[symbol]['output_name']
+        for blob in symbol_table:
+            mangled_name = blob['mangled_name']
+            output_name = blob['output_name']
             self.assertEqual(mangled_name, output_name, errmsg)
 
 

@@ -44,6 +44,8 @@ class TestMangler(helper.TestCppMangler):
         self.run_test('''
 class cls {
   public:
+    cls();
+    ~cls();
     static int smemb1;
 };
 
@@ -61,7 +63,9 @@ void func_std_ns(void);
 void func1(void);
 int func2(char *, ...);
         ''',
-        [('smemb1', '_ZN3cls6smemb1E'),
+        [({'name': 'cls', 'kind': ['CONSTRUCTOR']}, '_ZN3clsC1Ev'),
+         ('~cls', '_ZN3clsD1Ev'),
+         ('smemb1', '_ZN3cls6smemb1E'),
          ('smemb2', '_ZN5space3cls6smemb2E'),
          ('func_std_ns', '_ZSt11func_std_nsv'),
          ('func1', '_Z5func1v'),

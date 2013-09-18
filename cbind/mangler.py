@@ -27,7 +27,9 @@ def _encoding(tree, output):
                   ::= <data name>
                   ::= <special-name>
     '''
-    if tree.kind == CursorKind.FUNCTION_DECL:
+    if (tree.kind == CursorKind.FUNCTION_DECL or
+            tree.kind == CursorKind.CONSTRUCTOR or
+            tree.kind == CursorKind.DESTRUCTOR):
         _name(tree, output)
         _bare_function_type(tree, output, mangle_return_type=False)
     else:
@@ -40,11 +42,11 @@ def _name(tree, output):
               ::= <unscoped-templated-name> <template-args>
               ::= <local-name>
     '''
-    parent = tree.semantic_parent
-    if (parent.kind == CursorKind.TRANSLATION_UNIT or _is_std_namespace(tree)):
+    if (tree.semantic_parent.kind == CursorKind.TRANSLATION_UNIT or
+            _is_std_namespace(tree)):
         _unscoped_name(tree, output)
-        return
-    _nested_name(tree, output)
+    else:
+        _nested_name(tree, output)
 
 
 def _unscoped_name(tree, output):
@@ -89,15 +91,41 @@ def _unqualified_name(tree, output):
     '''<unqualified-name> ::= <operator-name>
                           ::= <ctor-dtor-name>
                           ::= <source-name>
-                          ::= <unnamed-type-name>
     '''
-    _source_name(tree, output)
+    if tree.kind == CursorKind.CONSTRUCTOR:
+        _ctor_name(tree, output)
+    elif tree.kind == CursorKind.DESTRUCTOR:
+        _dtor_name(tree, output)
+    else:
+        _source_name(tree, output)
 
 
 def _source_name(tree, output):
     '''<source-name> ::= <positive length number> <identifier>'''
     assert tree.spelling
     output.write('%d%s' % (len(tree.spelling), tree.spelling))
+
+
+def _ctor_name(tree, output):
+    '''<ctor-dtor-name> ::= C1  # complete object constructor
+                        ::= C2  # base object constructor
+                        ::= C3  # complete object allocating constructor
+                        ::= D0  # deleting destructor
+                        ::= D1  # complete object destructor
+                        ::= D2  # base object destructor
+    '''
+    output.write('C1')
+
+
+def _dtor_name(tree, output):
+    '''<ctor-dtor-name> ::= C1  # complete object constructor
+                        ::= C2  # base object constructor
+                        ::= C3  # complete object allocating constructor
+                        ::= D0  # deleting destructor
+                        ::= D1  # complete object destructor
+                        ::= D2  # base object destructor
+    '''
+    output.write('D1')
 
 
 BUILTIN_TYPE_MAP = {

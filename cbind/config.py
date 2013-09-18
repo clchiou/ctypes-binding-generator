@@ -45,6 +45,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         enum
         errcheck
         import_
+        kind
         method
         mixin
         name
@@ -60,7 +61,10 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     def make(cls, matcher_specs):
         '''Create a sum of matchers.'''
         matchers = tuple(cls._make(spec) for spec in matcher_specs)
-        return MatcherAggregator(matchers)
+        if len(matchers) == 1:
+            return matchers[0]
+        else:
+            return MatcherAggregator(matchers)
 
     @classmethod
     def _make(cls, spec):
@@ -71,6 +75,11 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
                     for regex in spec['argtypes'])
         else:
             patterns['argtypes'] = None
+        if 'kind' in spec:
+            patterns['kind'] = [getattr(CursorKind, kind)
+                    for kind in spec['kind']]
+        else:
+            patterns['kind'] = None
         if 'parent' in spec:
             patterns['parent'] = cls._make(spec['parent'])
         else:
@@ -113,12 +122,14 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     def do_match(self, tree):
         '''Match tree.'''
         if (not self.argtypes and
+            not self.kind and
             not self.name and
             not self.parent and
             not self.restype):
             logging.info('Could not match with empty rule')
             return False
         return ((not self.name or self._match_original_name(tree)) and
+                (not self.kind or tree.kind in self.kind) and
                 (not self.argtypes or self._match_argtypes(tree)) and
                 (not self.restype or self._match_restype(tree)) and
                 (not self.parent or not tree.semantic_parent or
