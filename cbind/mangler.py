@@ -84,7 +84,7 @@ def _encoding(tree, output):
             tree.kind == CursorKind.DESTRUCTOR or
             tree.kind == CursorKind.CXX_METHOD):
         _name(tree, output)
-        _bare_function_type(tree, output, mangle_return_type=False)
+        _bare_function_type(tree.type, output, mangle_return_type=False)
     elif _is_special_entity(tree):
         _special_name(tree, output)
     else:
@@ -438,10 +438,14 @@ def _type(type_, output):
     _cv_qualifiers(type_, output)
     if type_.kind in BUILTIN_TYPE_MAP:
         output.write(BUILTIN_TYPE_MAP[type_.kind])
+        return
+    output.begin_substitution()
+    canonical = type_.get_canonical()
+    if canonical.kind == TypeKind.FUNCTIONPROTO:
+        _function_type(canonical, output)
     elif type_.is_user_defined_type():
-        output.begin_substitution()
         _class_enum_type(type_.get_declaration(), output)
-        output.end_substitution()
+    output.end_substitution()
 
 
 def _cv_qualifiers(type_, output):
@@ -461,18 +465,27 @@ def _ref_qualifier(type_, output):
         pass  # TODO: ref-qualifier is not exposed through libclang.
 
 
-def _bare_function_type(tree, output, mangle_return_type):
+def _function_type(type_, output):
+    '''<function-type> ::= F [Y] <bare-function-type> E'''
+    output.write('F')
+    # TODO: Check extern "C" and output 'Y'
+    _bare_function_type(type_, output, mangle_return_type=True)
+    output.write('E')
+
+
+def _bare_function_type(type_, output, mangle_return_type):
     '''<bare-function-type> ::= <signature type>+
        # types are possible return type, then parameter types
     '''
     if mangle_return_type:
-        _type(tree.result_type, output)
-    if tree.get_num_arguments() == 0 and not tree.type.is_function_variadic():
+        _type(type_.get_result(), output)
+    argtypes = type_.get_argument_types()
+    if not argtypes and not type_.is_function_variadic():
         output.write('v')
     else:
-        for arg in tree.get_arguments():
-            _type(arg.type, output)
-        if tree.type.is_function_variadic():
+        for argtype in argtypes:
+            _type(argtype, output)
+        if type_.is_function_variadic():
             output.write('z')
 
 
