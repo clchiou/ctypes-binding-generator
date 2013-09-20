@@ -381,6 +381,7 @@ TypeKind.register("VECTOR", 113)
 TypeKind.register("INCOMPLETEARRAY", 114)
 TypeKind.register("VARIABLEARRAY", 115)
 TypeKind.register("DEPENDENTSIZEDARRAY", 116)
+TypeKind.register("MEMBERPOINTER", 117)
 
 class Type(TypeMixin, Structure):
     pass
@@ -489,6 +490,12 @@ clang_getArraySize = _lib.clang_getArraySize
 clang_getArraySize.argtypes = [Type]
 clang_getArraySize.restype = c_longlong
 Type.get_array_size = _CtypesFunctor(clang_getArraySize)
+
+clang_getClassType = _lib.clang_getClassType
+clang_getClassType.argtypes = [Type]
+clang_getClassType.restype = Type
+clang_getClassType.errcheck = ref_translation_unit
+Type.get_class_type = _CtypesFunctor(clang_getClassType)
 
 clang_Type_getAlignOf = _lib.clang_Type_getAlignOf
 clang_Type_getAlignOf.argtypes = [Type]

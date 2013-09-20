@@ -246,6 +246,7 @@ class SyntaxTreeType:
 
     get_array_element_type = _make_type_getter(Type.get_array_element_type)
     get_canonical = _make_type_getter(Type.get_canonical)
+    get_class_type = _make_type_getter(Type.get_class_type)
     if hasattr(Type, 'element_type'):
         get_element_type = _make_type_getter(lambda c_type: c_type.element_type)
     else:

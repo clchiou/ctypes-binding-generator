@@ -443,6 +443,8 @@ def _type(type_, output):
     canonical = type_.get_canonical()
     if canonical.kind == TypeKind.FUNCTIONPROTO:
         _function_type(canonical, output)
+    elif type_.kind == TypeKind.MEMBERPOINTER:
+        _pointer_to_member_type(type_, output)
     elif type_.is_user_defined_type():
         _class_enum_type(type_.get_declaration(), output)
     output.end_substitution()
@@ -492,6 +494,13 @@ def _bare_function_type(type_, output, mangle_return_type):
 def _class_enum_type(tree, output):
     '''<class-enum-type> ::= <name>'''
     _name(tree, output)
+
+
+def _pointer_to_member_type(type_, output):
+    '''<pointer-to-member-type> ::= M <class type> <member type>'''
+    output.write('M')
+    _type(type_.get_class_type(), output)
+    _type(type_.get_pointee(), output)
 
 
 def _template_param(tree, output):

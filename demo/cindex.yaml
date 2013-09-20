@@ -18,6 +18,7 @@ import:
                        ArrayElementType|
                        ArraySize|
                        CanonicalType|
+                       ClassType|
                        CString|
                        CursorLinkage|
                        CursorLocation|
@@ -105,6 +106,8 @@ method:
       method: Type.get_array_size
     - name: clang_getCanonicalType
       method: Type.get_canonical
+    - name: clang_getClassType
+      method: Type.get_class_type
     - name: clang_getElementType
       method: Type.get_element_type
     - name: clang_getTypeDeclaration

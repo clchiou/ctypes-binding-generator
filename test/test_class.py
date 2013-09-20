@@ -70,8 +70,8 @@ enum enum1 {
     X
 };
 void func4(cls, enum1);
-
 void func5(void (*)());
+void func6(void (cls::*)());
         ''',
         [({'name': 'cls', 'kind': ['CONSTRUCTOR']}, '_ZN3clsC1Ev'),
          ('~cls', '_ZN3clsD1Ev'),
@@ -87,6 +87,7 @@ void func5(void (*)());
          ('func3', '_Z5func3PfRsCdPVKl'),
          ('func4', '_Z5func43cls5enum1'),
          ('func5', '_Z5func5PFvvE'),
+         ('func6', '_Z5func6M3clsFvvE'),
         ], args=['-std=c++11'])
 
 
