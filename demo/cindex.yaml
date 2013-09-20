@@ -62,6 +62,8 @@ rename:
           function: 'lambda match: match.group(1).upper()'
     - name: CX(Cursor|Linkage)_
       rename:
+        - pattern: '(CXX)'
+          replace: \1_
         - pattern: '([a-z])([A-Z])'
           replace: \1_\2
         - pattern: CX(Cursor|Linkage)_(\w+)

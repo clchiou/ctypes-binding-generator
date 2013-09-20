@@ -29,7 +29,8 @@ def _encoding(tree, output):
     '''
     if (tree.kind == CursorKind.FUNCTION_DECL or
             tree.kind == CursorKind.CONSTRUCTOR or
-            tree.kind == CursorKind.DESTRUCTOR):
+            tree.kind == CursorKind.DESTRUCTOR or
+            tree.kind == CursorKind.CXX_METHOD):
         _name(tree, output)
         _bare_function_type(tree, output, mangle_return_type=False)
     elif _is_special_entity(tree):
@@ -130,6 +131,8 @@ def _unqualified_name(tree, output):
         _ctor_name(tree, output)
     elif tree.kind == CursorKind.DESTRUCTOR:
         _dtor_name(tree, output)
+    elif _is_operator(tree):
+        _operator_name(tree, output)
     else:
         _source_name(tree, output)
 
@@ -138,6 +141,126 @@ def _source_name(tree, output):
     '''<source-name> ::= <positive length number> <identifier>'''
     assert tree.spelling
     output.write('%d%s' % (len(tree.spelling), tree.spelling))
+
+
+OPERATOR_MAP = {
+        'new':      'nw',
+        'new[]':    'na',
+        'delete':   'dl',
+        'delete[]': 'da',
+        '~':        'co',
+        '+':        ('ps', 'pl'),
+        '-':        ('ng', 'mi'),
+        '*':        ('de', 'ml'),
+        '/':        'dv',
+        '%':        'rm',
+        '&':        ('ad', 'an'),
+        '|':        'or',
+        '^':        'eo',
+        '=':        'aS',
+        '+=':       'pL',
+        '-=':       'mI',
+        '*=':       'mL',
+        '/=':       'dV',
+        '%=':       'rM',
+        '&=':       'aN',
+        '|=':       'oR',
+        '^=':       'eO',
+        '<<':       'ls',
+        '>>':       'rs',
+        '<<=':      'lS',
+        '>>=':      'rS',
+        '==':       'eq',
+        '!=':       'ne',
+        '<':        'lt',
+        '>':        'gt',
+        '<=':       'le',
+        '>=':       'ge',
+        '!':        'nt',
+        '&&':       'aa',
+        '||':       'oo',
+        '++':       'pp',
+        '--':       'mm',
+        ',':        'cm',
+        '->*':      'pm',
+        '->':       'pt',
+        '()':       'cl',
+        '[]':       'ix',
+        '?':        'qu',
+}
+
+
+def _is_operator(tree):
+    '''Check if it is C++ operator overloading.'''
+    if tree.kind != CursorKind.CXX_METHOD:
+        return False
+    if not tree.spelling.startswith('operator'):
+        return False
+    operator = tree.spelling[len('operator'):].strip()
+    return operator in OPERATOR_MAP
+
+
+def _operator_name(tree, output):
+    '''<operator-name> ::= nw   # new
+                       ::= na   # new[]
+                       ::= dl   # delete
+                       ::= da   # delete[]
+                       ::= ps   # + (unary)
+                       ::= ng   # - (unary)
+                       ::= ad   # & (unary)
+                       ::= de   # * (unary)
+                       ::= co   # ~
+                       ::= pl   # +
+                       ::= mi   # -
+                       ::= ml   # *
+                       ::= dv   # /
+                       ::= rm   # %
+                       ::= an   # &
+                       ::= or   # |
+                       ::= eo   # ^
+                       ::= aS   # =
+                       ::= pL   # +=
+                       ::= mI   # -=
+                       ::= mL   # *=
+                       ::= dV   # /=
+                       ::= rM   # %=
+                       ::= aN   # &=
+                       ::= oR   # |=
+                       ::= eO   # ^=
+                       ::= ls   # <<
+                       ::= rs   # >>
+                       ::= lS   # <<=
+                       ::= rS   # >>=
+                       ::= eq   # ==
+                       ::= ne   # !=
+                       ::= lt   # <
+                       ::= gt   # >
+                       ::= le   # <=
+                       ::= ge   # >=
+                       ::= nt   # !
+                       ::= aa   # &&
+                       ::= oo   # ||
+                       ::= pp   # ++
+                       ::= mm   # --
+                       ::= cm   # ,
+                       ::= pm   # ->*
+                       ::= pt   # ->
+                       ::= cl   # ()
+                       ::= ix   # []
+                       ::= qu   # ?
+                       ::= st   # sizeof (a type)
+                       ::= sz   # sizeof (an expression)
+                       ::= cv <type>    # (cast)
+                       ::= v <digit> <source-name>  # vendor extended operator
+    '''
+    operator = tree.spelling[len('operator'):].strip()
+    operator_mangled = OPERATOR_MAP[operator]
+    if operator in ('+', '-', '*', '&'):
+        if tree.get_num_arguments() == 0:
+            operator_mangled = operator_mangled[0]
+        else:
+            operator_mangled = operator_mangled[1]
+    output.write(operator_mangled)
 
 
 def _ctor_name(tree, output):
