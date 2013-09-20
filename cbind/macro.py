@@ -211,6 +211,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
         macros = StringIO(macros)
         # Parse preprocessor output
         for define_line in macros:
+            define_line = define_line.lstrip()  # remove leading spaces
             if not define_line.startswith(_MAGIC):
                 continue
             sep = define_line.find(' ')
