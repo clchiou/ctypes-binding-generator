@@ -9,9 +9,61 @@ from pycbind.compatibility import StringIO
 # TODO(clchiou): Complete mangle BNF.
 
 
+class MangleBuffer:
+    '''Mangled string output buffer.'''
+
+    @staticmethod
+    def make_substitution(seq_id):
+        '''Make substitution string.'''
+        if seq_id == 0:
+            return 'S_'
+        seq_id -= 1
+        base36 = []
+        while True:
+            seq_id, index = divmod(seq_id, 36)
+            if index < 10:
+                base36.append(chr(ord('0') + index))
+            else:
+                base36.append(chr(ord('A') + index - 10))
+            if seq_id == 0:
+                break
+        return 'S%s_' % ''.join(reversed(base36))
+
+    def __init__(self):
+        self.bufs = [StringIO()]
+        self.substitutions = {}
+        self.seq_id = 0
+
+    def begin_substitution(self):
+        '''Begin substitution session.'''
+        self.bufs.append(StringIO())
+
+    def end_substitution(self):
+        '''End substitution session.'''
+        assert len(self.bufs) > 1
+        mangled = self.bufs.pop().getvalue()
+        if mangled == '':
+            self.bufs[-1].write(mangled)
+        elif mangled in self.substitutions:
+            self.bufs[-1].write(self.substitutions[mangled])
+        else:
+            self.substitutions[mangled] = self.make_substitution(self.seq_id)
+            self.seq_id += 1
+            self.bufs[-1].write(mangled)
+
+    def write(self, mangled):
+        '''Write the piece of mangled string.'''
+        self.bufs[-1].write(mangled)
+
+    def getvalue(self):
+        '''Get the mangled output.'''
+        assert len(self.bufs) == 1
+        return self.bufs[0].getvalue()
+
+
 def mangle(tree):
     '''Mangle tree node.'''
-    output = StringIO()
+    output = MangleBuffer()
     _mangled_name(tree, output)
     return output.getvalue()
 
@@ -79,7 +131,9 @@ def _unscoped_template_name(tree, output):
     '''<unscoped-template-name> ::= <unscoped-name>
                                 ::= <substitution>
     '''
+    output.begin_substitution()
     _unscoped_name(tree, output)
+    output.end_substitution()
 
 
 def _nested_name(tree, output):
@@ -103,6 +157,7 @@ def _prefix(tree, output):
                 ::= # empty
                 ::= <substitution>
     '''
+    output.begin_substitution()
     if (tree.semantic_parent.kind == CursorKind.NAMESPACE or
             tree.semantic_parent.kind == CursorKind.CLASS_DECL):
         _prefix(tree.semantic_parent, output)
@@ -112,6 +167,7 @@ def _prefix(tree, output):
         _template_args(tree, output)
     elif _is_template_param(tree):
         _template_param(tree, output)
+    output.end_substitution()
 
 
 def _template_prefix(tree, output):
@@ -383,7 +439,9 @@ def _type(type_, output):
     if type_.kind in BUILTIN_TYPE_MAP:
         output.write(BUILTIN_TYPE_MAP[type_.kind])
     elif type_.is_user_defined_type():
+        output.begin_substitution()
         _class_enum_type(type_.get_declaration(), output)
+        output.end_substitution()
 
 
 def _cv_qualifiers(type_, output):

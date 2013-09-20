@@ -49,7 +49,7 @@ class cls {
     static int smemb1;
     void membf1() & {}
     void membf2() && {}
-    const cls &operator+(void *);
+    const cls &operator+(const cls &);
 };
 
 namespace space {
@@ -75,7 +75,7 @@ void func4(cls, enum1);
          ('~cls', '_ZN3clsD1Ev'),
          ('smemb1', '_ZN3cls6smemb1E'),
          ('smemb2', '_ZN5space3cls6smemb2E'),
-         ('operator\+', '_ZN3clsplEPv'),
+         ('operator\+', '_ZN3clsplERKS_'),
          # TODO: ref-qualifier is not exposed through libclang.
          #('membf1', '_ZNR3cls6membf1Ev'),
          #('membf2', '_ZNO3cls6membf2Ev'),
