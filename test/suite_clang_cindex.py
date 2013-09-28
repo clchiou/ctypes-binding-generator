@@ -1,8 +1,8 @@
 import sys
 import unittest
 
-import pycbind
-pycbind.choose_cindex_impl(pycbind.CLANG_CINDEX)
+import cbind
+cbind.choose_cindex_impl(cbind.CLANG_CINDEX)
 
 import suite_all
 

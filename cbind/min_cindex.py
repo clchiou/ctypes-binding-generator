@@ -4,6 +4,7 @@ import sys as _python_sys
 from ctypes import *
 
 # pylint: disable-all
+from cbind.compatibility import decode_str
 from cbind.min_cindex_helper import (check_cursor,
                                      ref_translation_unit,
                                      Index,
@@ -11,7 +12,6 @@ from cbind.min_cindex_helper import (check_cursor,
                                      SourceLocationMixin,
                                      TypeMixin,
                                      EnumerateKindMixin)
-from pycbind.compatibility import decode_str
 
 if _python_sys.platform == 'darwin':
     _lib = cdll.LoadLibrary('libclang.dylib')

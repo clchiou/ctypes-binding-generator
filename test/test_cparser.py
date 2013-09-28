@@ -2,8 +2,8 @@
 
 import unittest
 
+from cbind.compatibility import StringIO
 from cbind.macro import Token, Expression, Parser
-from pycbind.compatibility import StringIO
 
 
 class TestToken(unittest.TestCase):

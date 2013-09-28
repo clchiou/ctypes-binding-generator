@@ -2,7 +2,7 @@ import os
 import unittest
 
 import helper
-from cbind import CtypesBindingGenerator
+from cbind.ctypes_binding import CtypesBindingGenerator
 from cbind.source import SyntaxTree, SyntaxTreeType
 
 

@@ -1,9 +1,9 @@
 # Copyright (C) 2013 Che-Liang Chiou.
 
-'''Itanium C++ ABI of C++ external names (a.k.a. mangling)'''
+'''Itanium C++ ABI of external names (a.k.a. mangling)'''
 
 from cbind.cindex import CursorKind, TypeKind
-from pycbind.compatibility import StringIO
+from cbind.compatibility import StringIO
 
 
 # TODO(clchiou): Complete mangle BNF.

@@ -5,9 +5,11 @@ import tempfile
 import token
 import tokenize
 import unittest
-from cbind import CtypesBindingGenerator, MacroGenerator, mangle
+from cbind.compatibility import StringIO
 from cbind.config import SyntaxTreeMatcher
-from pycbind.compatibility import StringIO
+from cbind.ctypes_binding import CtypesBindingGenerator
+from cbind.macro import MacroGenerator
+from cbind.mangler import mangle
 
 
 class TestCtypesBindingGenerator(unittest.TestCase):

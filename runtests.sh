@@ -31,7 +31,7 @@ export PYTHONPATH="$(pwd)"
 
 pushd "${TEST_DIR}"
 
-PATHS_ARG='--source=cbind,pycbind,.'
+PATHS_ARG='--source=cbind,.'
 
 rm -f .coverage
 echo "Run tests under Python 2 (and generates test coverage report)"

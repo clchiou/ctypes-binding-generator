@@ -8,8 +8,8 @@ import re
 import subprocess
 from collections import OrderedDict, namedtuple
 from cbind.cindex import CursorKind
+from cbind.compatibility import StringIO, decode_str
 from cbind.source import SyntaxTree
-from pycbind.compatibility import StringIO, decode_str
 
 
 # List of direct-translation symbols.
