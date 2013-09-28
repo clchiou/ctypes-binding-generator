@@ -151,6 +151,9 @@ def format_two_column(code1, code2, output):
     '''Format codes in two column.'''
     input1 = StringIO(code1)
     input2 = StringIO(code2)
+    column1 = []
+    column2 = []
+    longest = 0
     while True:
         line1 = input1.readline()
         line2 = input2.readline()
@@ -158,7 +161,24 @@ def format_two_column(code1, code2, output):
             break
         line1 = line1.rstrip()
         line2 = line2.rstrip()
-        output.write('{0:<38} | {1:<38}\n'.format(line1, line2))
+        longest = max(longest, len(line1))
+        if line1:
+            column1.append(line1)
+        if line2:
+            column2.append(line2)
+    fmt = '{0:<%d} | {1}\n' % longest
+    i = 0
+    while i < len(column1) and i < len(column2):
+        if i < len(column1):
+            line1 = column1[i]
+        else:
+            line1 = ''
+        if i < len(column2):
+            line2 = column2[i]
+        else:
+            line2 = ''
+        output.write(fmt.format(line1, line2))
+        i += 1
 
 
 def format_ast(tunits, output):
