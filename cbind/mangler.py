@@ -159,7 +159,8 @@ def _prefix(tree, output):
     '''
     output.begin_substitution()
     if (tree.semantic_parent.kind == CursorKind.NAMESPACE or
-            tree.semantic_parent.kind == CursorKind.CLASS_DECL):
+            tree.semantic_parent.kind == CursorKind.CLASS_DECL or
+            tree.semantic_parent.kind == CursorKind.STRUCT_DECL):
         _prefix(tree.semantic_parent, output)
         _unqualified_name(tree.semantic_parent, output)
     elif _is_template(tree):

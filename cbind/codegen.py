@@ -5,6 +5,7 @@
 import logging
 
 from cbind.cindex import CursorKind, TypeKind
+from cbind.mangler import mangle
 import cbind.annotations as annotations
 
 
@@ -73,6 +74,19 @@ INDENT = '    '
 LIBNAME = '_lib'
 
 
+# Generate C++ bindings
+# TODO: Because C++ binding generation is an experimental feature, we would
+# not like to generate C++ binding without user consent.  But we will remove
+# this check when this feature is completed and not experimental.
+CPP = False
+
+
+def set_cpp_binding(cpp):
+    '''Set to true to generate C++ bindings.'''
+    global CPP  # pylint: disable=W0603
+    CPP = cpp
+
+
 def gen_tree_node(tree, output):
     '''Generate ctypes binding from a AST node.'''
     if not tree.get_annotation(annotations.REQUIRED, False):
@@ -105,10 +119,15 @@ def gen_tree_node(tree, output):
 
 def gen_record(tree, output, declared=False, declaration=False):
     '''Generate ctypes binding of a POD definition.'''
+    cls_name = tree.name
     if not declared:
-        _make_pod_header(tree, tree.name, output)
+        _make_pod_header(tree, cls_name, output)
     if not declaration:
-        _make_pod_body(tree, tree.name, output)
+        _make_pod_body(tree, cls_name, output)
+        if CPP:
+            if tree.kind != CursorKind.UNION_DECL:
+                for method in tree.get_method():
+                    _make_method(method, cls_name, output)
 
 
 def _make_type(type_):
@@ -189,23 +208,40 @@ def _make_typedef(tree, output):
     output.write('%s = %s\n' % (tree.name, _make_type(type_)))
 
 
-def _make_function(tree, output):
+def _make_function(tree, output, cls_name=None):
     '''Generate ctypes binding of a function declaration.'''
     if not tree.is_external_linkage():
         return
-    output.write('{0} = {1}.{2}\n'.format(tree.name, LIBNAME, tree.spelling))
+
+    cxx_method = tree.kind == CursorKind.CXX_METHOD
+    if cxx_method:
+        name = '%s.%s' % (cls_name, tree.name)
+        symbol_name = mangle(tree)
+    else:
+        name = tree.name
+        symbol_name = tree.spelling
+    output.write('{0} = {1}.{2}\n'.format(name, LIBNAME, symbol_name))
+
     argtypes = ', '.join(make_function_argtypes(tree))
     if argtypes:
-        output.write('%s.argtypes = [%s]\n' % (tree.name, argtypes))
+        output.write('%s.argtypes = [%s]\n' % (name, argtypes))
     if tree.result_type.kind != TypeKind.VOID:
         restype = make_function_restype(tree)
-        output.write('%s.restype = %s\n' % (tree.name, restype))
+        output.write('%s.restype = %s\n' % (name, restype))
     errcheck = tree.get_annotation(annotations.ERRCHECK, False)
     if errcheck:
-        output.write('%s.errcheck = %s\n' % (tree.name, errcheck))
+        output.write('%s.errcheck = %s\n' % (name, errcheck))
+
     method = tree.get_annotation(annotations.METHOD, False)
-    if method:
-        output.write('%s = _CtypesFunctor(%s)\n' % (method, tree.name))
+    if cxx_method:
+        if tree.is_static_method():
+            wrapper = 'staticmethod'
+        else:
+            wrapper = '_CtypesFunctor'
+        output.write('{name} = {wrapper}({name})\n'.format(
+            name=name, wrapper=wrapper))
+    elif method:
+        output.write('%s = _CtypesFunctor(%s)\n' % (method, name))
 
 
 def make_function_argtypes(tree):
@@ -262,6 +298,11 @@ def _make_pod_body(tree, name, output):
             output.write(',\n%s' % indent)
         output.write('%s' % field_stmt)
     output.write(']\n')
+
+
+def _make_method(method, cls_name, output):
+    '''Generate method of a class.'''
+    _make_function(method, output, cls_name=cls_name)
 
 
 def _make_enum(tree, output):

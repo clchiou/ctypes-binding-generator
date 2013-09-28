@@ -44,6 +44,7 @@ class SyntaxTree:
         get_num_arguments
         is_bitfield
         is_definition
+        is_static_method
         kind
         location
         result_type
@@ -68,6 +69,9 @@ class SyntaxTree:
     HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL,
         CursorKind.CLASS_DECL,
         CursorKind.UNION_DECL))
+
+    HAS_METHOD_DECL = frozenset((CursorKind.STRUCT_DECL,
+        CursorKind.CLASS_DECL))
 
     @classmethod
     def parse(cls, path, contents=None, args=None, annotation_table=None):
@@ -170,6 +174,14 @@ class SyntaxTree:
             return
         for child_tree in self.get_children():
             if child_tree.kind == CursorKind.FIELD_DECL:
+                yield child_tree
+
+    def get_method(self):
+        '''Get member methods of a class.'''
+        if self.kind not in self.HAS_METHOD_DECL:
+            return
+        for child_tree in self.get_children():
+            if child_tree.kind == CursorKind.CXX_METHOD:
                 yield child_tree
 
     def traverse(self, preorder=None, postorder=None, prune=None):

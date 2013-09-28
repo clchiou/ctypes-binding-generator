@@ -529,3 +529,8 @@ clang_isCursorDefinition.argtypes = [Cursor]
 clang_isCursorDefinition.restype = c_uint
 Cursor.is_definition = _CtypesFunctor(clang_isCursorDefinition)
 
+clang_CXXMethod_isStatic = _lib.clang_CXXMethod_isStatic
+clang_CXXMethod_isStatic.argtypes = [Cursor]
+clang_CXXMethod_isStatic.restype = c_uint
+Cursor.is_static_method = _CtypesFunctor(clang_CXXMethod_isStatic)
+

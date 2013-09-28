@@ -3,7 +3,7 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
 import functools
-from cbind.codegen import gen_tree_node, gen_record
+from cbind.codegen import gen_tree_node, gen_record, set_cpp_binding
 from cbind.config import SyntaxTreeMatcher
 from cbind.passes import (custom_pass,
         scan_required_nodes,
@@ -58,8 +58,9 @@ class _CtypesFunctor(object):
 class CtypesBindingGenerator:
     '''Generate ctypes binding from C source files with libclang.'''
 
-    def __init__(self):
+    def __init__(self, enable_cpp=False):
         '''Initialize the object.'''
+        self.enable_cpp = enable_cpp
         self.syntax_tree_forest = SyntaxTreeForest()
         self._config = {}
 
@@ -123,6 +124,7 @@ class CtypesBindingGenerator:
 
     def generate(self, output):
         '''Generate ctypes binding.'''
+        set_cpp_binding(self.enable_cpp)
         if 'method' in self._config:
             output.write(METHOD_DESCRIPTOR)
         for syntax_tree in self.syntax_tree_forest:

@@ -37,6 +37,28 @@ class bar(Structure):
 bar._fields_ = [('x', c_int)]
         ''', filename='input.cpp')
 
+    def test_method(self):
+        self.run_test('''
+struct cls {
+  public:
+    int method1(char);
+    static int smethod(char);
+};
+        ''', '''
+class cls(Structure):
+    pass
+
+cls.method1 = _lib._ZN3cls7method1Ec
+cls.method1.argtypes = [c_char]
+cls.method1.restype = c_int
+cls.method1 = _CtypesFunctor(cls.method1)
+
+cls.smethod = _lib._ZN3cls7smethodEc
+cls.smethod.argtypes = [c_char]
+cls.smethod.restype = c_int
+cls.smethod = staticmethod(cls.smethod)
+        ''', filename='input.cpp', enable_cpp=True)
+
 
 class TestMangler(helper.TestCppMangler):
 

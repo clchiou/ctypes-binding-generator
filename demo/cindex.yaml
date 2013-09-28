@@ -12,6 +12,7 @@ preamble: |
 import:
     - name: ^clang_createIndex$
     - name: ^clang_Cursor_(getArgument|getNumArguments|isBitField)$
+    - name: ^clang_CXXMethod_isStatic$
     - name: ^clang_dispose(Diagnostic|Index|String|TranslationUnit)$
     - name: ^clang_equalCursors$
     - name: ^clang_get(ArgType|
@@ -69,6 +70,7 @@ rename:
           replace: \1_\2
         - pattern: CX(Cursor|Linkage)_(\w+)
           function: 'lambda match: match.group(2).upper()'
+    - name: CXX
     - name: CX(\w+)
       rename: \1
 
@@ -93,6 +95,8 @@ method:
       method: Cursor.get_num_arguments
     - name: clang_Cursor_isBitField
       method: Cursor.is_bitfield
+    - name: clang_CXXMethod_isStatic
+      method: Cursor.is_static_method
     - name: clang_isCursorDefinition
       method: Cursor.is_definition
 

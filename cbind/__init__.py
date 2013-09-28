@@ -38,6 +38,8 @@ def _parse_args(args=None):
             help='choose cindex implementation')
     parser.add_argument('-l', metavar='LIBRARY',
             help='library name; use default loader codes')
+    parser.add_argument('--enable-c++', dest='enable_cpp', action='store_true',
+            help='enable C++ translation (experimental)')
 
     group = parser.add_argument_group(title='macro parser arguments',
             description='''
@@ -80,7 +82,7 @@ def main(args=None):
     from cbind.ctypes_binding import CtypesBindingGenerator
     from cbind.macro import MacroGenerator
 
-    cbgen = CtypesBindingGenerator()
+    cbgen = CtypesBindingGenerator(enable_cpp=args.enable_cpp)
     if args.config:
         try:
             import yaml

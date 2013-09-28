@@ -17,9 +17,9 @@ class TestCtypesBindingGenerator(unittest.TestCase):
 
     # pylint: disable=R0913
     def run_test(self, c_code, python_code,
-            filename='input.c', args=None, config=None):
+            filename='input.c', args=None, config=None, enable_cpp=False):
         '''Generate Python code from C code and compare it to the answer.'''
-        cbgen = CtypesBindingGenerator()
+        cbgen = CtypesBindingGenerator(enable_cpp=enable_cpp)
         if config is not None:
             import yaml
             config = yaml.load(config)
