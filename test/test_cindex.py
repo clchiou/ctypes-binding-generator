@@ -1,7 +1,9 @@
 import os
+import tempfile
 import unittest
 
 import helper
+import cbind
 from cbind.ctypes_binding import CtypesBindingGenerator
 from cbind.source import SyntaxTree, SyntaxTreeType
 
@@ -54,6 +56,30 @@ int foo(,);
         c_file = os.path.join(os.path.dirname(__file__), 'file.c')
         cbgen = CtypesBindingGenerator()
         cbgen.parse(c_file)
+
+
+class TestMain(unittest.TestCase):
+
+    def setUp(self):
+        self.input_path = tempfile.mkstemp(suffix='.c')[1]
+        self.output_path = tempfile.mkstemp(suffix='.py')[1]
+
+    def tearDown(self):
+        os.remove(self.input_path)
+        os.remove(self.output_path)
+
+    def test_main(self):
+        with open(self.input_path, 'w') as fin:
+            fin.write('''
+#define Y X + 1
+
+enum {
+    number = Y,
+};
+            ''')
+        args = ('--enable-macro -i %s -o %s -- -DX=1' %
+                (self.input_path, self.output_path)).split()
+        cbind.main(args=args)
 
 
 if __name__ == '__main__':

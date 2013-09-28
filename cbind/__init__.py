@@ -19,7 +19,7 @@ def choose_cindex_impl(choice=None):
     return _CINDEX_IMPL_CHOICE
 
 
-def _parse_args():
+def _parse_args(args=None):
     '''Parse command-line arguments.'''
     import argparse
     parser = argparse.ArgumentParser(description='''
@@ -53,16 +53,16 @@ def _parse_args():
             help='arguments passed to clang, separated by an optional \'--\' '
                  'from those passed to %(prog)s')
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=args)
     return parser, args
 
 
-def main():
+def main(args=None):
     '''Main function.'''
     import logging
     import sys
 
-    parser, args = _parse_args()
+    parser, args = _parse_args(args=args)
     if not args.i:
         parser.print_usage()
         return 0
