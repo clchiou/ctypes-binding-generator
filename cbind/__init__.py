@@ -38,6 +38,10 @@ def _parse_args(args=None):
             help='choose cindex implementation')
     parser.add_argument('-l', metavar='LIBRARY',
             help='library name; use default loader codes')
+    parser.add_argument('--severity', default='warning',
+            choices=['ignored', 'note', 'warning', 'error', 'fatal'],
+            help='''make clang diagnostics of severity no lower than this
+            level into runtime errors, default to %(default)s''')
     parser.add_argument('--enable-c++', dest='enable_cpp', action='store_true',
             help='enable C++ translation (experimental)')
 
@@ -79,8 +83,12 @@ def main(args=None):
         clang_args = args.ccargs
 
     choose_cindex_impl(args.cindex)
+    from cbind.cindex import Diagnostic
     from cbind.ctypes_binding import CtypesBindingGenerator
     from cbind.macro import MacroGenerator
+    from cbind.source import SyntaxTree
+
+    SyntaxTree.SEVERITY = getattr(Diagnostic, args.severity.capitalize())
 
     cbgen = CtypesBindingGenerator(enable_cpp=args.enable_cpp)
     if args.config:

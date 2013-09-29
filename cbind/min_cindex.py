@@ -7,11 +7,12 @@ from ctypes import *
 from cbind.compatibility import decode_str
 from cbind.min_cindex_helper import (check_cursor,
                                      ref_translation_unit,
-                                     Index,
                                      CursorMixin,
+                                     Diagnostic,
+                                     EnumerateKindMixin,
+                                     Index,
                                      SourceLocationMixin,
-                                     TypeMixin,
-                                     EnumerateKindMixin)
+                                     TypeMixin)
 
 if _python_sys.platform == 'darwin':
     _lib = cdll.LoadLibrary('libclang.dylib')

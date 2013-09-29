@@ -4,8 +4,10 @@
 
 from collections import defaultdict
 from os.path import basename
+import logging
+
 import cbind.annotations as annotations
-from cbind.cindex import (Index, Cursor, CursorKind,
+from cbind.cindex import (Index, Cursor, CursorKind, Diagnostic,
         Type, TypeKind, LinkageKind)
 
 
@@ -36,6 +38,8 @@ def _make_subtree_iterator(iter_cursors):
 
 class SyntaxTree:
     '''Class represents an abstract syntax tree.'''
+
+    SEVERITY = Diagnostic.Warning
 
     PROPERTIES = frozenset('''
         enum_type
@@ -88,14 +92,22 @@ class SyntaxTree:
         index = Index.create()
         tunit = index.parse(path, args=args, unsaved_files=unsaved_files)
         for diag in tunit.diagnostics:
-            if diag.severity >= diag.Warning:
-                # I can't think of any test cases or real world scenarios
-                # that diag.location.file is None...
-                assert diag.location.file
-                filename = diag.location.file.name
-                raise SyntaxError('%s:%d:%d: %s' %
-                        (filename, diag.location.line, diag.location.column,
-                            diag.spelling))
+            # I can't think of any test cases or real world scenarios
+            # that diag.location.file is None...
+            assert diag.location.file
+            severity_str = {
+                    Diagnostic.Ignored: 'IGNORE',
+                    Diagnostic.Note:    'NOTE',
+                    Diagnostic.Warning: 'WARNING',
+                    Diagnostic.Error:   'ERROR',
+                    Diagnostic.Fatal:   'FATAL',
+            }[diag.severity]
+            message = '%s:%d:%d: %s: %s' % (diag.location.file.name,
+                    diag.location.line, diag.location.column,
+                    severity_str, diag.spelling)
+            if diag.severity >= cls.SEVERITY:
+                raise SyntaxError(message)
+            logging.info(message)
         if annotation_table is None:
             annotation_table = defaultdict(dict)
         return cls(tunit.cursor, tunit, annotation_table)

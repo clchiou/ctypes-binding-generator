@@ -4,10 +4,11 @@
 
 from ctypes import c_uint
 import clang.cindex as _cindex
-from clang.cindex import Index, Cursor, CursorKind, Type, TypeKind
+from clang.cindex import Index, Cursor, CursorKind, Diagnostic, Type, TypeKind
 
 
-__all__ = ['Index', 'Cursor', 'CursorKind', 'Type', 'TypeKind', 'LinkageKind']
+__all__ = ['Index', 'Cursor', 'CursorKind', 'Diagnostic',
+        'Type', 'TypeKind', 'LinkageKind']
 
 
 # Register libclang function.
