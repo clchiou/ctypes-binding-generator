@@ -84,13 +84,15 @@ def main(args=None):
 
     choose_cindex_impl(args.cindex)
     from cbind.cindex import Diagnostic
+    from cbind.codegen import CodeGen
     from cbind.ctypes_binding import CtypesBindingGenerator
     from cbind.macro import MacroGenerator
     from cbind.source import SyntaxTree
 
+    CodeGen.ENABLE_CPP = args.enable_cpp
     SyntaxTree.SEVERITY = getattr(Diagnostic, args.severity.capitalize())
 
-    cbgen = CtypesBindingGenerator(enable_cpp=args.enable_cpp)
+    cbgen = CtypesBindingGenerator()
     if args.config:
         try:
             import yaml

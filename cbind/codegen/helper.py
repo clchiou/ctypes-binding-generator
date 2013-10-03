@@ -8,6 +8,8 @@ from cbind.cindex import CursorKind, TypeKind
 from cbind.mangler import mangle
 import cbind.annotations as annotations
 
+import cbind.codegen # TODO: Remove this later
+
 
 # Map of clang type to ctypes type
 C_TYPE_MAP = {
@@ -74,19 +76,6 @@ INDENT = '    '
 LIBNAME = '_lib'
 
 
-# Generate C++ bindings
-# TODO: Because C++ binding generation is an experimental feature, we would
-# not like to generate C++ binding without user consent.  But we will remove
-# this check when this feature is completed and not experimental.
-CPP = False
-
-
-def set_cpp_binding(cpp):
-    '''Set to true to generate C++ bindings.'''
-    global CPP  # pylint: disable=W0603
-    CPP = cpp
-
-
 def gen_tree_node(tree, output):
     '''Generate ctypes binding from a AST node.'''
     if not tree.get_annotation(annotations.REQUIRED, False):
@@ -124,7 +113,7 @@ def gen_record(tree, output, declared=False, declaration=False):
         _make_pod_header(tree, cls_name, output)
     if not declaration:
         _make_pod_body(tree, cls_name, output)
-        if CPP:
+        if cbind.codegen.CodeGen.ENABLE_CPP:
             if tree.kind != CursorKind.UNION_DECL:
                 for method in tree.get_method():
                     _make_method(method, cls_name, output)

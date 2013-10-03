@@ -3,7 +3,7 @@
 '''Parse and generate ctypes binding from C sources with clang.'''
 
 import functools
-from cbind.codegen import gen_tree_node, gen_record, set_cpp_binding
+from cbind.codegen import CodeGen
 from cbind.config import SyntaxTreeMatcher
 from cbind.passes import (custom_pass,
         scan_required_nodes,
@@ -58,9 +58,9 @@ class _CtypesFunctor(object):
 class CtypesBindingGenerator:
     '''Generate ctypes binding from C source files with libclang.'''
 
-    def __init__(self, enable_cpp=False):
+    def __init__(self):
         '''Initialize the object.'''
-        self.enable_cpp = enable_cpp
+        self.codegen = CodeGen()
         self.syntax_tree_forest = SyntaxTreeForest()
         self._config = {}
 
@@ -124,32 +124,20 @@ class CtypesBindingGenerator:
 
     def generate(self, output):
         '''Generate ctypes binding.'''
-        set_cpp_binding(self.enable_cpp)
+        self.codegen.set_output(output)
         if 'method' in self._config:
             output.write(METHOD_DESCRIPTOR)
         for syntax_tree in self.syntax_tree_forest:
             va_list_tag = syntax_tree.get_annotation(
                     annotations.USE_VA_LIST_TAG, False)
             if va_list_tag:
-                gen_record(va_list_tag, output,
-                        declared=False, declaration=False)
+                self.codegen.generate_record_definition(va_list_tag)
                 output.write('\n')
                 break
         for syntax_tree in self.syntax_tree_forest:
             syntax_tree.traverse(
-                    preorder=lambda tree: self._gen_forward_decl(tree, output),
-                    postorder=lambda tree: gen_tree_node(tree, output))
-
-    @staticmethod
-    def _gen_forward_decl(tree, output):
-        '''Generate forward declaration for nodes.'''
-        if not tree.get_annotation(annotations.REQUIRED, False):
-            return
-        if not tree.get_annotation(annotations.FORWARD_DECLARATION, False):
-            return
-        declared = tree.get_annotation(annotations.DECLARED, False)
-        gen_record(tree, output, declared=declared, declaration=True)
-        tree.annotate(annotations.DECLARED, True)
+                    preorder=self.codegen.generate_record_forward_decl,
+                    postorder=self.codegen.generate)
 
 
 def check_locally_defined(tree, path):

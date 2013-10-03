@@ -7,7 +7,7 @@ import logging
 import re
 
 from cbind.cindex import CursorKind
-from cbind.codegen import make_function_argtypes, make_function_restype
+from cbind.codegen import CodeGen
 import cbind.annotations as annotations
 
 
@@ -143,7 +143,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         '''Match tree.argtypes.'''
         if tree.kind != CursorKind.FUNCTION_DECL:
             return False
-        argtypes = make_function_argtypes(tree)
+        argtypes = CodeGen.make_function_argtypes(tree)
         if len(self.argtypes) != len(argtypes):
             return False
         for argtype_search, argtype in zip(self.argtypes, argtypes):
@@ -154,7 +154,7 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     def _match_restype(self, tree):
         '''Match tree.restype.'''
         return (tree.kind == CursorKind.FUNCTION_DECL and
-                self.restype.search(make_function_restype(tree)))
+                self.restype.search(CodeGen.make_function_restype(tree)))
 
     @call_do_match
     def do_import(self, _):

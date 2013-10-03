@@ -6,6 +6,7 @@ import token
 import tokenize
 import unittest
 from cbind.compatibility import StringIO
+from cbind.codegen import CodeGen
 from cbind.config import SyntaxTreeMatcher
 from cbind.ctypes_binding import CtypesBindingGenerator
 from cbind.macro import MacroGenerator
@@ -19,7 +20,8 @@ class TestCtypesBindingGenerator(unittest.TestCase):
     def run_test(self, c_code, python_code,
             filename='input.c', args=None, config=None, enable_cpp=False):
         '''Generate Python code from C code and compare it to the answer.'''
-        cbgen = CtypesBindingGenerator(enable_cpp=enable_cpp)
+        CodeGen.ENABLE_CPP = enable_cpp
+        cbgen = CtypesBindingGenerator()
         if config is not None:
             import yaml
             config = yaml.load(config)
