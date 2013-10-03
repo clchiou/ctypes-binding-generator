@@ -1,5 +1,6 @@
 '''Unit testing helpers.'''
 
+import ctypes
 import os
 import tempfile
 import token
@@ -18,9 +19,12 @@ class TestCtypesBindingGenerator(unittest.TestCase):
 
     # pylint: disable=R0913
     def run_test(self, c_code, python_code,
-            filename='input.c', args=None, config=None, enable_cpp=False):
+            filename='input.c', args=None, config=None,
+            enable_cpp=False,
+            assert_layout=False):
         '''Generate Python code from C code and compare it to the answer.'''
         CodeGen.ENABLE_CPP = enable_cpp
+        CodeGen.ASSERT_LAYOUT = assert_layout
         cbgen = CtypesBindingGenerator()
         if config is not None:
             import yaml
@@ -42,7 +46,10 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         error_message = prepare_error_message(python_code, gen_code,
                 tunits=cbgen.get_translation_units())
         self.assertTrue(compare_codes(gen_code, python_code), error_message)
-        compile(gen_code, 'output.py', 'exec')
+        code = compile(gen_code, 'output.py', 'exec')
+        if assert_layout:
+            # Test if layout assertions are true
+            exec(code, vars(ctypes)) # pylint: disable=W0122
 
 
 class TestCppMangler(unittest.TestCase):
@@ -170,7 +177,7 @@ def format_two_column(code1, code2, output):
             column2.append(line2)
     fmt = '{0:<%d} | {1}\n' % longest
     i = 0
-    while i < len(column1) and i < len(column2):
+    while i < len(column1) or i < len(column2):
         if i < len(column1):
             line1 = column1[i]
         else:

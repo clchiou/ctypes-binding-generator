@@ -16,6 +16,8 @@ class CodeGen:
     # this check when this feature is completed and not experimental.
     ENABLE_CPP = False
 
+    ASSERT_LAYOUT = False
+
     make_function_argtypes = staticmethod(make_function_argtypes)
     make_function_restype = staticmethod(make_function_restype)
 

@@ -7,8 +7,7 @@ import logging
 from cbind.cindex import CursorKind, TypeKind
 from cbind.mangler import mangle
 import cbind.annotations as annotations
-
-import cbind.codegen # TODO: Remove this later
+import cbind.codegen
 
 
 # Map of clang type to ctypes type
@@ -117,6 +116,8 @@ def gen_record(tree, output, declared=False, declaration=False):
             if tree.kind != CursorKind.UNION_DECL:
                 for method in tree.get_method():
                     _make_method(method, cls_name, output)
+        if cbind.codegen.CodeGen.ASSERT_LAYOUT:
+            _make_layout_assertion(tree, cls_name, output)
 
 
 def _make_type(type_):
@@ -287,6 +288,24 @@ def _make_pod_body(tree, name, output):
             output.write(',\n%s' % indent)
         output.write('%s' % field_stmt)
     output.write(']\n')
+
+
+def _make_layout_assertion(tree, cls_name, output):
+    '''Generate assertions of struct layout for ABI compatibility.'''
+    if tree.kind == CursorKind.UNION_DECL:
+        return
+    first_bitfield_offset = None
+    for field in tree.get_field_declaration():
+        offset = tree.type.get_offset(field.original_name.encode()) / 8
+        if field.is_bitfield():
+            if first_bitfield_offset is None:
+                first_bitfield_offset = offset
+            else:
+                offset = first_bitfield_offset
+        else:
+            first_bitfield_offset = None
+        assertion = '%s.%s.offset == %d' % (cls_name, field.name, offset)
+        output.write('assert %s, \'%s\'\n' % (assertion, assertion))
 
 
 def _make_method(method, cls_name, output):

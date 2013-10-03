@@ -142,6 +142,47 @@ class bar(Structure):
 bar._fields_ = [('foo', __foo)]
         ''')
 
+    def test_layout_assertion(self):
+        self.run_test('''
+struct blob1 {
+    int i;
+    int j;
+};
+
+struct blob2 {
+    int i : 1;
+    int j : 31;
+    int k;
+    int l;
+    int m : 16;
+    int n : 16;
+    int o;
+};
+        ''', '''
+class blob1(Structure):
+    pass
+blob1._fields_ = [('i', c_int),
+                  ('j', c_int)]
+assert blob1.i.offset == 0, 'blob1.i.offset == 0'
+assert blob1.j.offset == 4, 'blob1.j.offset == 4'
+class blob2(Structure):
+    pass
+blob2._fields_ = [('i', c_int, 1),
+                  ('j', c_int, 31),
+                  ('k', c_int),
+                  ('l', c_int),
+                  ('m', c_int, 16),
+                  ('n', c_int, 16),
+                  ('o', c_int)]
+assert blob2.i.offset == 0, 'blob2.i.offset == 0'
+assert blob2.j.offset == 0, 'blob2.j.offset == 0'
+assert blob2.k.offset == 4, 'blob2.k.offset == 4'
+assert blob2.l.offset == 8, 'blob2.l.offset == 8'
+assert blob2.m.offset == 12, 'blob2.m.offset == 12'
+assert blob2.n.offset == 12, 'blob2.n.offset == 12'
+assert blob2.o.offset == 16, 'blob2.o.offset == 16'
+        ''', assert_layout=True)
+
 
 if __name__ == '__main__':
     unittest.main()

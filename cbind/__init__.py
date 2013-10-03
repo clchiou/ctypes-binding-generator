@@ -38,6 +38,8 @@ def _parse_args(args=None):
             help='choose cindex implementation')
     parser.add_argument('-l', metavar='LIBRARY',
             help='library name; use default loader codes')
+    parser.add_argument('--assert-layout', action='store_true',
+            help='generate assertions of struct layout')
     parser.add_argument('--severity', default='warning',
             choices=['ignored', 'note', 'warning', 'error', 'fatal'],
             help='''make clang diagnostics of severity no lower than this
@@ -90,6 +92,7 @@ def main(args=None):
     from cbind.source import SyntaxTree
 
     CodeGen.ENABLE_CPP = args.enable_cpp
+    CodeGen.ASSERT_LAYOUT = args.assert_layout
     SyntaxTree.SEVERITY = getattr(Diagnostic, args.severity.capitalize())
 
     cbgen = CtypesBindingGenerator()
