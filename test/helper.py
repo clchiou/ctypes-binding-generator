@@ -49,7 +49,25 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         code = compile(gen_code, 'output.py', 'exec')
         if assert_layout:
             # Test if layout assertions are true
-            exec(code, vars(ctypes)) # pylint: disable=W0122
+            exec(code, self.get_env()) # pylint: disable=W0122
+
+    @staticmethod
+    def get_env():
+        '''Create an environment for exec.'''
+        env = vars(ctypes)
+        env['_lib'] = Everything()
+        env['_CtypesFunctor'] = Everything()
+        return env
+
+
+class Everything(object):
+    '''Return Everything (self) to all attribute lookup.'''
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def __getattr__(self, _):
+        return Everything()
 
 
 class TestCppMangler(unittest.TestCase):

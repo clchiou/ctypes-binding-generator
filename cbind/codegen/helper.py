@@ -272,22 +272,32 @@ def _make_pod_body(tree, name, output):
     field_stmt = '%s_fields_ = [' % begin
     indent = ' ' * len(field_stmt)
     output.write(field_stmt)
-    first = True
+    offset = tree.type.get_offset(fields[0].original_name.encode()) / 8
+    if offset != 0:
+        # Add padding here; we probably encounter a vtable...
+        output.write('(\'__python_struct_padding\', c_char * %d)' % offset)
+        first = False
+    else:
+        first = True
     last_offset = -1  # Offsets of struct and class should be increasing
     for field in fields:
         offset = tree.type.get_offset(field.original_name.encode())
         assert tree.kind == CursorKind.UNION_DECL or last_offset < offset
         last_offset = offset
-        blob = ['\'%s\'' % field.name, _make_type(field.type)]
-        if field.is_bitfield():
-            blob.append(str(field.get_bitfield_width()))
-        field_stmt = '(%s)' % ', '.join(blob)
-        if first:
-            first = False
-        else:
+        if not first:
             output.write(',\n%s' % indent)
-        output.write('%s' % field_stmt)
+        _make_pod_field(field, output)
+        first = False
     output.write(']\n')
+
+
+def _make_pod_field(field, output):
+    '''Generate the field part of POD.'''
+    blob = ['\'%s\'' % field.name, _make_type(field.type)]
+    if field.is_bitfield():
+        blob.append(str(field.get_bitfield_width()))
+    field_stmt = '(%s)' % ', '.join(blob)
+    output.write('%s' % field_stmt)
 
 
 def _make_layout_assertion(tree, cls_name, output):

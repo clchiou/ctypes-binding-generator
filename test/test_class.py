@@ -41,23 +41,32 @@ bar._fields_ = [('x', c_int)]
         self.run_test('''
 struct cls {
   public:
+    int memb;
     int method1(char);
+    virtual void vmethod(void);
     static int smethod(char);
 };
         ''', '''
 class cls(Structure):
     pass
+cls._fields_ = [('__python_struct_padding', c_char * 8),
+                ('memb', c_int)]
 
 cls.method1 = _lib._ZN3cls7method1Ec
 cls.method1.argtypes = [c_char]
 cls.method1.restype = c_int
 cls.method1 = _CtypesFunctor(cls.method1)
 
+cls.vmethod = _lib._ZN3cls7vmethodEv
+cls.vmethod = _CtypesFunctor(cls.vmethod)
+
 cls.smethod = _lib._ZN3cls7smethodEc
 cls.smethod.argtypes = [c_char]
 cls.smethod.restype = c_int
 cls.smethod = staticmethod(cls.smethod)
-        ''', filename='input.cpp', enable_cpp=True)
+
+assert cls.memb.offset == 8, 'cls.memb.offset == 8'
+        ''', filename='input.cpp', enable_cpp=True, assert_layout=True)
 
 
 class TestMangler(helper.TestCppMangler):
