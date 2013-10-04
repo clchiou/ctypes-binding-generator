@@ -20,7 +20,6 @@ import:
                        ArrayElementType|
                        ArraySize|
                        CanonicalType|
-                       ClassType|
                        CString|
                        CursorLinkage|
                        CursorLocation|
@@ -53,7 +52,7 @@ import:
                       FunctionTypeVariadic|
                       VolatileQualifiedType)$
     - name: ^clang_parseTranslationUnit$
-    - name: ^clang_Type_get(AlignOf|OffsetOf)$
+    - name: ^clang_Type_get(AlignOf|ClassType|OffsetOf)$
     - name: ^clang_visitChildren$
     - name: ^CX(ChildVisitResult|SourceLocation|String|UnsavedFile)$
     - name: ^CX(Cursor|Linkage|Type)(Kind|_\w+)?$
@@ -103,6 +102,8 @@ method:
 
     - name: clang_Type_getAlignOf
       method: Type.get_align
+    - name: clang_Type_getClassType
+      method: Type.get_class_type
     - name: clang_Type_getOffsetOf
       method: Type.get_offset
     - name: clang_getArrayElementType
@@ -111,8 +112,6 @@ method:
       method: Type.get_array_size
     - name: clang_getCanonicalType
       method: Type.get_canonical
-    - name: clang_getClassType
-      method: Type.get_class_type
     - name: clang_getElementType
       method: Type.get_element_type
     - name: clang_getTypeDeclaration

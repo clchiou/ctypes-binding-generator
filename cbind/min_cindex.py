@@ -272,7 +272,8 @@ CursorKind.register("CXX_FINAL_ATTR", 404)
 CursorKind.register("CXX_OVERRIDE_ATTR", 405)
 CursorKind.register("ANNOTATE_ATTR", 406)
 CursorKind.register("ASM_LABEL_ATTR", 407)
-CursorKind.register("LAST_ATTR", 407)
+CursorKind.register("PACKED_ATTR", 408)
+CursorKind.register("LAST_ATTR", 408)
 CursorKind.register("PREPROCESSING_DIRECTIVE", 500)
 CursorKind.register("MACRO_DEFINITION", 501)
 CursorKind.register("MACRO_EXPANSION", 502)
@@ -492,16 +493,16 @@ clang_getArraySize.argtypes = [Type]
 clang_getArraySize.restype = c_longlong
 Type.get_array_size = _CtypesFunctor(clang_getArraySize)
 
-clang_getClassType = _lib.clang_getClassType
-clang_getClassType.argtypes = [Type]
-clang_getClassType.restype = Type
-clang_getClassType.errcheck = ref_translation_unit
-Type.get_class_type = _CtypesFunctor(clang_getClassType)
-
 clang_Type_getAlignOf = _lib.clang_Type_getAlignOf
 clang_Type_getAlignOf.argtypes = [Type]
 clang_Type_getAlignOf.restype = c_longlong
 Type.get_align = _CtypesFunctor(clang_Type_getAlignOf)
+
+clang_Type_getClassType = _lib.clang_Type_getClassType
+clang_Type_getClassType.argtypes = [Type]
+clang_Type_getClassType.restype = Type
+clang_Type_getClassType.errcheck = ref_translation_unit
+Type.get_class_type = _CtypesFunctor(clang_Type_getClassType)
 
 clang_Type_getOffsetOf = _lib.clang_Type_getOffsetOf
 clang_Type_getOffsetOf.argtypes = [Type, c_char_p]
