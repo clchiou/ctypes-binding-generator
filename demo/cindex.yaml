@@ -52,10 +52,14 @@ import:
                       FunctionTypeVariadic|
                       VolatileQualifiedType)$
     - name: ^clang_parseTranslationUnit$
-    - name: ^clang_Type_get(AlignOf|ClassType|OffsetOf)$
+    - name: ^clang_Type_get(AlignOf|
+                            ClassType|
+                            OffsetOf|
+                            RefQualifier)$
     - name: ^clang_visitChildren$
     - name: ^CX(ChildVisitResult|SourceLocation|String|UnsavedFile)$
-    - name: ^CX(Cursor|Linkage|Type)(Kind|_\w+)?$
+    - name: ^CX(Cursor|Linkage|RefQualifier|Type)(Kind|_\w+)?$
+    - name: ^CXRQ_(\w+)$
 
 rename:
     - name: CXType_
@@ -70,6 +74,10 @@ rename:
           replace: \1_\2
         - pattern: CX(Cursor|Linkage)_(\w+)
           function: 'lambda match: match.group(2).upper()'
+    - name: CXRQ_(\w+)
+      rename:
+        - pattern: CXRQ_(\w+)
+          function: 'lambda match: match.group(1).upper()'
     - name: CXX
     - name: CX(\w+)
       rename: \1
@@ -106,6 +114,8 @@ method:
       method: Type.get_class_type
     - name: clang_Type_getOffsetOf
       method: Type.get_offset
+    - name: clang_Type_getRefQualifier
+      method: Type.get_ref_qualifier
     - name: clang_getArrayElementType
       method: Type.get_array_element_type
     - name: clang_getArraySize
@@ -134,9 +144,9 @@ mixin:
       mixin: [SourceLocationMixin]
     - name: ^CXType$
       mixin: [TypeMixin]
-    - name: ^CX(Cursor|Type|Linkage)Kind$
+    - name: ^CX(Cursor|Type|Linkage|RefQualifier)Kind$
       mixin: [EnumerateKindMixin]
 
 enum:
-    - parent: {name: (Cursor|Type|Linkage)Kind}
+    - parent: {name: (Cursor|Type|Linkage|RefQualifier)Kind}
       enum: '{enum_name}.register("{enum_field}", {enum_value})'

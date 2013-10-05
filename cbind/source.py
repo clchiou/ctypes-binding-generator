@@ -235,6 +235,7 @@ class SyntaxTreeType:
         get_align
         get_array_size
         get_offset
+        get_ref_qualifier
         kind
     '''.split())
 

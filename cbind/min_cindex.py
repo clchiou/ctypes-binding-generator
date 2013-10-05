@@ -509,6 +509,17 @@ clang_Type_getOffsetOf.argtypes = [Type, c_char_p]
 clang_Type_getOffsetOf.restype = c_longlong
 Type.get_offset = _CtypesFunctor(clang_Type_getOffsetOf)
 
+class RefQualifierKind(EnumerateKindMixin, c_uint):
+    pass
+RefQualifierKind.register("NONE", 0)
+RefQualifierKind.register("LVALUE", 1)
+RefQualifierKind.register("RVALUE", 2)
+
+clang_Type_getRefQualifier = _lib.clang_Type_getRefQualifier
+clang_Type_getRefQualifier.argtypes = [Type]
+clang_Type_getRefQualifier.restype = RefQualifierKind
+Type.get_ref_qualifier = _CtypesFunctor(clang_Type_getRefQualifier)
+
 clang_Cursor_isBitField = _lib.clang_Cursor_isBitField
 clang_Cursor_isBitField.argtypes = [Cursor]
 clang_Cursor_isBitField.restype = c_uint

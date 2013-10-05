@@ -2,7 +2,7 @@
 
 '''Itanium C++ ABI of external names (a.k.a. mangling)'''
 
-from cbind.cindex import CursorKind, TypeKind
+from cbind.cindex import CursorKind, TypeKind, RefQualifierKind
 from cbind.compatibility import StringIO
 
 
@@ -465,7 +465,11 @@ def _ref_qualifier(type_, output):
                        ::= O    # && ref-qualifier
     '''
     if type_.kind == TypeKind.FUNCTIONPROTO:
-        pass  # TODO: ref-qualifier is not exposed through libclang.
+        refqual = type_.get_ref_qualifier()
+        if refqual == RefQualifierKind.LVALUE:
+            output.write('R')
+        elif refqual == RefQualifierKind.RVALUE:
+            output.write('O')
 
 
 def _function_type(type_, output):

@@ -109,9 +109,8 @@ void func6(void (cls::*)());
          ('smemb1', '_ZN3cls6smemb1E'),
          ('smemb2', '_ZN5space3cls6smemb2E'),
          ('operator\+', '_ZN3clsplERKS_'),
-         # TODO: ref-qualifier is not exposed through libclang.
-         #('membf1', '_ZNR3cls6membf1Ev'),
-         #('membf2', '_ZNO3cls6membf2Ev'),
+         ('membf1', '_ZNR3cls6membf1Ev'),
+         ('membf2', '_ZNO3cls6membf2Ev'),
          ('func_std_ns', '_ZSt11func_std_nsv'),
          ('func1', '_Z5func1v'),
          ('func2', '_Z5func2Pcz'),
