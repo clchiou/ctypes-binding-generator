@@ -55,11 +55,11 @@ import:
     - name: ^clang_Type_get(AlignOf|
                             ClassType|
                             OffsetOf|
-                            RefQualifier)$
+                            CXXRefQualifier)$
     - name: ^clang_visitChildren$
     - name: ^CX(ChildVisitResult|SourceLocation|String|UnsavedFile)$
     - name: ^CX(Cursor|Linkage|RefQualifier|Type)(Kind|_\w+)?$
-    - name: ^CXRQ_(\w+)$
+    - name: ^CXRefQualifier_(\w+)$
 
 rename:
     - name: CXType_
@@ -74,9 +74,9 @@ rename:
           replace: \1_\2
         - pattern: CX(Cursor|Linkage)_(\w+)
           function: 'lambda match: match.group(2).upper()'
-    - name: CXRQ_(\w+)
+    - name: CXRefQualifier_(\w+)
       rename:
-        - pattern: CXRQ_(\w+)
+        - pattern: CXRefQualifier_(\w+)
           function: 'lambda match: match.group(1).upper()'
     - name: CXX
     - name: CX(\w+)
@@ -114,7 +114,7 @@ method:
       method: Type.get_class_type
     - name: clang_Type_getOffsetOf
       method: Type.get_offset
-    - name: clang_Type_getRefQualifier
+    - name: clang_Type_getCXXRefQualifier
       method: Type.get_ref_qualifier
     - name: clang_getArrayElementType
       method: Type.get_array_element_type

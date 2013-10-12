@@ -515,10 +515,10 @@ RefQualifierKind.register("NONE", 0)
 RefQualifierKind.register("LVALUE", 1)
 RefQualifierKind.register("RVALUE", 2)
 
-clang_Type_getRefQualifier = _lib.clang_Type_getRefQualifier
-clang_Type_getRefQualifier.argtypes = [Type]
-clang_Type_getRefQualifier.restype = RefQualifierKind
-Type.get_ref_qualifier = _CtypesFunctor(clang_Type_getRefQualifier)
+clang_Type_getCXXRefQualifier = _lib.clang_Type_getCXXRefQualifier
+clang_Type_getCXXRefQualifier.argtypes = [Type]
+clang_Type_getCXXRefQualifier.restype = RefQualifierKind
+Type.get_ref_qualifier = _CtypesFunctor(clang_Type_getCXXRefQualifier)
 
 clang_Cursor_isBitField = _lib.clang_Cursor_isBitField
 clang_Cursor_isBitField.argtypes = [Cursor]
