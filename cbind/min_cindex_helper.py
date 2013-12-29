@@ -25,14 +25,15 @@ class Diagnostic(ClangObject):
     '''A diagnostic object.'''
 
     Ignored = 0
-    Note    = 1
+    Note = 1
     Warning = 2
-    Error   = 3
-    Fatal   = 4
+    Error = 3
+    Fatal = 4
 
     def __init__(self, object_):
         super(Diagnostic, self).__init__(object_)
-        self.severity = cbind.min_cindex.clang_getDiagnosticSeverity(self).value
+        severity = cbind.min_cindex.clang_getDiagnosticSeverity(self)
+        self.severity = severity.value
         self.location = cbind.min_cindex.clang_getDiagnosticLocation(self)
         self.spelling = cbind.min_cindex.clang_getDiagnosticSpelling(self)
 
@@ -93,10 +94,12 @@ class TranslationUnit(ClangObject):
         else:
             unsaved_array = None
         ptr = cbind.min_cindex.clang_parseTranslationUnit(index,
-                filename.encode(),
-                args_array, len(args),
-                unsaved_array, len(unsaved_files),
-                options)
+                                                          filename.encode(),
+                                                          args_array,
+                                                          len(args),
+                                                          unsaved_array,
+                                                          len(unsaved_files),
+                                                          options)
         if not ptr:
             raise TranslationUnitLoadError('Error parsing translation unit.')
         return cls(ptr)
@@ -155,7 +158,7 @@ class cached_property(object):  # pylint: disable=C0103
 
 
 class SourceLocationData(namedtuple('SourceLocationData',
-        'file line column offset')):
+                                    'file line column offset')):
     '''Data blob of source location.'''
     # pylint: disable=W0232
     pass
@@ -189,13 +192,17 @@ class SourceLocationMixin(object):
         '''data blob of properties.'''
         file_, line, column, offset = c_void_p(), c_uint(), c_uint(), c_uint()
         cbind.min_cindex.clang_getInstantiationLocation(self,
-                byref(file_), byref(line), byref(column), byref(offset))
+                                                        byref(file_),
+                                                        byref(line),
+                                                        byref(column),
+                                                        byref(offset))
         if file_:
             file_ = ClangObject(file_)
             setattr(file_, 'name', cbind.min_cindex.clang_getFileName(file_))
         else:
             file_ = None
-        return SourceLocationData(file_, line.value, column.value, offset.value)
+        return SourceLocationData(file_, line.value, column.value,
+                                  offset.value)
 
 
 class CursorMixin(object):
@@ -258,7 +265,8 @@ class CursorMixin(object):
                                     cbind.min_cindex.TypeKind.ULONG,
                                     cbind.min_cindex.TypeKind.ULONGLONG,
                                     cbind.min_cindex.TypeKind.UINT128):
-            return cbind.min_cindex.clang_getEnumConstantDeclUnsignedValue(self)
+            return cbind.min_cindex.\
+                clang_getEnumConstantDeclUnsignedValue(self)
         else:
             return cbind.min_cindex.clang_getEnumConstantDeclValue(self)
 
@@ -278,6 +286,7 @@ class CursorMixin(object):
     def get_children(self):
         '''Return a list of children.'''
         children = []
+
         def visit(child, *_):
             '''Visit children callback.'''
             assert child != cbind.min_cindex.clang_getNullCursor()
@@ -285,8 +294,11 @@ class CursorMixin(object):
             setattr(child, '_translation_unit', self._translation_unit)
             children.append(child)
             return 1  # continue
+
         callback_proto = CFUNCTYPE(cbind.min_cindex.ChildVisitResult,
-                cbind.min_cindex.Cursor, cbind.min_cindex.Cursor, c_void_p)
+                                   cbind.min_cindex.Cursor,
+                                   cbind.min_cindex.Cursor,
+                                   c_void_p)
         visit_callback = callback_proto(visit)
         cbind.min_cindex.clang_visitChildren(self, visit_callback, None)
         return children

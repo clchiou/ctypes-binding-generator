@@ -3,8 +3,8 @@
 '''Package for automatic generation of ctypes bindings from C sources.'''
 
 
-CLANG_CINDEX    = 'clang-cindex'
-MIN_CINDEX      = 'min-cindex'
+CLANG_CINDEX = 'clang-cindex'
+MIN_CINDEX = 'min-cindex'
 
 
 # Default choose min_cindex
@@ -26,40 +26,45 @@ def _parse_args(args=None):
             Generate ctypes binding from C source files with clang.
             ''')
     parser.add_argument('-v', action='count', default=0,
-            help='increase verbosity level')
+                        help='increase verbosity level')
     parser.add_argument('-i', metavar='SOURCE', action='append',
-            help='C source file')
+                        help='C source file')
     parser.add_argument('-o', metavar='OUTPUT', default='-',
-            help='output file, default to \'-\' (stdout)')
+                        help='output file, default to \'-\' (stdout)')
     parser.add_argument('--config', type=argparse.FileType('r'),
-            help='configuration file')
+                        help='configuration file')
     parser.add_argument('--cindex', default=MIN_CINDEX,
-            choices=[MIN_CINDEX, CLANG_CINDEX],
-            help='choose cindex implementation')
+                        choices=[MIN_CINDEX, CLANG_CINDEX],
+                        help='choose cindex implementation')
     parser.add_argument('-l', metavar='LIBRARY',
-            help='library name; use default loader codes')
+                        help='library name; use default loader codes')
     parser.add_argument('--assert-layout', action='store_true',
-            help='generate assertions of struct layout')
+                        help='generate assertions of struct layout')
     parser.add_argument('--severity', default='warning',
-            choices=['ignored', 'note', 'warning', 'error', 'fatal'],
-            help='''make clang diagnostics of severity no lower than this
-            level into runtime errors, default to %(default)s''')
+                        choices=['ignored',
+                                 'note',
+                                 'warning',
+                                 'error',
+                                 'fatal'],
+                        help=('make clang diagnostics of severity no lower '
+                              'than this level into runtime errors, default '
+                              'to %(default)s'))
     parser.add_argument('--enable-c++', dest='enable_cpp', action='store_true',
-            help='enable C++ translation (experimental)')
+                        help='enable C++ translation (experimental)')
 
+    description = ('Translate C macros into Python codes (experimental). '
+                   'The PATTERN argument will match macro name.')
     group = parser.add_argument_group(title='macro parser arguments',
-            description='''
-            Translate C macros into Python codes (experimental). The PATTERN
-            argument will match macro name.
-            ''')
+                                      description=description)
     group.add_argument('--enable-macro', action='store_true',
-            help='enable macro translation')
+                       help='enable macro translation')
     group.add_argument('--macro-int', metavar='PATTERN',
-            help='assure that these macros are integer constants')
+                       help='assure that these macros are integer constants')
 
-    parser.add_argument('ccargs', metavar='CCARGS', nargs=argparse.REMAINDER,
-            help='arguments passed to clang, separated by an optional \'--\' '
+    help_text = ('arguments passed to clang, separated by an optional \'--\' '
                  'from those passed to %(prog)s')
+    parser.add_argument('ccargs', metavar='CCARGS', nargs=argparse.REMAINDER,
+                        help=help_text)
 
     args = parser.parse_args(args=args)
     return parser, args

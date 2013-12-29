@@ -9,8 +9,8 @@ import cbind.annotations as annotations
 def scan_va_list_tag(syntax_tree):
     '''Scan use of __va_list_tag.'''
     try:
-        traverse_postorder(syntax_tree,
-                lambda tree: _scan_tree(tree, syntax_tree))
+        postorder = lambda tree: _scan_tree(tree, syntax_tree)
+        traverse_postorder(syntax_tree, postorder)
     except StopIteration:
         pass
 

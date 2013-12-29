@@ -7,8 +7,8 @@ from cbind.cindex import CursorKind, TypeKind
 
 def traverse_postorder(syntax_tree, postorder):
     '''Traverse syntax tree post order.'''
-    syntax_tree.traverse(postorder=postorder,
-            prune=lambda tree: tree.kind == CursorKind.COMPOUND_STMT)
+    prune = lambda tree: tree.kind == CursorKind.COMPOUND_STMT
+    syntax_tree.traverse(postorder=postorder, prune=prune)
 
 
 def strip_type(type_):

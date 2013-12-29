@@ -14,15 +14,15 @@ from cbind.source import SyntaxTree
 
 # List of direct-translation symbols.
 CTYPES_SYMBOLS = {
-        'char':     'c_byte',
-        'double':   'c_double',
-        'float':    'c_float',
-        'int':      'c_int',
-        'long':     'c_long',
-        'short':    'c_short',
-        'sizeof':   'sizeof',
-        'unsigned': 'c_uint',
-        'wchar_t':  'c_wchar',
+    'char':     'c_byte',
+    'double':   'c_double',
+    'float':    'c_float',
+    'int':      'c_int',
+    'long':     'c_long',
+    'short':    'c_short',
+    'sizeof':   'sizeof',
+    'unsigned': 'c_uint',
+    'wchar_t':  'c_wchar',
 }
 
 
@@ -88,7 +88,7 @@ class MacroGenerator:
             match = regex_name.match(enum.spelling)
             if match:
                 yield cls._make_int_literal(symbol_map[match.group(1)],
-                        enum.enum_value)
+                                            enum.enum_value)
 
     @staticmethod
     def _make_int_literal(symbol, value):
@@ -108,17 +108,19 @@ class MacroGenerator:
             src.write('%s_%s = %s,\n' % (_MAGIC, symbol.name, symbol.body))
         src.write('};\n')
         syntax_tree = SyntaxTree.parse('input.c', contents=src.getvalue(),
-                args=args)
+                                       args=args)
         return cls._find_enums(syntax_tree)
 
     @staticmethod
     def _find_enums(syntax_tree):
         '''Find enums of translation unit.'''
         enum_trees = []
+
         def search_enum_def(tree):
             '''Test if the tree is an enum definition.'''
             if tree.kind == CursorKind.ENUM_DECL and tree.is_definition():
                 enum_trees.append(tree)
+
         syntax_tree.traverse(search_enum_def)
         # I can't think of any real world scenarios that
         # the generated enum_trees would be empty...
@@ -132,7 +134,7 @@ class MacroGenerator:
         '''Check if there are references to undefined symbols.'''
         bound_names = set(CTYPES_SYMBOLS)
         bound_names.update(name for name in self.symbol_table
-                if self.symbol_table[name])
+                           if self.symbol_table[name])
         for name in self.symbol_table.keys():
             symbol = self.symbol_table[name]
             # I can't think of any real world scenarios
@@ -142,6 +144,7 @@ class MacroGenerator:
                 env = bound_names.union(symbol.args)
             else:
                 env = bound_names
+
             def check_symbol_name(token):
                 '''Check if token name is defined.'''
                 if token.kind != Token.SYMBOL:
@@ -149,11 +152,12 @@ class MacroGenerator:
                 if token.spelling in env:
                     return
                 raise CSyntaxError(token.spelling)
+
             try:
                 symbol.expr.traverse(check_symbol_name)
             except CSyntaxError as err:
                 logging.info('Could not resolve reference to "%s" in %s',
-                        err.args[0], symbol.macro)
+                             err.args[0], symbol.macro)
                 self.symbol_table[name] = None
 
     def generate(self, output):
@@ -198,16 +202,18 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
                 args_list = '(%s)' % ', '.join(symbol.args)
             else:
                 args_list = ''
-            source.write('%s_%s %s%s\n' % (_MAGIC, symbol.name,
-                symbol.name, args_list))
+            source.write('%s_%s %s%s\n' %
+                         (_MAGIC, symbol.name, symbol.name, args_list))
         clang = ['clang', '-E', '-x', 'c', '-']
         clang.extend(clang_args or ())
         proc = subprocess.Popen(clang,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr)
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=stderr)
         macros = decode_str(proc.communicate(source.getvalue().encode())[0])
         if proc.returncode != 0:
             raise MacroException('clang preprocessor returns %d' %
-                    proc.returncode)
+                                 proc.returncode)
         macros = StringIO(macros)
         # Parse preprocessor output
         for define_line in macros:
@@ -215,7 +221,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
             if not define_line.startswith(_MAGIC):
                 continue
             sep = define_line.find(' ')
-            name = define_line[len(_MAGIC)+1:sep]  # sep == -1 is okay here!
+            name = define_line[len(_MAGIC) + 1:sep]  # sep == -1 is okay here!
             symbol = candidates[name]
             if sep != -1:
                 body = define_line[sep:].strip()
@@ -250,7 +256,7 @@ class MacroSymbol(namedtuple('MacroSymbol', 'name args body expr')):
     def set_expr(cls, symbol, expr):
         '''Add expr to a MacroSymbol.'''
         return cls(name=symbol.name, args=symbol.args, body=symbol.body,
-                expr=expr)
+                   expr=expr)
 
     @property
     def macro(self):
@@ -276,17 +282,17 @@ class Parser:
     # pylint: disable=R0903
 
     BINARY_OPERATOR_PRECEDENCE = (
-            '||',
-            '&&',
-            '|',
-            '^',
-            '&',
-            ('==', '!='),
-            ('<', '>', '<=', '>='),
-            ('<<', '>>'),
-            ('+', '-'),
-            ('*', '/', '%'),
-            )
+        '||',
+        '&&',
+        '|',
+        '^',
+        '&',
+        ('==', '!='),
+        ('<', '>', '<=', '>='),
+        ('<<', '>>'),
+        ('+', '-'),
+        ('*', '/', '%'),
+    )
 
     def __init__(self):
         '''Initialize the object.'''
@@ -425,10 +431,10 @@ class Parser:
     def _primary_expr(self):
         '''Parse primary expression.'''
         this = self._match((Token.PARENTHESES, '('),
-                (Token.SYMBOL,),
-                (Token.CHAR_LITERAL,),
-                (Token.INT_LITERAL,),
-                (Token.FP_LITERAL,))
+                           (Token.SYMBOL,),
+                           (Token.CHAR_LITERAL,),
+                           (Token.INT_LITERAL,),
+                           (Token.FP_LITERAL,))
         if this.kind == Token.PARENTHESES:
             expr = self._cond_expr()
             self._match((Token.PARENTHESES, ')'))
@@ -526,19 +532,19 @@ class Token(namedtuple('Token', 'kind spelling')):
             \s+
             ''', re.VERBOSE)
 
-    FUNCTION        = 'FUNCTION'
-    SYMBOL          = 'SYMBOL'
-    TRIOP           = 'TRIOP'
-    BINOP           = 'BINOP'
-    UNIOP           = 'UNIOP'
-    CHAR_LITERAL    = 'CHAR_LITERAL'
-    STR_LITERAL     = 'STR_LITERAL'
-    INT_LITERAL     = 'INT_LITERAL'
-    FP_LITERAL      = 'FP_LITERAL'
-    PARENTHESES     = 'PARENTHESES'
-    MISC            = 'MISC'
-    CAT             = 'CAT'
-    END             = 'END'
+    FUNCTION = 'FUNCTION'
+    SYMBOL = 'SYMBOL'
+    TRIOP = 'TRIOP'
+    BINOP = 'BINOP'
+    UNIOP = 'UNIOP'
+    CHAR_LITERAL = 'CHAR_LITERAL'
+    STR_LITERAL = 'STR_LITERAL'
+    INT_LITERAL = 'INT_LITERAL'
+    FP_LITERAL = 'FP_LITERAL'
+    PARENTHESES = 'PARENTHESES'
+    MISC = 'MISC'
+    CAT = 'CAT'
+    END = 'END'
 
     @classmethod
     def get_tokens(cls, c_expr):
@@ -557,8 +563,7 @@ class Token(namedtuple('Token', 'kind spelling')):
                     ('floating_point_literal',  cls.FP_LITERAL),
                     ('binary_operator',         cls.BINOP),
                     ('parentheses',             cls.PARENTHESES),
-                    ('misc',                    cls.MISC),
-                    ):
+                    ('misc',                    cls.MISC)):
                 spelling = match.group(gname)
                 if spelling:
                     yield cls(kind=kind, spelling=spelling)

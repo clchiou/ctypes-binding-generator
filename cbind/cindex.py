@@ -6,12 +6,20 @@ import cbind
 
 
 if cbind.choose_cindex_impl() == cbind.MIN_CINDEX:
-    from cbind.min_cindex import (Index, Cursor, CursorKind, Diagnostic,
-            Type, TypeKind, LinkageKind, RefQualifierKind)
+    from cbind.min_cindex import (Index,
+                                  Cursor, CursorKind,
+                                  Diagnostic,
+                                  Type, TypeKind,
+                                  LinkageKind,
+                                  RefQualifierKind)
 else:
-    from cbind.clang_cindex import (Index, Cursor, CursorKind, Diagnostic,
-            Type, TypeKind, LinkageKind, RefQualifierKind)
+    from cbind.clang_cindex import (Index,
+                                    Cursor, CursorKind,
+                                    Diagnostic,
+                                    Type, TypeKind,
+                                    LinkageKind,
+                                    RefQualifierKind)
 
 
 __all__ = ['Index', 'Cursor', 'CursorKind', 'Diagnostic',
-        'Type', 'TypeKind', 'LinkageKind', 'RefQualifierKind']
+           'Type', 'TypeKind', 'LinkageKind', 'RefQualifierKind']

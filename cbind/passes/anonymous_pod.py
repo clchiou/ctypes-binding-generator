@@ -51,5 +51,5 @@ def _real_anonymous_pod(tree):
     assert tree.location.file
     filename = re.sub(r'[^\w]', '_', tree.location.file.name)
     name = '_%s_%s_%d_%d' % (kind, filename,
-            tree.location.line, tree.location.column)
+                             tree.location.line, tree.location.column)
     tree.annotate(annotations.ORIGINAL_NAME, name)

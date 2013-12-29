@@ -29,8 +29,8 @@ def scan_required_nodes(syntax_tree, check_required):
     visited = set()
     todo = []
     traverse_postorder(syntax_tree, _scan_required)
-    call_scan_type_definition = lambda tree: _scan_type_definition(tree.type,
-            todo, visited)
+    call_scan_type_definition = lambda tree: \
+        _scan_type_definition(tree.type, todo, visited)
     while todo:
         # Trick is to copy todo and then empty it without creating a new list.
         trees = list(todo)

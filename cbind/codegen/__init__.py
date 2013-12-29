@@ -12,7 +12,7 @@ class CodeGen:
 
     # Generate C++ bindings
     # TODO: Because C++ binding generation is an experimental feature, we would
-    # not like to generate C++ binding without user consent.  But we will remove
+    # not like to generate C++ binding without user consent, but we will remove
     # this check when this feature is completed and not experimental.
     ENABLE_CPP = False
 

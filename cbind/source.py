@@ -8,7 +8,7 @@ import logging
 
 import cbind.annotations as annotations
 from cbind.cindex import (Index, Cursor, CursorKind, Diagnostic,
-        Type, TypeKind, LinkageKind)
+                          Type, TypeKind, LinkageKind)
 
 
 class SyntaxTreeForest(list):
@@ -22,7 +22,7 @@ class SyntaxTreeForest(list):
     def parse(self, path, contents=None, args=None):
         '''Parse C source file.'''
         syntax_tree = SyntaxTree.parse(path, contents=contents, args=args,
-                annotation_table=self.annotation_table)
+                                       annotation_table=self.annotation_table)
         self.append(syntax_tree)
         return syntax_tree
 
@@ -59,23 +59,23 @@ class SyntaxTree:
     '''.split())
 
     UDT_DECL = frozenset((CursorKind.STRUCT_DECL,
-        CursorKind.CLASS_DECL,
-        CursorKind.UNION_DECL,
-        CursorKind.ENUM_DECL))
+                          CursorKind.CLASS_DECL,
+                          CursorKind.UNION_DECL,
+                          CursorKind.ENUM_DECL))
 
     POD_DECL = frozenset((CursorKind.STRUCT_DECL,
-        CursorKind.CLASS_DECL,
-        CursorKind.UNION_DECL))
+                          CursorKind.CLASS_DECL,
+                          CursorKind.UNION_DECL))
 
     UDT_FIELD_DECL = frozenset((CursorKind.ENUM_CONSTANT_DECL,
-        CursorKind.FIELD_DECL))
+                                CursorKind.FIELD_DECL))
 
     HAS_FIELD_DECL = frozenset((CursorKind.STRUCT_DECL,
-        CursorKind.CLASS_DECL,
-        CursorKind.UNION_DECL))
+                                CursorKind.CLASS_DECL,
+                                CursorKind.UNION_DECL))
 
     HAS_METHOD_DECL = frozenset((CursorKind.STRUCT_DECL,
-        CursorKind.CLASS_DECL))
+                                 CursorKind.CLASS_DECL))
 
     @classmethod
     def parse(cls, path, contents=None, args=None, annotation_table=None):
@@ -96,15 +96,17 @@ class SyntaxTree:
             # that diag.location.file is None...
             assert diag.location.file
             severity_str = {
-                    Diagnostic.Ignored: 'IGNORE',
-                    Diagnostic.Note:    'NOTE',
-                    Diagnostic.Warning: 'WARNING',
-                    Diagnostic.Error:   'ERROR',
-                    Diagnostic.Fatal:   'FATAL',
+                Diagnostic.Ignored: 'IGNORE',
+                Diagnostic.Note:    'NOTE',
+                Diagnostic.Warning: 'WARNING',
+                Diagnostic.Error:   'ERROR',
+                Diagnostic.Fatal:   'FATAL',
             }[diag.severity]
             message = '%s:%d:%d: %s: %s' % (diag.location.file.name,
-                    diag.location.line, diag.location.column,
-                    severity_str, diag.spelling)
+                                            diag.location.line,
+                                            diag.location.column,
+                                            severity_str,
+                                            diag.spelling)
             if diag.severity >= cls.SEVERITY:
                 raise SyntaxError(message)
             logging.info(message)
@@ -136,7 +138,7 @@ class SyntaxTree:
         else:
             filename = '?'
         return hash('%s:%s:%d' %
-                (cursor.kind, filename, cursor.location.offset))
+                    (cursor.kind, filename, cursor.location.offset))
 
     def __getattr__(self, name):
         '''Get property.'''
@@ -273,7 +275,8 @@ class SyntaxTreeType:
     get_canonical = _make_type_getter(Type.get_canonical)
     get_class_type = _make_type_getter(Type.get_class_type)
     if hasattr(Type, 'element_type'):
-        get_element_type = _make_type_getter(lambda c_type: c_type.element_type)
+        get_element_type = _make_type_getter(lambda c_type:
+                                             c_type.element_type)
     else:
         get_element_type = _make_type_getter(Type.get_element_type)
     get_pointee = _make_type_getter(Type.get_pointee)
@@ -282,7 +285,7 @@ class SyntaxTreeType:
     def get_argument_types(self):
         '''Get type of arguments.'''
         return tuple(SyntaxTreeType(c_type, self.syntax_tree)
-                for c_type in self.c_type.argument_types())
+                     for c_type in self.c_type.argument_types())
 
     def is_user_defined_type(self):
         '''Test if this type is user-defined.'''

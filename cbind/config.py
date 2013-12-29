@@ -72,12 +72,12 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
         patterns = {}
         if 'argtypes' in spec:
             patterns['argtypes'] = tuple(re.compile(regex, re.VERBOSE)
-                    for regex in spec['argtypes'])
+                                         for regex in spec['argtypes'])
         else:
             patterns['argtypes'] = None
         if 'kind' in spec:
             patterns['kind'] = [getattr(CursorKind, kind)
-                    for kind in spec['kind']]
+                                for kind in spec['kind']]
         else:
             patterns['kind'] = None
         if 'parent' in spec:
@@ -96,12 +96,12 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
             rename = None
         # pylint: disable=W0142
         return cls(rename=rename,
-                enum=spec.get('enum'),
-                errcheck=spec.get('errcheck'),
-                import_=spec.get('import', True),
-                method=spec.get('method'),
-                mixin=spec.get('mixin'),
-                **patterns)
+                   enum=spec.get('enum'),
+                   errcheck=spec.get('errcheck'),
+                   import_=spec.get('import', True),
+                   method=spec.get('method'),
+                   mixin=spec.get('mixin'),
+                   **patterns)
 
     @staticmethod
     def _make_rename_rules(spec):
@@ -122,10 +122,10 @@ class SyntaxTreeMatcher(namedtuple('SyntaxTreeMatcher', '''
     def do_match(self, tree):
         '''Match tree.'''
         if (not self.argtypes and
-            not self.kind and
-            not self.name and
-            not self.parent and
-            not self.restype):
+                not self.kind and
+                not self.name and
+                not self.parent and
+                not self.restype):
             logging.info('Could not match with empty rule')
             return False
         return ((not self.name or self._match_original_name(tree)) and

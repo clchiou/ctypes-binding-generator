@@ -4,34 +4,31 @@
 
 from ctypes import c_uint
 import clang.cindex as _cindex
-from clang.cindex import (
-        Index,
-        Cursor,
-        CursorKind,
-        Diagnostic,
-        RefQualifierKind,
-        Type,
-        TypeKind)
+from clang.cindex import (Index,
+                          Cursor,
+                          CursorKind,
+                          Diagnostic,
+                          RefQualifierKind,
+                          Type,
+                          TypeKind)
 
 
 __all__ = ['Index', 'Cursor', 'CursorKind', 'Diagnostic',
-        'Type', 'TypeKind', 'LinkageKind', 'RefQualifierKind']
+           'Type', 'TypeKind', 'LinkageKind', 'RefQualifierKind']
 
 
 # Register libclang function.
 _cindex.register_function(_cindex.conf.lib,
-        ('clang_getCursorLinkage', [Cursor], c_uint), False)
+                          ('clang_getCursorLinkage', [Cursor], c_uint), False)
 
 
 class LinkageKind:  # pylint: disable=R0903
     '''Class represents linkage kind.'''
-    _linkage_kind_tags = (
-            'INVALID',
-            'NO_LINKAGE',
-            'INTERNAL',
-            'UNIQUE_EXTERNAL',
-            'EXTERNAL',
-    )
+    _linkage_kind_tags = ('INVALID',
+                          'NO_LINKAGE',
+                          'INTERNAL',
+                          'UNIQUE_EXTERNAL',
+                          'EXTERNAL')
 
     def __init__(self, kind):
         self.kind = kind
@@ -46,11 +43,11 @@ class LinkageKind:  # pylint: disable=R0903
         return 'LinkageKind.%s' % self._linkage_kind_tags[self.kind]
 
 
-LinkageKind.INVALID         = LinkageKind(0)
-LinkageKind.NO_LINKAGE      = LinkageKind(1)
-LinkageKind.INTERNAL        = LinkageKind(2)
+LinkageKind.INVALID = LinkageKind(0)
+LinkageKind.NO_LINKAGE = LinkageKind(1)
+LinkageKind.INTERNAL = LinkageKind(2)
 LinkageKind.UNIQUE_EXTERNAL = LinkageKind(3)
-LinkageKind.EXTERNAL        = LinkageKind(4)
+LinkageKind.EXTERNAL = LinkageKind(4)
 
 
 def _cursor_get_num_arguments(self):

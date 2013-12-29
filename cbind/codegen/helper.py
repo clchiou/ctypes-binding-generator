@@ -12,60 +12,60 @@ import cbind.codegen
 
 # Map of clang type to ctypes type
 C_TYPE_MAP = {
-        TypeKind.INVALID:           None,
-        TypeKind.UNEXPOSED:         None,
-        TypeKind.VOID:              None,
-        TypeKind.BOOL:              'c_bool',
-        TypeKind.CHAR_U:            'c_ubyte',
-        TypeKind.UCHAR:             'c_ubyte',
-        TypeKind.CHAR16:            None,
-        TypeKind.CHAR32:            None,
-        TypeKind.USHORT:            'c_ushort',
-        TypeKind.UINT:              'c_uint',
-        TypeKind.ULONG:             'c_ulong',
-        TypeKind.ULONGLONG:         'c_ulonglong',
-        TypeKind.UINT128:           None,
-        TypeKind.CHAR_S:            'c_char',
-        TypeKind.SCHAR:             'c_char',
-        TypeKind.WCHAR:             'c_wchar',
-        TypeKind.SHORT:             'c_short',
-        TypeKind.INT:               'c_int',
-        TypeKind.LONG:              'c_long',
-        TypeKind.LONGLONG:          'c_longlong',
-        TypeKind.INT128:            None,
-        TypeKind.FLOAT:             'c_float',
-        TypeKind.DOUBLE:            'c_double',
-        TypeKind.LONGDOUBLE:        'c_longdouble',
-        TypeKind.NULLPTR:           None,
-        TypeKind.OVERLOAD:          None,
-        TypeKind.DEPENDENT:         None,
-        TypeKind.OBJCID:            None,
-        TypeKind.OBJCCLASS:         None,
-        TypeKind.OBJCSEL:           None,
-        TypeKind.COMPLEX:           None,
-        TypeKind.POINTER:           None,
-        TypeKind.BLOCKPOINTER:      None,
-        TypeKind.LVALUEREFERENCE:   None,
-        TypeKind.RVALUEREFERENCE:   None,
-        TypeKind.RECORD:            None,
-        TypeKind.ENUM:              None,
-        TypeKind.TYPEDEF:           None,
-        TypeKind.OBJCINTERFACE:     None,
-        TypeKind.OBJCOBJECTPOINTER: None,
-        TypeKind.FUNCTIONNOPROTO:   None,
-        TypeKind.FUNCTIONPROTO:     None,
-        TypeKind.CONSTANTARRAY:     None,
-        TypeKind.INCOMPLETEARRAY:   None,
-        TypeKind.VARIABLEARRAY:     None,
-        TypeKind.DEPENDENTSIZEDARRAY: None,
-        TypeKind.VECTOR:            None,
+    TypeKind.INVALID:           None,
+    TypeKind.UNEXPOSED:         None,
+    TypeKind.VOID:              None,
+    TypeKind.BOOL:              'c_bool',
+    TypeKind.CHAR_U:            'c_ubyte',
+    TypeKind.UCHAR:             'c_ubyte',
+    TypeKind.CHAR16:            None,
+    TypeKind.CHAR32:            None,
+    TypeKind.USHORT:            'c_ushort',
+    TypeKind.UINT:              'c_uint',
+    TypeKind.ULONG:             'c_ulong',
+    TypeKind.ULONGLONG:         'c_ulonglong',
+    TypeKind.UINT128:           None,
+    TypeKind.CHAR_S:            'c_char',
+    TypeKind.SCHAR:             'c_char',
+    TypeKind.WCHAR:             'c_wchar',
+    TypeKind.SHORT:             'c_short',
+    TypeKind.INT:               'c_int',
+    TypeKind.LONG:              'c_long',
+    TypeKind.LONGLONG:          'c_longlong',
+    TypeKind.INT128:            None,
+    TypeKind.FLOAT:             'c_float',
+    TypeKind.DOUBLE:            'c_double',
+    TypeKind.LONGDOUBLE:        'c_longdouble',
+    TypeKind.NULLPTR:           None,
+    TypeKind.OVERLOAD:          None,
+    TypeKind.DEPENDENT:         None,
+    TypeKind.OBJCID:            None,
+    TypeKind.OBJCCLASS:         None,
+    TypeKind.OBJCSEL:           None,
+    TypeKind.COMPLEX:           None,
+    TypeKind.POINTER:           None,
+    TypeKind.BLOCKPOINTER:      None,
+    TypeKind.LVALUEREFERENCE:   None,
+    TypeKind.RVALUEREFERENCE:   None,
+    TypeKind.RECORD:            None,
+    TypeKind.ENUM:              None,
+    TypeKind.TYPEDEF:           None,
+    TypeKind.OBJCINTERFACE:     None,
+    TypeKind.OBJCOBJECTPOINTER: None,
+    TypeKind.FUNCTIONNOPROTO:   None,
+    TypeKind.FUNCTIONPROTO:     None,
+    TypeKind.CONSTANTARRAY:     None,
+    TypeKind.INCOMPLETEARRAY:   None,
+    TypeKind.VARIABLEARRAY:     None,
+    TypeKind.DEPENDENTSIZEDARRAY: None,
+    TypeKind.VECTOR:            None,
 }
 
 # Typedef'ed types of stddef.h, etc.
 BUILTIN_TYPEDEFS = {
-        'size_t': 'c_size_t',
-        'ssize_t': 'c_ssize_t',
-        'wchar_t': 'c_wchar_t',
+    'size_t': 'c_size_t',
+    'ssize_t': 'c_ssize_t',
+    'wchar_t': 'c_wchar_t',
 }
 
 # Indent by 4 speces
@@ -90,8 +90,7 @@ def gen_tree_node(tree, output):
     elif tree.is_user_defined_pod_decl():
         declared = tree.get_annotation(annotations.DECLARED, False)
         declaration = not tree.is_definition()
-        gen_record(tree, output,
-                declared=declared, declaration=declaration)
+        gen_record(tree, output, declared=declared, declaration=declaration)
     elif tree.kind == CursorKind.ENUM_DECL and tree.is_definition():
         _make_enum(tree, output)
     elif tree.kind == CursorKind.VAR_DECL:
@@ -129,7 +128,7 @@ def _make_type(type_):
     elif type_.kind == TypeKind.TYPEDEF:
         tree = type_.get_declaration()
         c_type = (BUILTIN_TYPEDEFS.get(tree.name) or
-                _make_type(type_.get_canonical()))
+                  _make_type(type_.get_canonical()))
     elif type_.kind == TypeKind.CONSTANTARRAY:
         # TODO(clchiou): Make parentheses context-sensitive
         element_type = _make_type(type_.get_array_element_type())
@@ -161,7 +160,8 @@ def _make_pointer_type(pointer_type=None, pointee_type=None):
         # Handle special case "typedef void foo;"
         c_type = 'c_void_p'
     elif (pointee_type.kind == TypeKind.WCHAR or
-            (pointee_type.kind == TypeKind.TYPEDEF and decl.name == 'wchar_t')):
+            (pointee_type.kind == TypeKind.TYPEDEF and
+             decl.name == 'wchar_t')):
         c_type = 'c_wchar_p'
     elif canonical.kind == TypeKind.FUNCTIONPROTO:
         c_type = _make_function_pointer(canonical)
@@ -260,7 +260,7 @@ def _make_pod_header(tree, name, output):
     else:
         fmt = 'class {name}({kind}):\n{indent}pass\n'
     output.write(fmt.format(name=name, kind=pod_kind, indent=INDENT,
-        mixin=', '.join(mixin)))
+                            mixin=', '.join(mixin)))
 
 
 def _make_pod_body(tree, name, output):
@@ -338,19 +338,23 @@ def _make_enum(tree, output):
         else:
             fmt = 'class {name}({type}):\n{indent}pass\n'
         output.write(fmt.format(name=enum_name, indent=INDENT,
-            type=enum_type, mixin=', '.join(mixin)))
+                                type=enum_type, mixin=', '.join(mixin)))
     for enum in tree.get_children():
         if not enum.get_annotation(annotations.REQUIRED, False):
             continue
         fmt = enum.get_annotation(annotations.ENUM,
-                '{enum_field} = {enum_value}')
-        output.write(fmt.format(enum_name=enum_name, enum_type=enum_type,
-            enum_field=enum.name, enum_value=enum.enum_value))
+                                  '{enum_field} = {enum_value}')
+        output.write(fmt.format(enum_name=enum_name,
+                                enum_type=enum_type,
+                                enum_field=enum.name,
+                                enum_value=enum.enum_value))
         output.write('\n')
 
 
 def _make_var(tree, output):
     '''Generate ctypes binding of a variable declaration.'''
     c_type = _make_type(tree.type)
-    output.write('{0} = {1}.in_dll({2}, \'{3}\')\n'.
-            format(tree.name, c_type, LIBNAME, tree.spelling))
+    output.write('{0} = {1}.in_dll({2}, \'{3}\')\n'.format(tree.name,
+                                                           c_type,
+                                                           LIBNAME,
+                                                           tree.spelling))

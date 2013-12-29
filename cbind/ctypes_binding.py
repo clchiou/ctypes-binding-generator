@@ -6,11 +6,11 @@ import functools
 from cbind.codegen import CodeGen
 from cbind.config import SyntaxTreeMatcher
 from cbind.passes import (custom_pass,
-        scan_required_nodes,
-        scan_and_rename,
-        scan_forward_decl,
-        scan_va_list_tag,
-        scan_anonymous_pod)
+                          scan_required_nodes,
+                          scan_and_rename,
+                          scan_forward_decl,
+                          scan_va_list_tag,
+                          scan_anonymous_pod)
 from cbind.source import SyntaxTreeForest
 import cbind.annotations as annotations
 
@@ -74,7 +74,7 @@ class CtypesBindingGenerator:
                 self._config['preamble'] = preamble['codes']
                 self._config['library'] = preamble.get('library')
                 self._config['use_custom_loader'] = \
-                        preamble.get('use_custom_loader')
+                    preamble.get('use_custom_loader')
         for name in 'enum errcheck import method mixin rename'.split():
             if name in config_data:
                 matcher = SyntaxTreeMatcher.make(config_data[name])
@@ -85,10 +85,12 @@ class CtypesBindingGenerator:
         if 'import' in self._config:
             check_required = self._config['import']
         else:
-            check_required = functools.partial(check_locally_defined, path=path)
+            check_required = functools.partial(check_locally_defined,
+                                               path=path)
 
         syntax_tree = self.syntax_tree_forest.parse(path,
-                contents=contents, args=args)
+                                                    contents=contents,
+                                                    args=args)
         scan_required_nodes(syntax_tree, check_required)
         scan_forward_decl(syntax_tree)
         scan_va_list_tag(syntax_tree)
@@ -129,15 +131,15 @@ class CtypesBindingGenerator:
             output.write(METHOD_DESCRIPTOR)
         for syntax_tree in self.syntax_tree_forest:
             va_list_tag = syntax_tree.get_annotation(
-                    annotations.USE_VA_LIST_TAG, False)
+                annotations.USE_VA_LIST_TAG, False)
             if va_list_tag:
                 self.codegen.generate_record_definition(va_list_tag)
                 output.write('\n')
                 break
         for syntax_tree in self.syntax_tree_forest:
             syntax_tree.traverse(
-                    preorder=self.codegen.generate_record_forward_decl,
-                    postorder=self.codegen.generate)
+                preorder=self.codegen.generate_record_forward_decl,
+                postorder=self.codegen.generate)
 
 
 def check_locally_defined(tree, path):
