@@ -11,8 +11,10 @@ class TestToken(unittest.TestCase):
     def run_test(self, c_expr, *answer_tokens):
         output_tokens = tuple(Token.get_tokens(c_expr))
         msg = ('%d != %d:\n%s\n%s\n' %
-                (len(output_tokens), len(answer_tokens),
-                    output_tokens, answer_tokens))
+               (len(output_tokens),
+                len(answer_tokens),
+                output_tokens,
+                answer_tokens))
         self.assertEqual(len(output_tokens), len(answer_tokens), msg)
         for output, answer in zip(output_tokens, answer_tokens):
             msg = '%s != %s' % (output, answer)
@@ -90,29 +92,29 @@ class TestExpression(unittest.TestCase):
 
     def test_simple_expr(self):
         self.run_test('xx + yy * zz - (1 - 3.14) / a',
-                ('+',
-                    'xx',
-                    ('-',
-                        ('*', 'yy', 'zz'),
-                        ('/',
-                            ('()', ('-', '1', '3.14')),
-                            'a'
-                            )
-                        )
-                    )
-                )
+                      ('+',
+                          'xx',
+                          ('-',
+                              ('*', 'yy', 'zz'),
+                              ('/',
+                                  ('()', ('-', '1', '3.14')),
+                                  'a'
+                              )
+                          )
+                      )
+                     )
         self.run_test('xx || yy && zz;',
-                ('||', 'xx', ('&&', 'yy', 'zz')),
-                'xx or yy and zz')
+                      ('||', 'xx', ('&&', 'yy', 'zz')),
+                      'xx or yy and zz')
         self.run_test('x ? y : z',
-                ('?:', 'x', 'y', 'z'),
-                'y if x else z')
+                      ('?:', 'x', 'y', 'z'),
+                      'y if x else z')
         self.run_test('- +x',
-                ('-', ('+', 'x')),
-                '-+x')
+                      ('-', ('+', 'x')),
+                      '-+x')
         self.run_test('!!1',
-                ('!', ('!', '1')),
-                'not not 1')
+                      ('!', ('!', '1')),
+                      'not not 1')
 
     def test_function_call(self):
         self.run_test('f(1, 2, 3)', ('()', 'f', '1', '2', '3'))

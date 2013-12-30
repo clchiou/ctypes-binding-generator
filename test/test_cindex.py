@@ -24,10 +24,12 @@ int foo(,);
                     name = 'filename'
                 file = FakeFile()
                 offset = 1
+
             def __init__(self):
                 self.spelling = 'spelling'
                 self.location = FakeCursor.FakeLocation()
                 self.kind = 'kind'
+
         cursor1 = FakeCursor()
         cursor2 = FakeCursor()
         cursor3 = FakeCursor()

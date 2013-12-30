@@ -181,9 +181,9 @@ rename:
     def test_preamble(self):
         header = cbind.ctypes_binding.HEADER.format(progname='cbind')
         loader = cbind.ctypes_binding.LOAD_LIBRARY.format(
-                posix_library='libclang.so',
-                darwin_library='libclang.dylib',
-                windows_library='libclang.dll')
+            posix_library='libclang.so',
+            darwin_library='libclang.dylib',
+            windows_library='libclang.dll')
 
         self.run_test('''
         ''', header + '''

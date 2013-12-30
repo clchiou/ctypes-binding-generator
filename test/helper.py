@@ -19,9 +19,9 @@ class TestCtypesBindingGenerator(unittest.TestCase):
 
     # pylint: disable=R0913
     def run_test(self, c_code, python_code,
-            filename='input.c', args=None, config=None,
-            enable_cpp=False,
-            assert_layout=False):
+                 filename='input.c', args=None, config=None,
+                 enable_cpp=False,
+                 assert_layout=False):
         '''Generate Python code from C code and compare it to the answer.'''
         CodeGen.ENABLE_CPP = enable_cpp
         CodeGen.ASSERT_LAYOUT = assert_layout
@@ -43,13 +43,13 @@ class TestCtypesBindingGenerator(unittest.TestCase):
         cbgen.generate(output)
         gen_code = output.getvalue()
 
-        error_message = prepare_error_message(python_code, gen_code,
-                tunits=cbgen.get_translation_units())
+        error_message = prepare_error_message(
+            python_code, gen_code, tunits=cbgen.get_translation_units())
         self.assertTrue(compare_codes(gen_code, python_code), error_message)
         code = compile(gen_code, 'output.py', 'exec')
         if assert_layout:
             # Test if layout assertions are true
-            exec(code, self.get_env()) # pylint: disable=W0122
+            exec(code, self.get_env())  # pylint: disable=W0122
 
     @staticmethod
     def get_env():
@@ -88,12 +88,14 @@ class TestCppMangler(unittest.TestCase):
                 'matcher': matcher,
                 'mangled_name': mangled_name,
             })
+
         def search_node(tree):
             '''Search matched node.'''
             for blob in symbol_table:
                 if blob['matcher'].do_match(tree):
                     self.assertTrue('tree' not in blob)  # Unique matching
                     blob['tree'] = tree
+
         root.traverse(preorder=search_node)
         for blob in symbol_table:
             blob['output_name'] = mangle(blob['tree'])
@@ -114,7 +116,9 @@ class TestCppMangler(unittest.TestCase):
             output_name = blob['output_name']
             if mangled_name != output_name:
                 errmsg.write('Mangling symbol %s: %s != %s\n' %
-                        (repr(symbol), repr(mangled_name), repr(output_name)))
+                             (repr(symbol),
+                              repr(mangled_name),
+                              repr(output_name)))
         format_ast([root.translation_unit], errmsg)
         errmsg = errmsg.getvalue()
         for blob in symbol_table:
@@ -150,13 +154,15 @@ class TestMacroGenerator(unittest.TestCase):
 def compare_codes(code1, code2):
     '''Test if Python codes are equivalent.'''
     unimportant_token_types = frozenset(
-            (token.NEWLINE, token.INDENT, token.DEDENT, token.N_TOKENS + 1))
+        (token.NEWLINE, token.INDENT, token.DEDENT, token.N_TOKENS + 1))
+
     def get_tokens(code):
         '''Return tokens important to comparison.'''
         tokens = tokenize.generate_tokens(StringIO(code).readline)
         for token_type, token_str, _, _, _ in tokens:
             if token_type not in unimportant_token_types:
                 yield token_str
+
     for token1, token2 in zip(get_tokens(code1), get_tokens(code2)):
         if token1 != token2:
             return False
@@ -213,16 +219,16 @@ def format_ast(tunits, output):
     def traverse(cursor, indent):
         '''Traverse and print astree.'''
         if cursor.location.file:
-            begin = ('%s%s:%s' % (indent,
-                cursor.location.file.name, cursor.location.line))
+            begin = ('%s%s:%s' %
+                     (indent, cursor.location.file.name, cursor.location.line))
         else:
             begin = '%s?:%s' % (indent, cursor.location.line)
         if cursor.spelling:
             name = cursor.spelling
         else:
             name = '\'\''
-        output.write('{0!s:<24} {1!s:<24} {2!s}\n'.format(begin,
-            name, cursor.kind))
+        output.write('{0!s:<24} {1!s:<24} {2!s}\n'.format(
+            begin, name, cursor.kind))
         for child in cursor.get_children():
             traverse(child, indent + '  ')
 
